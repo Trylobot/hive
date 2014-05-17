@@ -21,7 +21,6 @@
   },
   "homepage": "https://github.com/Trylobot/hive",
   "dependencies": {
-    "compress": "^0.1.9",
     "compression": "^1.0.2",
     "datejs": "^1.0.0-beta",
     "express": "^4.2.0",
