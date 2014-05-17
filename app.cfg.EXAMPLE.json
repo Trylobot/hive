@@ -1,0 +1,4 @@
+{
+  "server_port": 80,
+  "socket_io_log_level": 1
+}
