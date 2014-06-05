@@ -1,3 +1,6 @@
+var _ = require("lodash");
+_(global).extend(require("./util"));
+
 /* 
 piece.js
 this module is used to represent a single hive piece.
@@ -5,10 +8,13 @@ this module is used to represent a single hive piece.
 	labelled with hive bug pictures.
 */
 
+// data
+
 var colors_list = [
 	"White",
 	"Black"
 ];
+var colors_map = invert_list( colors_list );
 
 var types_list = [
 	"Queen Bee",
@@ -20,35 +26,34 @@ var types_list = [
 	"Ladybug",
 	"Pillbug"
 ];
+var types_map = invert_list( types_list );
 
-var colors_map = {};
-for( var i = 0; i < colors_list.length; ++i ) {
-	colors_map[colors_list[i]] = i;
+// functions
+
+function create_piece( color, type ) {
+	var piece = {
+		color: colors_map[color],
+		type: types_map[type]
+	}
+	return piece;
 }
 
-var types_map = {};
-for( var i = 0; i < types_list.length; ++i ) {
-	types_map[types_list[i]] = i;
+function type_name( type_id ) {
+	return types_list[type_id];
 }
+
+function color_name( color_id ) {
+	return colors_list[color_id];
+}
+
+// exports
 
 exports.types_list = types_list;
 exports.types_map = types_map;
 exports.colors_list = colors_list;
 exports.colors_map = colors_map;
 
-exports.create_piece = function( color, type ) {
-	var piece = {
-		type: types_map[type],
-		color: colors_map[color]
-	}
-	return piece;
-}
-
-exports.type_name = function( type_id ) {
-	return types_list[type_id];
-}
-
-exports.color_name = function( color_id ) {
-	return colors_list[color_id];
-}
+exports.create_piece = create_piece;
+exports.type_name = type_name;
+exports.color_name = color_name;
 

@@ -1,4 +1,7 @@
+var _ = require("lodash");
+_(global).extend(require("./util"));
 var piece = require("./piece");
+var position = require("./position");
 
 /* 
 board.js
@@ -12,34 +15,42 @@ naturally, in real life, the board itself is imaginary, and really just
 	the collection of pieces on whatever surface the players are putting them on.
 */
 
+// functions
+
 // creates a new, empty board
-exports.create_board = function() {
+function create_board() {
 	var board = {
-		// map: location hash (str) -> piece object
+		// map: position_key_str => piece_object
 		//   location hash is of the form "row,col,layer"
 		pieces: {}
 	}
 	// add a new piece to the board at a specific location
-	board.place_piece = function( row, col, layer, piece ) {
-		var position_key = board.encode_position_key( row, col, layer ); 
-		pieces[position_key] = piece;
+	board.place_piece = function( piece, position ) {
+		board.pieces[ position.encode() ] = piece;
 	}
 	// move an existing piece to a new position
-	board.move_piece = function( row_0, col_0, layer_0, row_1, col_1, layer_1 ) {
-		var position_key_0 = board.encode_position_key( row_0, col_0, layer_0 );
-		var position_key_1 = board.encode_position_key( row_1, col_1, layer_1 );
-		pieces[position_key_1] = pieces[position_key_0];
-		pieces[position_key_0] = undefined;
+	board.move_piece = function( position_0, position_1 ) {
+		var position_key_0 = position_0.encode();
+		var position_key_1 = position_1.encode();
+		board.pieces[position_key_1] = board.pieces[position_key_0];
+		board.pieces[position_key_0] = undefined;
 	}
-	// create a hash for a location, used for storage of piece objects
-	board.encode_position_key = function( row, col, layer ) {
-		return row + "," + col + "," + layer;
+	board.lookup_piece = function( position ) {
+		return board.pieces[ position.encode() ];
 	}
-	board.decode_position_key = function( position_key ) {
-		var parts = position_key.split(",");
-		return {
-			row: parts[0].
-		}
+	board.lookup_coplanar_adjacent_pieces = function( position ) {
+		return _(position.coplanar_directions_map).mapValues( 
+			function( key, value, object ) {
+				return board.pieces[ position.translate( value ).encode() ];
+			});
+	}
+	board.lookup_piece_atop = function( position ) {
+		return board.pieces[ position.translate( "+layer" ).encode() ];
 	}
 	return board;
 }
+
+// exports
+
+exports.create_board = create_board;
+

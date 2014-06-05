@@ -13,7 +13,7 @@ console.log( "express server listening on port " + cfg.server_port );
 var io = require('socket.io').listen( server );
 require('datejs');
 var mt = require('mersenne').MersenneTwister19937;
-var _ = require('underscore');
+var _ = require('lodash');
 // module configs
 app.use( compress() ); // gzip compression
 app.use( favicon( 'favicon.png' ));
