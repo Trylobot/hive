@@ -4,7 +4,7 @@
   "description": "Hive AI Development Tool",
   "main": "index.js",
   "scripts": {
-    "test": "test.js"
+    "test": "node test/all-tests.js"
   },
   "repository": {
     "type": "git",
@@ -29,5 +29,8 @@
     "serve-favicon": "^2.0.0",
     "socket.io": "^0.9.16",
     "underscore": "^1.6.0"
+  },
+  "devDependencies": {
+    "test": ">=0.0.5"
   }
 }
