@@ -1,4 +1,1 @@
-require("./domain/all-tests");
-
-if( module == require.main )
-	require("test").run( exports );
+require("test").run( require("./domain/all-tests") );

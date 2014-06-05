@@ -1,6 +1,3 @@
-require("./piece-tests");
-require("./board-tests");
-require("./game-tests");
-
-if( module == require.main )
-	require("test").run( exports );
+require("test").run( require("./piece-tests") );
+require("test").run( require("./board-tests") );
+require("test").run( require("./game-tests") );

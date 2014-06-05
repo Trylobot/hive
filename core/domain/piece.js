@@ -36,10 +36,10 @@ exports.types_map = types_map;
 exports.colors_list = colors_list;
 exports.colors_map = colors_map;
 
-exports.create_piece = function( type, color ) {
+exports.create_piece = function( color, type ) {
 	var piece = {
 		type: types_map[type],
-		color: color_map[color]
+		color: colors_map[color]
 	}
 	return piece;
 }
