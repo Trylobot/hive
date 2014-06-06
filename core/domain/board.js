@@ -18,9 +18,9 @@ naturally, in real life, the board itself is imaginary, and really just
 // functions
 
 // creates a new, empty board
-function create_board() {
+function create() {
 	var board = {
-		// map: position_key_str => piece_object
+		// map: position_key => piece_object
 		//   location hash is of the form "row,col,layer"
 		pieces: {}
 	}
@@ -35,22 +35,53 @@ function create_board() {
 		board.pieces[position_key_1] = board.pieces[position_key_0];
 		board.pieces[position_key_0] = undefined;
 	}
+	// return piece at position
 	board.lookup_piece = function( position ) {
 		return board.pieces[ position.encode() ];
 	}
+	// return the contents of the six positions adjacent to a given position, on the same layer
+	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
+	// containing the fields: "position", "position_key", "contents"
 	board.lookup_coplanar_adjacent_pieces = function( position ) {
-		return _(position.coplanar_directions_map).mapValues( 
-			function( key, value, object ) {
-				return board.pieces[ position.translate( value ).encode() ];
-			});
+		return _(position.coplanar_directions_map).mapValues( function( direction_id, direction_name ) {
+			var translated_position = position.translation( direction_name );
+			var translated_position_key = translated_position.encode();
+			return {
+				position: translated_position,
+				position_key: translated_position_key,
+				contents: board.pieces[ translated_position_key ]
+			}
+		});
 	}
+	// return the contents of the position directly above the given position
 	board.lookup_piece_atop = function( position ) {
-		return board.pieces[ position.translate( "+layer" ).encode() ];
+		return board.pieces[ position.translation( "+layer" ).encode() ];
+	}
+	// return a map containing the positions of free spaces adjacent to pieces already placed on the board
+	//   key is the position key, value is the position object representing that space
+	board.lookup_free_spaces = function() {
+		var free_spaces = {};
+		// for each piece currently on the board ...
+		_(board.pieces).forEach( function( piece_object, piece_position_key ) {
+			var position = position.decode_position( key );
+			// ignoring pieces higher up than layer 0
+			if( position.layer != 0 )
+				return;
+			// find the pieces adjacent to it
+			var adjacent_pieces = board.lookup_coplanar_adjacent_pieces( position );
+			// retain each space not occupied by a piece
+			_(position.coplanar_directions_map).forEach( function( direction_id, direction_name ) {
+				var lookup_result = adjacent_pieces[direction_name];
+				if( lookup_result.contents === "undefined" )
+					free_spaces[ lookup_result.position_key ] = lookup_result.position;
+			});
+		});
+		return free_spaces;
 	}
 	return board;
 }
 
 // exports
 
-exports.create_board = create_board;
+exports.create = create;
 

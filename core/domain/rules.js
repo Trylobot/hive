@@ -14,16 +14,16 @@ this module is used to represent the rules of hive.
 
 // functions
 
-function check_placement( piece, board ) {
-
+function find_valid_placement( piece, board ) {
+	
 }
 
-function check_movement( piece, board, ) {
-
+function find_valid_movement( piece, board, position ) {
+	
 }
 
 // exports
 
-exports.check_placement = check_placement;
-exports.check_movement = check_movement;
+exports.find_valid_placement = find_valid_placement;
+exports.find_valid_movement = find_valid_movement;
 

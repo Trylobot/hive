@@ -30,7 +30,7 @@ var types_map = invert_list( types_list );
 
 // functions
 
-function create_piece( color, type ) {
+function create( color, type ) {
 	var piece = {
 		color: colors_map[color],
 		type: types_map[type]
@@ -53,7 +53,7 @@ exports.types_map = types_map;
 exports.colors_list = colors_list;
 exports.colors_map = colors_map;
 
-exports.create_piece = create_piece;
+exports.create = create;
 exports.type_name = type_name;
 exports.color_name = color_name;
 

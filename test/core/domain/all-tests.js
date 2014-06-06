@@ -1,6 +1,9 @@
-// require("test").run( require("./util-tests") );
-require("test").run( require("./piece-tests") );
-// require("test").run( require("./position-tests") );
-// require("test").run( require("./board-tests") );
-// require("test").run( require("./rules-tests") );
-// require("test").run( require("./game-tests") );
+var _ = require("lodash");
+require("test").run( _.extend({},
+	// require("./util-tests"),
+	require("./piece-tests"),
+	// require("./position-tests"),
+	require("./board-tests")
+	// require("./rules-tests"),
+	// require("./game-tests"),
+));

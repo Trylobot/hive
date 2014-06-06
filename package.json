@@ -1,36 +1,36 @@
 {
-  "name": "hive",
-  "version": "0.0.1",
-  "description": "Hive AI Development Tool",
-  "main": "index.js",
-  "scripts": {
-    "test": "node test/all-tests.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Trylobot/hive.git"
-  },
-  "keywords": [
-    "hive",
-    "ai"
-  ],
-  "author": "Trylobot",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Trylobot/hive/issues"
-  },
-  "homepage": "https://github.com/Trylobot/hive",
-  "dependencies": {
-    "compression": "^1.0.2",
-    "datejs": "^1.0.0-beta",
-    "express": "^4.2.0",
-    "mersenne": "0.0.3",
-    "mongodb": "^1.4.4",
-    "serve-favicon": "^2.0.0",
-    "socket.io": "^0.9.16",
-    "lodash": "^2.4.1"
-  },
-  "devDependencies": {
-    "test": ">=0.0.5"
-  }
+	"name": "hive",
+	"version": "0.0.1",
+	"description": "Hive AI Development Tool",
+	"main": "index.js",
+	"scripts": {
+		"test": "node test/all-tests.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Trylobot/hive.git"
+	},
+	"keywords": [
+		"hive",
+		"ai"
+	],
+	"author": "Trylobot",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/Trylobot/hive/issues"
+	},
+	"homepage": "https://github.com/Trylobot/hive",
+	"dependencies": {
+		"compression": "^1.0.2",
+		"datejs": "^1.0.0-beta",
+		"express": "^4.2.0",
+		"mersenne": "0.0.3",
+		"mongodb": "^1.4.4",
+		"serve-favicon": "^2.0.0",
+		"socket.io": "^0.9.16",
+		"lodash": "^2.4.1"
+	},
+	"devDependencies": {
+		"test": ">=0.0.5"
+	}
 }
