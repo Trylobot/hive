@@ -26,6 +26,7 @@ var layer_directions_map = invert_list( layer_directions_list );
 
 // functions
 
+// where row, col, layer are all integer numbers
 function create( row, col, layer ) {
 	var position = {
 		row: row,
@@ -38,6 +39,7 @@ function create( row, col, layer ) {
 	position.translation = function( direction ) {
 		return translation( position, direction );
 	}
+	return position;
 }
 
 function encode( position ) {
@@ -46,7 +48,7 @@ function encode( position ) {
 
 function decode( position_key ) {
 	var parts = position_key.split(",");
-	return create_position( _.parseInt(parts[0]), _.parseInt(parts[1]),  _.parseInt(parts[2]) );
+	return create( _.parseInt(parts[0]), _.parseInt(parts[1]),  _.parseInt(parts[2]) );
 }
 
 function translation( position, direction ) {
@@ -58,7 +60,7 @@ function translation( position, direction ) {
 		case "+row-col": return create( position.row + 1, position.col - 1, position.layer     ); break;
 		case "-row-col": return create( position.row - 1, position.col - 1, position.layer     ); break;
 		case "+layer":   return create( position.row    , position.col    , position.layer + 1 ); break;
-		case "-layer":   return create( position.row    , position.col    , position.layer + 1 ); break;
+		case "-layer":   return create( position.row    , position.col    , position.layer - 1 ); break;
 		default:         return create( position.row    , position.col    , position.layer     ); break;
 	}
 }

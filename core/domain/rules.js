@@ -1,8 +1,8 @@
 var _ = require("lodash");
 _(global).extend(require("./util"));
-var piece = require("./piece");
-var position = require("./position");
-var board = require("./board");
+var Piece = require("./piece");
+var Position = require("./position");
+var Board = require("./board");
 
 /*
 rules.js

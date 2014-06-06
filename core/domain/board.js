@@ -1,7 +1,7 @@
 var _ = require("lodash");
 _(global).extend(require("./util"));
-var piece = require("./piece");
-var position = require("./position");
+var Piece = require("./piece");
+var Position = require("./position");
 
 /* 
 board.js
@@ -43,7 +43,7 @@ function create() {
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
 	// containing the fields: "position", "position_key", "contents"
 	board.lookup_coplanar_adjacent_pieces = function( position ) {
-		return _(position.coplanar_directions_map).mapValues( function( direction_id, direction_name ) {
+		return _.mapValues( Position.coplanar_directions_map, function( direction_id, direction_name ) {
 			var translated_position = position.translation( direction_name );
 			var translated_position_key = translated_position.encode();
 			return {
@@ -62,18 +62,18 @@ function create() {
 	board.lookup_free_spaces = function() {
 		var free_spaces = {};
 		// for each piece currently on the board ...
-		_(board.pieces).forEach( function( piece_object, piece_position_key ) {
-			var position = position.decode_position( key );
+		_.forEach( board.pieces, function( piece_object, piece_position_key ) {
+			var position = Position.decode( piece_position_key );
 			// ignoring pieces higher up than layer 0
 			if( position.layer != 0 )
 				return;
 			// find the pieces adjacent to it
 			var adjacent_pieces = board.lookup_coplanar_adjacent_pieces( position );
 			// retain each space not occupied by a piece
-			_(position.coplanar_directions_map).forEach( function( direction_id, direction_name ) {
-				var lookup_result = adjacent_pieces[direction_name];
-				if( lookup_result.contents === "undefined" )
-					free_spaces[ lookup_result.position_key ] = lookup_result.position;
+			_.forEach( Position.coplanar_directions_map, function( direction_id, direction_name ) {
+				var adjacency = adjacent_pieces[direction_name];
+				if( typeof adjacency.contents === "undefined" )
+					free_spaces[ adjacency.position_key ] = adjacency.position;
 			});
 		});
 		return free_spaces;

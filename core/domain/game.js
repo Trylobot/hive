@@ -1,8 +1,8 @@
 var _ = require("lodash");
 _(global).extend(require("./util"));
-var piece = require("./piece");
-var board = require("./board");
-var rules = require("./rules");
+var Piece = require("./piece");
+var Board = require("./board");
+var Rules = require("./rules");
 
 /*
 game.js
@@ -19,49 +19,49 @@ it encapsulates all of the hive rules, and allows for
 // creates a new game board and initializes player hands, with optional add-on pieces
 function create( use_mosquito, use_ladybug, use_pillbug ) {
 	var game = {
-		board: board.create(),
+		board: Board.create(),
 		hands: [
 			[ // player 1, White
-				piece.create( "White", "Queen Bee" ),
-				piece.create( "White", "Queen Bee" ),
-				piece.create( "White", "Beetle" ),
-				piece.create( "White", "Beetle" ),
-				piece.create( "White", "Grasshopper" ),
-				piece.create( "White", "Grasshopper" ),
-				piece.create( "White", "Grasshopper" ),
-				piece.create( "White", "Spider" ),
-				piece.create( "White", "Spider" ),
-				piece.create( "White", "Soldier Ant" ),
-				piece.create( "White", "Soldier Ant" ),
-				piece.create( "White", "Soldier Ant" )
+				Piece.create( "White", "Queen Bee" ),
+				Piece.create( "White", "Queen Bee" ),
+				Piece.create( "White", "Beetle" ),
+				Piece.create( "White", "Beetle" ),
+				Piece.create( "White", "Grasshopper" ),
+				Piece.create( "White", "Grasshopper" ),
+				Piece.create( "White", "Grasshopper" ),
+				Piece.create( "White", "Spider" ),
+				Piece.create( "White", "Spider" ),
+				Piece.create( "White", "Soldier Ant" ),
+				Piece.create( "White", "Soldier Ant" ),
+				Piece.create( "White", "Soldier Ant" )
 			], 
 			[ // player 2, Black
-				piece.create( "Black", "Queen Bee" ),
-				piece.create( "Black", "Queen Bee" ),
-				piece.create( "Black", "Beetle" ),
-				piece.create( "Black", "Beetle" ),
-				piece.create( "Black", "Grasshopper" ),
-				piece.create( "Black", "Grasshopper" ),
-				piece.create( "Black", "Grasshopper" ),
-				piece.create( "Black", "Spider" ),
-				piece.create( "Black", "Spider" ),
-				piece.create( "Black", "Soldier Ant" ),
-				piece.create( "Black", "Soldier Ant" ),
-				piece.create( "Black", "Soldier Ant" )
+				Piece.create( "Black", "Queen Bee" ),
+				Piece.create( "Black", "Queen Bee" ),
+				Piece.create( "Black", "Beetle" ),
+				Piece.create( "Black", "Beetle" ),
+				Piece.create( "Black", "Grasshopper" ),
+				Piece.create( "Black", "Grasshopper" ),
+				Piece.create( "Black", "Grasshopper" ),
+				Piece.create( "Black", "Spider" ),
+				Piece.create( "Black", "Spider" ),
+				Piece.create( "Black", "Soldier Ant" ),
+				Piece.create( "Black", "Soldier Ant" ),
+				Piece.create( "Black", "Soldier Ant" )
 			]
 		]
 	}
 	if( use_mosquito ) {
-		game.hands[0].push( piece.create( "White", "Mosquito" ));
-		game.hands[1].push( piece.create( "Black", "Mosquito" ));
+		game.hands[0].push( Piece.create( "White", "Mosquito" ));
+		game.hands[1].push( Piece.create( "Black", "Mosquito" ));
 	}
 	if( use_ladybug ) {
-		game.hands[0].push( piece.create( "White", "Ladybug" ));
-		game.hands[1].push( piece.create( "Black", "Ladybug" ));
+		game.hands[0].push( Piece.create( "White", "Ladybug" ));
+		game.hands[1].push( Piece.create( "Black", "Ladybug" ));
 	}
 	if( use_pillbug ) {
-		game.hands[0].push( piece.create( "White", "Pillbug" ));
-		game.hands[1].push( piece.create( "Black", "Pillbug" ));
+		game.hands[0].push( Piece.create( "White", "Pillbug" ));
+		game.hands[1].push( Piece.create( "Black", "Pillbug" ));
 	}
 	return game;
 }
