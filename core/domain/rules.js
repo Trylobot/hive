@@ -15,7 +15,8 @@ this module is used to represent the rules of hive.
 // functions
 
 function find_valid_placement( piece, board ) {
-	
+	// placement can only occur in an empty spot on the bottom layer
+	var free_spaces = board.lookup_free_spaces();
 }
 
 function find_valid_movement( piece, board, position ) {

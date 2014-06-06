@@ -3,23 +3,50 @@ var Piece = require("../../../core/domain/piece");
 var Position = require("../../../core/domain/position");
 var Board = require("../../../core/domain/board");
 
-// exports["test that board pieces can be placed and moved"] = function( assert ) {
-	
-// }
+exports["test place_piece"] = function( assert ) {
+	var board;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
+	assert.ok(
+		_.keys(board.pieces).length == 1,
+		"expected 1 piece on the board" )
+}
+
+exports["test move_piece"] = function( assert ) {
+	var board, piece;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 1, 1, 0 ));
+	board.move_piece( Position.create( 1, 1, 0 ), Position.create( -1, 1, 0 ));
+	piece = board.lookup_piece( Position.create( -1, 1, 0 ));
+	assert.ok(
+		piece.color == Piece.color_id( "Black" ) && piece.type == Piece.type_id( "Queen Bee" ),
+		"expected to find moved piece" );
+}
+
+exports["test lookup_piece"] = function( assert ) {
+}
+
+exports["test lookup_topmost_piece"] = function( assert ) {
+}
+
+exports["test lookup_coplanar_adjacent_pieces"] = function( assert ) {
+}
+
+exports["test lookup_piece_atop"] = function( assert ) {
+}
 
 exports["test lookup_free_spaces"] = function( assert ) {
-	var b, c, t, p, v, free_spaces;
+	var board, free_spaces;
 
-	b = Board.create();
-	c = "White";
-	t = "Queen Bee";
-	p = Piece.create( c, t );
-	v = Position.create( 0, 0, 0 );
-	b.place_piece( p, v );
-	free_spaces = b.lookup_free_spaces();
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
+	free_spaces = board.lookup_free_spaces();
 	assert.ok(
 		_.keys(free_spaces).length == 6,
-		"there are 6 free spaces; _.keys(free_spaces).length = " + _.keys(free_spaces).length);
+		"expected 6 free spaces" );
 }
 
 if( module == require.main )

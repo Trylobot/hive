@@ -42,8 +42,16 @@ function type_name( type_id ) {
 	return types_list[type_id];
 }
 
+function type_id( type_name ) {
+	return types_map[type_name];
+}
+
 function color_name( color_id ) {
 	return colors_list[color_id];
+}
+
+function color_id( color_name ) {
+	return colors_map[color_name];
 }
 
 // exports
@@ -55,5 +63,7 @@ exports.colors_map = colors_map;
 
 exports.create = create;
 exports.type_name = type_name;
+exports.type_id = type_id;
 exports.color_name = color_name;
+exports.color_id = color_id;
 

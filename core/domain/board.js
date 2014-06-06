@@ -35,9 +35,24 @@ function create() {
 		board.pieces[position_key_1] = board.pieces[position_key_0];
 		board.pieces[position_key_0] = undefined;
 	}
-	// return piece at position
+	// return piece at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
 		return board.pieces[ position.encode() ];
+	}
+	// return topmost piece at (row, col) given by position (layer ignored), or undefined if no pieces exist
+	board.lookup_topmost_piece = function( position ) {
+		var cursor = Position.create( position.row, position.col, 0 );
+		var piece = board.lookup_piece( cursor );
+		if( typeof piece === "undefined" )
+			return undefined;
+		while( true ) {
+			var piece_atop = board.lookup_piece_atop( cursor );
+			if( typeof piece_atop === "undefined" )
+				break;
+			piece = piece_atop;
+			cursor = cursor.translation( "+layer" );
+		}
+		return piece;
 	}
 	// return the contents of the six positions adjacent to a given position, on the same layer
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
