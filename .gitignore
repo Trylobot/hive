@@ -1,6 +1,7 @@
 app.cfg.json
 node_modules
 *.sublime-workspace
+*.pdn
 
 
 #################

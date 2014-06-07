@@ -12,7 +12,7 @@ var coplanar_directions_list = [
 	"-row",     // straight up
 	"-row+col", // diagonally up & right
 	"+row+col", // diagonally down & right
-	"+col",     // straight down
+	"+row",     // straight down
 	"+row-col", // diagonally down & left
 	"-row-col"  // diagonally up & left
 ];
@@ -56,7 +56,7 @@ function translation( position, direction ) {
 		case "-row":     return create( position.row - 2, position.col    , position.layer     ); break;
 		case "-row+col": return create( position.row - 1, position.col + 1, position.layer     ); break;
 		case "+row+col": return create( position.row + 1, position.col + 1, position.layer     ); break;
-		case "+col":     return create( position.row    , position.col + 2, position.layer     ); break;
+		case "+row":     return create( position.row + 2, position.col    , position.layer     ); break;
 		case "+row-col": return create( position.row + 1, position.col - 1, position.layer     ); break;
 		case "-row-col": return create( position.row - 1, position.col - 1, position.layer     ); break;
 		case "+layer":   return create( position.row    , position.col    , position.layer + 1 ); break;

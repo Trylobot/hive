@@ -45,8 +45,11 @@ exports["test lookup_free_spaces"] = function( assert ) {
 	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
 	free_spaces = board.lookup_free_spaces();
 	assert.ok(
-		_.keys(free_spaces).length == 6,
-		"expected 6 free spaces" );
+		_.difference( 
+			_.keys( free_spaces ), 
+			[ "-2,0,0", "-1,1,0", "1,1,0", "2,0,0", "1,-1,0", "-1,-1,0" ]
+		).length == 0,
+		"free spaces found exactly match those expected" );
 }
 
 if( module == require.main )
