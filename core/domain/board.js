@@ -33,7 +33,7 @@ function create() {
 		var position_key_0 = position_0.encode();
 		var position_key_1 = position_1.encode();
 		board.pieces[position_key_1] = board.pieces[position_key_0];
-		board.pieces[position_key_0] = undefined;
+		delete board.pieces[position_key_0];
 	}
 	// return piece at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
@@ -58,7 +58,7 @@ function create() {
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
 	// containing the fields: "position", "position_key"; 
 	// the "contents" field will contain the piece at the associated position, or undefined if there is no piece there
-	board.lookup_coplanar_adjacent_pieces = function( position ) {
+	board.lookup_coplanar_adjacent_positions = function( position ) {
 		return _.mapValues( Position.coplanar_directions_map, function( direction_id, direction_name ) {
 			var translated_position = position.translation( direction_name );
 			var translated_position_key = translated_position.encode();
@@ -86,12 +86,12 @@ function create() {
 			// ignoring pieces higher up than layer 0
 			if( position.layer != 0 )
 				return;
-			// find the pieces adjacent to it
-			var adjacent_pieces = board.lookup_coplanar_adjacent_pieces( position );
-			// retain each space not occupied by a piece
-			_.forEach( Position.coplanar_directions_map, function( direction_id, direction_name ) {
-				var adjacency = adjacent_pieces[direction_name];
+			// scan the positions adjacent to it
+			var adjacent_positions = board.lookup_coplanar_adjacent_positions( position );
+			// for each adjacent position ...
+			_.forEach( adjacent_positions, function( adjacency, direction_name ) {
 				if( typeof adjacency.contents === "undefined" ) {
+					// retain each space not occupied by a piece
 					free_spaces[ adjacency.position_key ] = adjacency.position;
 					// mark free spaces adjacent to piece-stacks not matching the color filter for later exclusion
 					if( typeof color_filter_id !== "undefined" ) {
@@ -108,18 +108,46 @@ function create() {
 		});
 		return free_spaces;
 	}
-	return board;
-	// count the number of contiguous groups of piece-stacks
-	// optionally pretend that a given position is empty
-	board.count_contiguous_groups = function( simulate_empty_position ) {
-		throw "not yet implemented";
-		return -1;
+	// check whether a board is contiguous
+	//   returns true if contiguous
+	// optionally, treat a specific position as empty
+	board.check_contiguity = function( assuming_empty_position ) {
+		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+		var piece_position_keys = _.keys( board.pieces );
+		var occupied_space_count = piece_position_keys.length;
+		// starting an arbitrary occupied position ...
+		var pieces_to_visit = [ Position.decode( piece_position_keys[0] ) ];
+		var visited_pieces = {};
+		visited_pieces[ piece_position_keys[0] ] = true;
+		// traverse adjacency graph until no more linked pieces could be found
+		while( pieces_to_visit.length > 0 ) {
+			var position = pieces_to_visit.pop();
+			// scan the positions adjacent to it
+			var adjacent_positions = board.lookup_coplanar_adjacent_positions( position );
+			// for each adjacent position ...
+			_.forEach( adjacent_positions, function( adjacency, direction_name ) {
+				// if the position is occupied
+				// and the position is not being filtered via function argument
+				if( typeof adjacency.contents !== "undefined" 
+				&&  !(adjacency.position_key in visited_pieces) 
+				&&  assuming_empty_position_key !== adjacency.position_key ) {
+					// add it to the pieces_to_visit stack, if it is not already visited
+					pieces_to_visit.push( adjacency.position );
+					visited_pieces[ adjacency.position_key ] = true;
+				}
+			});
+		}
+		// the number of visited pieces should equal the number of pieces on the board
+		var visited_pieces_count = _.keys( visited_pieces ).length;
+		return (visited_pieces_count == occupied_space_count);
 	}
-	// return a map containing a contiguous chain of free spaces, which is adjacent to and includes a given start position
-	board.lookup_position_chain = function( start_position ) {
+	// return a map containing a set of free spaces which is adjacent to a given start position
+	board.lookup_free_position_chain = function( start_position ) {
 		throw "not yet implemented";
 		return {};
 	}
+	// -------------
+	return board;
 }
 
 // exports
