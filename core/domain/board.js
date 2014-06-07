@@ -75,8 +75,11 @@ function create() {
 	}
 	// return a map containing the positions of free spaces adjacent to pieces already placed on the board
 	//   key is the position key, value is the position object representing that space
-	board.lookup_free_spaces = function() {
+	// optionally pass a color name to find free spaces that are adjacent to ONLY that color and no other color
+	board.lookup_free_spaces = function( color_filter ) {
 		var free_spaces = {};
+		var filtered_free_spaces = {};
+		var color_filter_id = Piece.color_id( color_filter );
 		// for each piece currently on the board ...
 		_.forEach( board.pieces, function( piece_object, piece_position_key ) {
 			var position = Position.decode( piece_position_key );
@@ -88,11 +91,20 @@ function create() {
 			// retain each space not occupied by a piece
 			_.forEach( Position.coplanar_directions_map, function( direction_id, direction_name ) {
 				var adjacency = adjacent_pieces[direction_name];
-				if( typeof adjacency.contents === "undefined" )
+				if( typeof adjacency.contents === "undefined" ) {
 					free_spaces[ adjacency.position_key ] = adjacency.position;
+					// mark free spaces adjacent to pieces not matching the color filter for later exclusion
+					if( typeof color_filter_id !== "undefined"
+					&&  color_filter_id != piece_object.color )
+						filtered_free_spaces[ adjacency.position_key ] = true;
+				}
 			});
 		});
-		return free_spaces;
+		// peform filtered_free_spaces exclusion
+		free_spaces = _.omit( free_spaces, function( free_position, free_position_key ) {
+			return (free_position_key in filtered_free_spaces);
+		});
+		return free_spaces
 	}
 	return board;
 }
