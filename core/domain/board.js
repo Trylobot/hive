@@ -93,10 +93,12 @@ function create() {
 				var adjacency = adjacent_pieces[direction_name];
 				if( typeof adjacency.contents === "undefined" ) {
 					free_spaces[ adjacency.position_key ] = adjacency.position;
-					// mark free spaces adjacent to pieces not matching the color filter for later exclusion
-					if( typeof color_filter_id !== "undefined"
-					&&  color_filter_id != piece_object.color )
-						filtered_free_spaces[ adjacency.position_key ] = true;
+					// mark free spaces adjacent to piece-stacks not matching the color filter for later exclusion
+					if( typeof color_filter_id !== "undefined" ) {
+						var topmost_piece_object = board.lookup_topmost_piece( position );
+						if( color_filter_id != topmost_piece_object.color )
+							filtered_free_spaces[ adjacency.position_key ] = true;
+					}
 				}
 			});
 		});
@@ -107,6 +109,15 @@ function create() {
 		return free_spaces
 	}
 	return board;
+	// count the number of contiguous groups of piece-stacks
+	// optionally pretend that a given position is empty
+	board.count_contiguous_groups = function( simulate_empty_position ) {
+		return -1; // not yet implemented
+	}
+	// return a map containing a contiguous chain of free spaces, which is adjacent to and includes a given start position
+	board.lookup_position_chain = function( start_position ) {
+		return {}; // not yet implemented
+	}
 }
 
 // exports

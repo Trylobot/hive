@@ -108,7 +108,8 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 		"free spaces (unfiltered) found exactly match those expected" );
 
 	board = Board.create();
-	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
 	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
 	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
