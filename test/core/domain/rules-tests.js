@@ -1,10 +1,10 @@
 var piece = require("../../../core/domain/rules");
 
-exports["test placement"] = function( assert ) {
+exports["test rules find_valid_placement"] = function( assert ) {
 	
 }
 
-exports["test movement"] = function( assert ) {
+exports["test rules find_valid_movement"] = function( assert ) {
 	
 }
 

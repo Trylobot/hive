@@ -56,7 +56,8 @@ function create() {
 	}
 	// return the contents of the six positions adjacent to a given position, on the same layer
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
-	// containing the fields: "position", "position_key", "contents"
+	// containing the fields: "position", "position_key"; 
+	// the "contents" field will contain the piece at the associated position, or undefined if there is no piece there
 	board.lookup_coplanar_adjacent_pieces = function( position ) {
 		return _.mapValues( Position.coplanar_directions_map, function( direction_id, direction_name ) {
 			var translated_position = position.translation( direction_name );

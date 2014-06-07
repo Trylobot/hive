@@ -1,6 +1,6 @@
 var Piece = require("../../../core/domain/piece");
 
-exports["test that all pieces can be created"] = function( assert ) {
+exports["test piece create"] = function( assert ) {
 	var color, type, piece;
 	
 	color = "White";

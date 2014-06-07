@@ -1,6 +1,6 @@
 var Position = require("../../../core/domain/position");
 
-exports["test create, encode, decode"] = function( assert ) {
+exports["test position create, encode, decode"] = function( assert ) {
 	var position, position_key;
 
 	position = Position.create( 0, 0, 0 );
@@ -33,7 +33,7 @@ exports["test create, encode, decode"] = function( assert ) {
 		"decoded position has the correct data" );
 }
 
-exports["test translation"] = function( assert ) {
+exports["test position translation"] = function( assert ) {
 	var position, translated_position;
 
 	position = Position.create( 0, 0, 0 );
