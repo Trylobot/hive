@@ -21,36 +21,60 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 	var game = {
 		board: Board.create(),
 		hands: [
-			[ // player 1, White
-				Piece.create( "White", "Queen Bee" ),
-				Piece.create( "White", "Queen Bee" ),
-				Piece.create( "White", "Beetle" ),
-				Piece.create( "White", "Beetle" ),
-				Piece.create( "White", "Grasshopper" ),
-				Piece.create( "White", "Grasshopper" ),
-				Piece.create( "White", "Grasshopper" ),
-				Piece.create( "White", "Spider" ),
-				Piece.create( "White", "Spider" ),
-				Piece.create( "White", "Soldier Ant" ),
-				Piece.create( "White", "Soldier Ant" ),
-				Piece.create( "White", "Soldier Ant" )
-			], 
-			[ // player 2, Black
-				Piece.create( "Black", "Queen Bee" ),
-				Piece.create( "Black", "Queen Bee" ),
-				Piece.create( "Black", "Beetle" ),
-				Piece.create( "Black", "Beetle" ),
-				Piece.create( "Black", "Grasshopper" ),
-				Piece.create( "Black", "Grasshopper" ),
-				Piece.create( "Black", "Grasshopper" ),
-				Piece.create( "Black", "Spider" ),
-				Piece.create( "Black", "Spider" ),
-				Piece.create( "Black", "Soldier Ant" ),
-				Piece.create( "Black", "Soldier Ant" ),
-				Piece.create( "Black", "Soldier Ant" )
-			]
-		]
+			[], // player 0: White
+			[]  // player 1: Black
+		],
+		current_turn: 0,
+		state_history: [],
+		game_over: false,
+		winner: null,
+		is_draw: false
 	}
+	game.record_current_state = function() {
+		var serialized_game_state = JSON.stringify({
+			board: game.board,
+			hands: game.hands
+		});
+		game.state_history.push( serialized_game_state );
+	}
+	game.perform_placement = function( player_hand_index, hand_piece_index, position ) {
+		var hand = board.hands[ player_hand_index ];
+		var piece = hand[ hand_piece_index ];
+		_.pull( hand, piece );
+		board.place_piece( position );
+	}
+	game.perform_movement = function( position_0, position_1 ) {
+		board.move_piece( position_0, position_1 );
+	}
+	// -------------------
+	// default hands (no addons)
+	// player 0: White
+	game.hands[0].push( Piece.create( "White", "Queen Bee" ));
+	game.hands[0].push( Piece.create( "White", "Queen Bee" ));
+	game.hands[0].push( Piece.create( "White", "Beetle" ));
+	game.hands[0].push( Piece.create( "White", "Beetle" ));
+	game.hands[0].push( Piece.create( "White", "Grasshopper" ));
+	game.hands[0].push( Piece.create( "White", "Grasshopper" ));
+	game.hands[0].push( Piece.create( "White", "Grasshopper" ));
+	game.hands[0].push( Piece.create( "White", "Spider" ));
+	game.hands[0].push( Piece.create( "White", "Spider" ));
+	game.hands[0].push( Piece.create( "White", "Soldier Ant" ));
+	game.hands[0].push( Piece.create( "White", "Soldier Ant" ));
+	game.hands[0].push( Piece.create( "White", "Soldier Ant" ));
+	// player 1: Black
+	game.hands[1].push( Piece.create( "Black", "Queen Bee" ));
+	game.hands[1].push( Piece.create( "Black", "Queen Bee" ));
+	game.hands[1].push( Piece.create( "Black", "Beetle" ));
+	game.hands[1].push( Piece.create( "Black", "Beetle" ));
+	game.hands[1].push( Piece.create( "Black", "Grasshopper" ));
+	game.hands[1].push( Piece.create( "Black", "Grasshopper" ));
+	game.hands[1].push( Piece.create( "Black", "Grasshopper" ));
+	game.hands[1].push( Piece.create( "Black", "Spider" ));
+	game.hands[1].push( Piece.create( "Black", "Spider" ));
+	game.hands[1].push( Piece.create( "Black", "Soldier Ant" ));
+	game.hands[1].push( Piece.create( "Black", "Soldier Ant" ));
+	game.hands[1].push( Piece.create( "Black", "Soldier Ant" ));
+	// optional addon pieces
 	if( use_mosquito ) {
 		game.hands[0].push( Piece.create( "White", "Mosquito" ));
 		game.hands[1].push( Piece.create( "Black", "Mosquito" ));
@@ -63,6 +87,8 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.hands[0].push( Piece.create( "White", "Pillbug" ));
 		game.hands[1].push( Piece.create( "Black", "Pillbug" ));
 	}
+	// initialize history with initial game state
+	game.record_current_state();
 	return game;
 }
 

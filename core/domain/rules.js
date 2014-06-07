@@ -61,7 +61,9 @@ function find_valid_movement( piece, board, position ) {
 // private functions
 
 function find_valid_movement__Queen_Bee( color, board, position ) {
-	throw "not yet implemented";
+	// lookup immediate adjacencies
+	var adjacencies = board.lookup_coplanar_adjacent_pieces( position );
+	
 }
 
 function find_valid_movement__Beetle( color, board, position ) {
