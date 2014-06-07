@@ -89,6 +89,10 @@ exports["test board lookup_piece_atop"] = function( assert ) {
 		"Black Beetle is atop White Queen Bee" );
 }
 
+exports["test board lookup_pieces_on_bottom_layer"] = function( assert ) {
+	// TODO
+}
+
 exports["test board lookup_free_spaces"] = function( assert ) {
 	var board, free_spaces;
 
@@ -169,7 +173,7 @@ exports["test board check_contiguity"] = function( assert ) {
 	assert.equal(
 		is_contiguous,
 		true,
-		"board should confirm that the board WOULD be contiguous" );
+		"board should confirm that the board WOULD be contiguous" ); // pieces not on the bottom layer are being included
 	// but what would happen if I moved the Black Spider at (1, 1, 0)?
 	var is_contiguous = board.check_contiguity( Position.create( 1, 1, 0 ));
 	assert.equal(

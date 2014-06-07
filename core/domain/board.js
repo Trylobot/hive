@@ -73,6 +73,10 @@ function create() {
 	board.lookup_piece_atop = function( position ) {
 		return board.pieces[ position.translation( "+layer" ).encode() ];
 	}
+	// return a map containing the pieces on layer 0
+	board.lookup_pieces_on_bottom_layer = function() {
+		throw "not implemented";
+	}
 	// return a map containing the positions of free spaces adjacent to pieces already placed on the board
 	//   key is the position key, value is the position object representing that space
 	// optionally pass a color name to find free spaces that are adjacent to ONLY that color and no other color
