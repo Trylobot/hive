@@ -20,11 +20,12 @@ it encapsulates all of the hive rules, and allows for
 function create( use_mosquito, use_ladybug, use_pillbug ) {
 	var game = {
 		board: Board.create(),
-		hands: [
-			[], // player 0: White
-			[]  // player 1: Black
-		],
-		current_turn: 0,
+		hands: {
+			"White": [],
+			"Black": []
+		},
+		player_turn: "White",
+		turn_number: 0,
 		state_history: [],
 		game_over: false,
 		winner: null,
@@ -48,44 +49,45 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 	}
 	// -------------------
 	// default hands (no addons)
-	// player 0: White
-	game.hands[0].push( Piece.create( "White", "Queen Bee" ));
-	game.hands[0].push( Piece.create( "White", "Queen Bee" ));
-	game.hands[0].push( Piece.create( "White", "Beetle" ));
-	game.hands[0].push( Piece.create( "White", "Beetle" ));
-	game.hands[0].push( Piece.create( "White", "Grasshopper" ));
-	game.hands[0].push( Piece.create( "White", "Grasshopper" ));
-	game.hands[0].push( Piece.create( "White", "Grasshopper" ));
-	game.hands[0].push( Piece.create( "White", "Spider" ));
-	game.hands[0].push( Piece.create( "White", "Spider" ));
-	game.hands[0].push( Piece.create( "White", "Soldier Ant" ));
-	game.hands[0].push( Piece.create( "White", "Soldier Ant" ));
-	game.hands[0].push( Piece.create( "White", "Soldier Ant" ));
-	// player 1: Black
-	game.hands[1].push( Piece.create( "Black", "Queen Bee" ));
-	game.hands[1].push( Piece.create( "Black", "Queen Bee" ));
-	game.hands[1].push( Piece.create( "Black", "Beetle" ));
-	game.hands[1].push( Piece.create( "Black", "Beetle" ));
-	game.hands[1].push( Piece.create( "Black", "Grasshopper" ));
-	game.hands[1].push( Piece.create( "Black", "Grasshopper" ));
-	game.hands[1].push( Piece.create( "Black", "Grasshopper" ));
-	game.hands[1].push( Piece.create( "Black", "Spider" ));
-	game.hands[1].push( Piece.create( "Black", "Spider" ));
-	game.hands[1].push( Piece.create( "Black", "Soldier Ant" ));
-	game.hands[1].push( Piece.create( "Black", "Soldier Ant" ));
-	game.hands[1].push( Piece.create( "Black", "Soldier Ant" ));
+	game.hands["White"].push( Piece.create( "White", "Queen Bee" ));
+	game.hands["White"].push( Piece.create( "White", "Queen Bee" ));
+	game.hands["White"].push( Piece.create( "White", "Beetle" ));
+	game.hands["White"].push( Piece.create( "White", "Beetle" ));
+	game.hands["White"].push( Piece.create( "White", "Grasshopper" ));
+	game.hands["White"].push( Piece.create( "White", "Grasshopper" ));
+	game.hands["White"].push( Piece.create( "White", "Grasshopper" ));
+	game.hands["White"].push( Piece.create( "White", "Spider" ));
+	game.hands["White"].push( Piece.create( "White", "Spider" ));
+	game.hands["White"].push( Piece.create( "White", "Soldier Ant" ));
+	game.hands["White"].push( Piece.create( "White", "Soldier Ant" ));
+	game.hands["White"].push( Piece.create( "White", "Soldier Ant" ));
+	game.hands["Black"].push( Piece.create( "Black", "Queen Bee" ));
+	game.hands["Black"].push( Piece.create( "Black", "Queen Bee" ));
+	game.hands["Black"].push( Piece.create( "Black", "Beetle" ));
+	game.hands["Black"].push( Piece.create( "Black", "Beetle" ));
+	game.hands["Black"].push( Piece.create( "Black", "Grasshopper" ));
+	game.hands["Black"].push( Piece.create( "Black", "Grasshopper" ));
+	game.hands["Black"].push( Piece.create( "Black", "Grasshopper" ));
+	game.hands["Black"].push( Piece.create( "Black", "Spider" ));
+	game.hands["Black"].push( Piece.create( "Black", "Spider" ));
+	game.hands["Black"].push( Piece.create( "Black", "Soldier Ant" ));
+	game.hands["Black"].push( Piece.create( "Black", "Soldier Ant" ));
+	game.hands["Black"].push( Piece.create( "Black", "Soldier Ant" ));
 	// optional addon pieces
 	if( use_mosquito ) {
-		game.hands[0].push( Piece.create( "White", "Mosquito" ));
-		game.hands[1].push( Piece.create( "Black", "Mosquito" ));
+		throw "not yet implemented";
+		game.hands["White"].push( Piece.create( "White", "Mosquito" ));
+		game.hands["Black"].push( Piece.create( "Black", "Mosquito" ));
 	}
 	if( use_ladybug ) {
-		game.hands[0].push( Piece.create( "White", "Ladybug" ));
-		game.hands[1].push( Piece.create( "Black", "Ladybug" ));
+		throw "not yet implemented";
+		game.hands["White"].push( Piece.create( "White", "Ladybug" ));
+		game.hands["Black"].push( Piece.create( "Black", "Ladybug" ));
 	}
 	if( use_pillbug ) {
-		game.hands[0].push( Piece.create( "White", "Pillbug" ));
-		game.hands[1].push( Piece.create( "Black", "Pillbug" ));
+		throw "not yet implemented";
+		game.hands["White"].push( Piece.create( "White", "Pillbug" ));
+		game.hands["Black"].push( Piece.create( "Black", "Pillbug" ));
 	}
 	// initialize history with initial game state
 	game.record_current_state();

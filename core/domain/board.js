@@ -106,17 +106,19 @@ function create() {
 		free_spaces = _.omit( free_spaces, function( free_position, free_position_key ) {
 			return (free_position_key in filtered_free_spaces);
 		});
-		return free_spaces
+		return free_spaces;
 	}
 	return board;
 	// count the number of contiguous groups of piece-stacks
 	// optionally pretend that a given position is empty
 	board.count_contiguous_groups = function( simulate_empty_position ) {
-		return -1; // not yet implemented
+		throw "not yet implemented";
+		return -1;
 	}
 	// return a map containing a contiguous chain of free spaces, which is adjacent to and includes a given start position
 	board.lookup_position_chain = function( start_position ) {
-		return {}; // not yet implemented
+		throw "not yet implemented";
+		return {};
 	}
 }
 
