@@ -1,3 +1,5 @@
+"use strict";
+
 var _ = require("lodash");
 _(global).extend(require("./util"));
 var Piece = require("./piece");

@@ -1,3 +1,5 @@
+"use strict";
+
 /*
 utils.js
 misc utilities

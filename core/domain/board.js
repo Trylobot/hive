@@ -1,3 +1,5 @@
+"use strict";
+
 var _ = require("lodash");
 _(global).extend(require("./util"));
 var Piece = require("./piece");
@@ -68,6 +70,10 @@ function create() {
 				contents: board.pieces[ translated_position_key ]
 			}
 		});
+	}
+	// return a list of positions valid to slide into, using the can_slide_lookup_table
+	board.lookup_adjacent_slide_positions = function( position ) {
+		throw "not implemented";
 	}
 	// return the contents of the position directly above the given position
 	board.lookup_piece_atop = function( position ) {
@@ -149,20 +155,100 @@ function create() {
 				}
 			});
 		}
-		// the number of visited pieces should equal the number of pieces on the board
+		// the number of visited pieces should equal the number of piece-stacks on the board
 		var visited_pieces_count = _.keys( visited_pieces ).length;
 		return (visited_pieces_count == occupied_space_count);
 	}
 	// return a map containing a set of free spaces which is adjacent to a given start position
 	board.lookup_free_position_chain = function( start_position ) {
-		throw "not yet implemented";
-		return {};
+		var chain = {};
+		var start_position_key = start_position.encode();
+
+		return chain;
 	}
 	// -------------
 	return board;
 }
 
+// data
+
+// keys in this lookup table are specified as follows:
+//   keys have one character for each of six directions
+//   the sequence begins with 12 o'clock and proceeds clockwise
+//   the characters represent the contents of the position one unit of distance away from an origin piece in the associated direction
+//   the character will be "1" if that direction is occupied
+//   the character will be "." if that direction is not occupied
+// values in this lookup table are specified in precisely the same way as the lookup keys
+//   except that they mean which directions are valid to slide into, instead of which ones are occupied
+var can_slide_lookup_table = {
+	"......": "......", // island cannot move
+	".....1": "1...1.", // slide around single piece
+	"....1.": "...1.1", // slide around single piece
+	"....11": "1..1..", // slide alongside pair of adjacent pieces
+	"...1..": "..1.1.", // slide around single piece
+	"...1.1": "1.1...", // slide up and out of crater
+	"...11.": "..1..1", // slide alongside pair of adjacent pieces
+	"...111": "1.1...", // slide up and out of crater
+	"..1...": ".1.1..", // slide around single piece
+	"..1..1": "11.11.", // slide between friends
+	"..1.1.": ".1...1", // slide up and out of crater
+	"..1.11": "11....", // slide out of corner
+	"..11..": ".1..1.", // slide alongside pair of adjacent pieces
+	"..11.1": "11....", // slide out of corner
+	"..111.": ".1...1", // slide up and out of crater
+	"..1111": "11....", // slide to escape from pit
+	".1....": "1.1...", // slide around single piece
+	".1...1": "..1.1.", // slide up and out of crater
+	".1..1.": "1.11.1", // slide between friends
+	".1..11": ".11...", // slide out of corner
+	".1.1..": "1...1.", // slide up and out of crater
+	".1.1.1": "......", // nearly-surrounded piece cannot move
+	".1.11.": "1....1", // slide out of corner
+	".1.111": "......", // nearly-surrounded piece cannot move
+	".11...": "1..1..", // slide alongside pair of adjacent pieces
+	".11..1": "...11.", // slide out of corner
+	".11.1.": "1....1", // slide out of corner
+	".11.11": "......", // nearly-surrounded piece cannot move
+	".111..": "1...1.", // slide up and out of crater
+	".111.1": "......", // nearly-surrounded piece cannot move
+	".1111.": "1....1", // slide to escape from pit
+	".11111": "......", // nearly-surrounded piece cannot move
+	"1.....": ".1...1", // slide around single piece
+	"1....1": ".1..1.", // slide alongside pair of adjacent pieces
+	"1...1.": ".1.1..", // slide up and out of crater
+	"1...11": ".1.1..", // slide up and out of crater
+	"1..1..": ".11.11", // slide between friends
+	"1..1.1": ".11...", // slide out of corner
+	"1..11.": ".11...", // slide out of corner
+	"1..111": ".11...", // slide to escape from pit
+	"1.1...": "...1.1", // slide up and out of crater
+	"1.1..1": "...11.", // slide out of corner
+	"1.1.1.": "......", // nearly-surrounded piece cannot move
+	"1.1.11": "......", // nearly-surrounded piece cannot move
+	"1.11..": "....11", // slide out of corner
+	"1.11.1": "......", // nearly-surrounded piece cannot move
+	"1.111.": "......", // nearly-surrounded piece cannot move
+	"1.1111": "......", // nearly-surrounded piece cannot move
+	"11....": "..1..1", // slide alongside pair of adjacent pieces
+	"11...1": "..1.1.", // slide up and out of crater
+	"11..1.": "..11..", // slide out of corner
+	"11..11": "..11..", // slide to escape from pit
+	"11.1..": "....11", // slide out of corner
+	"11.1.1": "......", // nearly-surrounded piece cannot move
+	"11.11.": "......", // nearly-surrounded piece cannot move
+	"11.111": "......", // nearly-surrounded piece cannot move
+	"111...": "...1.1", // slide up and out of crater
+	"111..1": "...11.", // slide to escape from pit
+	"111.1.": "......", // nearly-surrounded piece cannot move
+	"111.11": "......", // nearly-surrounded piece cannot move
+	"1111..": "....11", // slide to escape from pit
+	"1111.1": "......", // nearly-surrounded piece cannot move
+	"11111.": "......", // nearly-surrounded piece cannot move
+	"111111": "......"  // completely surrounded piece cannot move
+};
+
 // exports
 
 exports.create = create;
+exports.can_slide_lookup_table = can_slide_lookup_table;
 

@@ -111,16 +111,12 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 	board = Board.create();
 	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
 	free_spaces = board.lookup_free_spaces();
-	assert.equal(
-		JSON.stringify( _.difference( _.keys( free_spaces ), [
-			"-2,0,0",
-			"-1,1,0",
-			"1,1,0",
-			"2,0,0",
-			"1,-1,0",
-			"-1,-1,0"
-		])),
-		JSON.stringify( [] ),
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "-2,0,0", "-1,1,0", "1,1,0", "2,0,0", "1,-1,0", "-1,-1,0" ]
+		),
+		[],
 		"free spaces (unfiltered) found exactly match those expected" );
 
 	board = Board.create();
@@ -131,43 +127,30 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
 	
 	free_spaces = board.lookup_free_spaces();
-	assert.equal(
-		JSON.stringify( _.difference( _.keys( free_spaces ), [
-			"-3,-1,0", 
-			"-2,0,0", 
-			"-1,1,0", 
-			"0,2,0", 
-			"2,2,0", 
-			"4,2,0", 
-			"5,1,0", 
-			"4,0,0", 
-			"2,0,0", 
-			"1,-1,0", 
-			"0,-2,0", 
-			"-2,-2,0"
-		])),
-		JSON.stringify( [] ),
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "-3,-1,0", "-2,0,0", "-1,1,0", "0,2,0", "2,2,0", "4,2,0", "5,1,0", "4,0,0", "2,0,0", "1,-1,0", "0,-2,0", "-2,-2,0" ]
+		),
+		[],
 		"free spaces (unfiltered) found exactly match those expected" );
 	
 	free_spaces = board.lookup_free_spaces( "White" );
-	assert.equal(
-		JSON.stringify( _.difference( _.keys( free_spaces ), [
-			"4,2,0", 
-			"5,1,0", 
-			"4,0,0"
-		])),
-		JSON.stringify( [] ),
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "4,2,0", "5,1,0", "4,0,0" ]
+		),
+		[],
 		"free spaces (White) found exactly match those expected" );
 	
 	free_spaces = board.lookup_free_spaces( "Black" );
-	assert.equal(
-		JSON.stringify( _.difference( _.keys( free_spaces ), [
-			"-3,-1,0", 
-			"0,2,0", 
-			"0,-2,0", 
-			"-2,-2,0"
-		])),
-		JSON.stringify( [] ),
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "-3,-1,0", "0,2,0", "0,-2,0", "-2,-2,0" ]
+		),
+		[],
 		"free spaces (Black) found exactly match those expected" );
 }
 
@@ -195,7 +178,30 @@ exports["test board check_contiguity"] = function( assert ) {
 }
 
 exports["test board lookup_free_position_chain"] = function( assert ) {
+	var board;
 
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1, 0 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1, 0 ));
+	// what if I wanted to move the Black Queen?
+	var free_position_chain = board.lookup_free_position_chain( Position.create( -1, -1, 0 ));
+	assert.equal(
+		_.keys( free_position_chain ).length,
+		11,
+		"there are the correct number of positions in the chain" );
+	assert.ok(
+		!("2,0,0" in free_position_chain),
+		"the interior (inaccessible) position was not included" );
+
+}
+
+exports["test board can_slide_lookup_table"] = function( assert ) {
+	
 }
 
 if( module == require.main )

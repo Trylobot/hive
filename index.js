@@ -1,3 +1,5 @@
+"use strict";
+
 // basic config
 var fs = require('fs');
 var cfg = JSON.parse(
