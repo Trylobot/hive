@@ -73,7 +73,24 @@ function create() {
 	}
 	// return a list of positions valid to slide into, using the can_slide_lookup_table
 	board.lookup_adjacent_slide_positions = function( position ) {
-		throw "not implemented";
+		var occupied_adjacencies_lookup_key = "......", i;
+		for( i = 0; i < 6; ++i ) {
+			var direction_name = Position.coplanar_directions_list[i];
+			var translated_position = position.translation( direction_name );
+			var translated_position_key = translated_position.encode();
+			if( board.pieces[ translated_position_key ])
+				occupied_adjacencies_lookup_key[i] = "1";
+		}
+		var valid_directions_result_key = can_slide_lookup_table[ occupied_adjacencies_lookup_key ];
+		var position_list = [];
+		for( i = 0; i < 6; ++i ) {
+			if( valid_directions_result_key[i] === "1" ) {
+				var direction_name = Position.coplanar_directions_list[i];
+				var translated_position = position.translation( direction_name );
+				position_list.push( translated_position );
+			}
+		}
+		return position_list;
 	}
 	// return the contents of the position directly above the given position
 	board.lookup_piece_atop = function( position ) {

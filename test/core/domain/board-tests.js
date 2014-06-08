@@ -177,6 +177,28 @@ exports["test board check_contiguity"] = function( assert ) {
 		"board should confirm that the board would NOT BE contiguous" );
 }
 
+exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
+	var board;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1, 0 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1, 0 ));
+	// what if I wanted to move the Black Queen?
+	var adjacent_slide_positions = board.lookup_adjacent_slide_positions( Position.create( -1, -1, 0 ));
+	assert.equal(
+		JSON.stringify( adjacent_slide_positions ),
+		JSON.stringify( [
+			{ row: -2, col: 0, layer: 0 },
+			{ row: 0, col: -2, layer: 0 }
+		]),
+		"slide positions are correct" );
+}
+
 exports["test board lookup_free_position_chain"] = function( assert ) {
 	var board;
 
@@ -198,10 +220,6 @@ exports["test board lookup_free_position_chain"] = function( assert ) {
 		!("2,0,0" in free_position_chain),
 		"the interior (inaccessible) position was not included" );
 
-}
-
-exports["test board can_slide_lookup_table"] = function( assert ) {
-	
 }
 
 if( module == require.main )

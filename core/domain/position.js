@@ -11,12 +11,12 @@ represents a hive board position
 // data
 
 var coplanar_directions_list = [
-	"-row",     // straight up
-	"-row+col", // diagonally up & right
-	"+row+col", // diagonally down & right
-	"+row",     // straight down
-	"+row-col", // diagonally down & left
-	"-row-col"  // diagonally up & left
+	"-row",     // 12 o'clock - straight up
+	"-row+col", // 2 o'clock  - diagonally up & right
+	"+row+col", // 4 o'clock  - diagonally down & right
+	"+row",     // 6 o'clock  - straight down
+	"+row-col", // 8 o'clock  - diagonally down & left
+	"-row-col"  // 10 o'clock - diagonally up & left
 ];
 var coplanar_directions_map = invert_list( coplanar_directions_list );
 
