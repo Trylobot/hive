@@ -75,7 +75,13 @@ function create() {
 	}
 	// return a map containing the pieces on layer 0
 	board.lookup_pieces_on_bottom_layer = function() {
-		throw "not implemented";
+		var bottom_pieces = {};
+		_.forEach( board.pieces, function( piece, position_key ) {
+			var position = Position.decode( position_key );
+			if( position.layer == 0 )
+				bottom_pieces[ position_key ] = piece;
+		});
+		return bottom_pieces;
 	}
 	// return a map containing the positions of free spaces adjacent to pieces already placed on the board
 	//   key is the position key, value is the position object representing that space
@@ -84,12 +90,11 @@ function create() {
 		var free_spaces = {};
 		var filtered_free_spaces = {};
 		var color_filter_id = Piece.color_id( color_filter );
+		// ignoring pieces higher up than layer 0
+		var bottom_pieces = board.lookup_pieces_on_bottom_layer();
 		// for each piece currently on the board ...
-		_.forEach( board.pieces, function( piece_object, piece_position_key ) {
+		_.forEach( bottom_pieces, function( piece_object, piece_position_key ) {
 			var position = Position.decode( piece_position_key );
-			// ignoring pieces higher up than layer 0
-			if( position.layer != 0 )
-				return;
 			// scan the positions adjacent to it
 			var adjacent_positions = board.lookup_coplanar_adjacent_positions( position );
 			// for each adjacent position ...
@@ -117,8 +122,11 @@ function create() {
 	// optionally, treat a specific position as empty
 	board.check_contiguity = function( assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
-		var piece_position_keys = _.keys( board.pieces );
+		var bottom_pieces = board.lookup_pieces_on_bottom_layer();
+		var piece_position_keys = _.keys( bottom_pieces );
 		var occupied_space_count = piece_position_keys.length;
+		if( occupied_space_count == 0 )
+			return true;
 		// starting an arbitrary occupied position ...
 		var pieces_to_visit = [ Position.decode( piece_position_keys[0] ) ];
 		var visited_pieces = {};
