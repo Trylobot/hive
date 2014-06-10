@@ -1,4 +1,4 @@
-var piece = require("../../../core/domain/rules");
+var Rules = require("../../../core/domain/rules");
 
 exports["test rules find_valid_placement"] = function( assert ) {
 	

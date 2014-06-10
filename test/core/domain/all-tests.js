@@ -6,5 +6,6 @@ require("test").run( _.extend({},
 	require("./turn-tests"),
 	require("./board-tests"),
 	require("./rules-tests"),
-	require("./game-tests")
+	require("./game-tests"),
+	require("./player-tests")
 ));
