@@ -28,6 +28,11 @@ function create( row, col ) {
 		row: row,
 		col: col
 	}
+	position.adjacencies = function() {
+		return _.map( directions_enum, function( direction ) {
+			return translation( position, direction );
+		});
+	}
 	position.encode = function() {
 		return encode( position );
 	}

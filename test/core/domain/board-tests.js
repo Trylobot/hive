@@ -1,4 +1,5 @@
 var _ = require("lodash");
+_(global).extend(require("../../../core/domain/util"));
 var Piece = require("../../../core/domain/piece");
 var Position = require("../../../core/domain/position");
 var Board = require("../../../core/domain/board");
@@ -239,6 +240,25 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 		[],
 		"the expected positions are present (Soldier Ant style)" );
 
+}
+
+exports["test board can_slide_lookup_table"] = function( assert ) {
+	var pass = true;
+	_.forEach( Board.can_slide_lookup_table, function( value, key ) {
+		var rotated_key = key;
+		var rotated_value = value;
+		for( var i = 0; i < 5; ++i ) {
+			var rotated_key = rotated_key.rotate( 1 );
+			var rotated_value = rotated_value.rotate( 1 );
+			var actual_rotated_value = Board.can_slide_lookup_table[ rotated_key ];
+			if( actual_rotated_value != rotated_value ) {
+				pass = false;
+				assert.fail({ message: "if ["+key+"]=>["+value+"] then ["+rotated_key+"]=>["+rotated_value+"], but ["+rotated_key+"]=>["+actual_rotated_value+"]" });
+			}
+		}
+	});
+	if( pass )
+		assert.pass( "all tests passed" );
 }
 
 if( module == require.main )

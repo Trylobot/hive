@@ -240,7 +240,7 @@ var can_slide_lookup_table = {
 	".1....": "1.1...", // slide around single piece
 	".1...1": "..1.1.", // slide up and out of crater
 	".1..1.": "1.11.1", // slide between friends
-	".1..11": ".11...", // slide out of corner
+	".1..11": "..11..", // slide out of corner
 	".1.1..": "1...1.", // slide up and out of crater
 	".1.1.1": "......", // nearly-surrounded piece cannot move
 	".1.11.": "1....1", // slide out of corner

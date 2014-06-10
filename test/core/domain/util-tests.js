@@ -1,13 +1,18 @@
 var _ = require("lodash");
 _(global).extend(require("../../../core/domain/util"));
 
-exports["test util Array.prototype.insert"] = function( assert ) {
-	var list = [ "key1", "key2" ];
-	list.insert( 0, "key0" );
+exports["test util Array insert"] = function( assert ) {
 	assert.deepEqual(
-		list,
-		[ "key0", "key1", "key2" ],
-		"value was inserted at position 0" );
+		[ 1, 2, 3, 4 ].insert( 0, 5 ),
+		[ 5, 1, 2, 3, 4 ],
+		"actual matches expected" );
+}
+
+exports["test util String rotate"] = function( assert ) {
+	assert.deepEqual(
+		"12345".rotate( 1 ),
+		"51234",
+		"actual matches expected" );
 }
 
 if( module == require.main )
