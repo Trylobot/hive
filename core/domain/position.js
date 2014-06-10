@@ -10,30 +10,23 @@ represents a hive board position
 
 // data
 
-var coplanar_directions_list = [
-	"-row",     // 12 o'clock - straight up
-	"-row+col", // 2 o'clock  - diagonally up & right
-	"+row+col", // 4 o'clock  - diagonally down & right
-	"+row",     // 6 o'clock  - straight down
-	"+row-col", // 8 o'clock  - diagonally down & left
-	"-row-col"  // 10 o'clock - diagonally up & left
+var directions_enum = [
+	"12 o'clock",
+	"2 o'clock",
+	"4 o'clock",
+	"6 o'clock",
+	"8 o'clock",
+	"10 o'clock"
 ];
-var coplanar_directions_map = invert_list( coplanar_directions_list );
-
-var layer_directions_list = [
-	"+layer",   // directly above
-	"-layer"    // directly below
-];
-var layer_directions_map = invert_list( layer_directions_list );
 
 // functions
 
-// where row, col, layer are all integer numbers
-function create( row, col, layer ) {
+// row: integer
+// col: integer
+function create( row, col ) {
 	var position = {
 		row: row,
-		col: col,
-		layer: layer
+		col: col
 	}
 	position.encode = function() {
 		return encode( position );
@@ -45,34 +38,29 @@ function create( row, col, layer ) {
 }
 
 function encode( position ) {
-	return position.row + "," + position.col + "," + position.layer;
+	return position.row + "," + position.col;
 }
 
 function decode( position_key ) {
-	var parts = position_key.split(",");
-	return create( _.parseInt(parts[0]), _.parseInt(parts[1]),  _.parseInt(parts[2]) );
+	var parts = position_key.split( "," );
+	return create( parseInt( parts[0] ), parseInt( parts[1] ));
 }
 
 function translation( position, direction ) {
 	switch( direction ) {
-		case "-row":     return create( position.row - 2, position.col    , position.layer     ); break;
-		case "-row+col": return create( position.row - 1, position.col + 1, position.layer     ); break;
-		case "+row+col": return create( position.row + 1, position.col + 1, position.layer     ); break;
-		case "+row":     return create( position.row + 2, position.col    , position.layer     ); break;
-		case "+row-col": return create( position.row + 1, position.col - 1, position.layer     ); break;
-		case "-row-col": return create( position.row - 1, position.col - 1, position.layer     ); break;
-		case "+layer":   return create( position.row    , position.col    , position.layer + 1 ); break;
-		case "-layer":   return create( position.row    , position.col    , position.layer - 1 ); break;
-		default:         return create( position.row    , position.col    , position.layer     ); break;
+		case "12 o'clock": return create( position.row - 2, position.col     ); break;
+		case "2 o'clock":  return create( position.row - 1, position.col + 1 ); break;
+		case "4 o'clock":  return create( position.row + 1, position.col + 1 ); break;
+		case "6 o'clock":  return create( position.row + 2, position.col     ); break;
+		case "8 o'clock":  return create( position.row + 1, position.col - 1 ); break;
+		case "10 o'clock": return create( position.row - 1, position.col - 1 ); break;
+		default:           return create( position.row    , position.col     ); break;
 	}
 }
 
 // exports
 
-exports.coplanar_directions_list = coplanar_directions_list;
-exports.coplanar_directions_map = coplanar_directions_map;
-exports.layer_directions_list = layer_directions_list;
-exports.layer_directions_map = layer_directions_map;
+exports.directions_enum = directions_enum;
 
 exports.create = create;
 exports.encode = encode;

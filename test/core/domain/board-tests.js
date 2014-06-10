@@ -7,130 +7,113 @@ exports["test board place_piece"] = function( assert ) {
 	var board;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
 	assert.equal(
-		_.keys(board.pieces).length,
+		_.keys( board.pieces ).length,
 		1,
 		"expected 1 piece on the board" )
 }
 
-exports["test board move_piece, lookup_piece"] = function( assert ) {
-	var board, piece;
+exports["test board lookup_piece"] = function( assert ) {
+	var board;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 1, 1, 0 ));
-	board.move_piece( Position.create( 1, 1, 0 ), Position.create( -1, 1, 0 ));
-	piece = board.lookup_piece( Position.create( -1, 1, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	var piece = board.lookup_piece( Position.create( 0, 0 ));
 	assert.ok(
-		piece.color == Piece.color_id( "Black" ) && piece.type == Piece.type_id( "Queen Bee" ),
-		"expected to find moved piece" );
+		piece.color == "White" && piece.type == "Queen Bee",
+		"expected to find placed piece at specified position" )
 }
 
-exports["test board lookup_topmost_piece"] = function( assert ) {
+exports["test board move_piece"] = function( assert ) {
+	var board, piece;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 1, 1 ));
+	board.move_piece( Position.create( 1, 1 ), Position.create( -1, 1 ));
+	piece = board.lookup_piece( Position.create( -1, 1 ));
+	assert.ok(
+		piece.color == "Black" && piece.type == "Queen Bee",
+		"expected to find moved piece at specified position" );
+}
+
+exports["test board lookup_piece"] = function( assert ) {
 	var board, piece;
 
 	board = Board.create();
 
-	piece = board.lookup_topmost_piece( Position.create( 0, 0, 0 ));
+	piece = board.lookup_piece( Position.create( 0, 0 ));
 	assert.ok(
 		typeof piece === "undefined",
 		"Nothing is on top" );
 
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
-	piece = board.lookup_topmost_piece( Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	piece = board.lookup_piece( Position.create( 0, 0 ));
 	assert.ok(
-		piece.color == Piece.color_id( "White" ) && piece.type == Piece.type_id( "Queen Bee" ),
+		piece.color == "White" && piece.type == "Queen Bee",
 		"White Queen Bee is on top" );
 
-	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0, 1 ));
-	piece = board.lookup_topmost_piece( Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	piece = board.lookup_piece( Position.create( 0, 0 ));
 	assert.ok(
-		piece.color == Piece.color_id( "Black" ) && piece.type == Piece.type_id( "Beetle" ),
+		piece.color == "Black" && piece.type == "Beetle",
 		"Black Beetle is on top" );
 
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 2 ));
-	piece = board.lookup_topmost_piece( Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	piece = board.lookup_piece( Position.create( 0, 0 ));
 	assert.ok(
-		piece.color == Piece.color_id( "White" ) && piece.type == Piece.type_id( "Beetle" ),
+		piece.color == "White" && piece.type == "Beetle",
 		"White Beetle is on top" );
 
-	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0, 3 ));
-	piece = board.lookup_topmost_piece( Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	piece = board.lookup_piece( Position.create( 0, 0 ));
 	assert.ok(
-		piece.color == Piece.color_id( "Black" ) && piece.type == Piece.type_id( "Beetle" ),
+		piece.color == "Black" && piece.type == "Beetle",
 		"Black Beetle is on top" );
 }
 
-exports["test board lookup_coplanar_adjacent_positions"] = function( assert ) {
+exports["test board lookup_adjacent_positions"] = function( assert ) {
 	var board, adjacent_pieces;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "White", "Grasshopper" ), Position.create( 1, 1, 0 ));
-	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, 1, 0 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -1, -1, 0 ));
-	adjacent_pieces = board.lookup_coplanar_adjacent_positions( Position.create( 1, 1, 0 ));
+	board.place_piece( Piece.create( "White", "Grasshopper" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -1, -1 ));
+	adjacent_pieces = board.lookup_adjacent_positions( Position.create( 1, 1 ));
 	assert.equal(
-		_.reduce( adjacent_pieces, function( sum, adjacency ) { return sum + (adjacency.contents ? 1 : 0); }, 0 ),
+		_.reduce( adjacent_pieces, function( sum, adjacency ) { return sum + (!!adjacency.contents ? 1 : 0); }, 0 ),
 		2,
 		"number of occupied adjacencies match expected" );
-}
-
-exports["test board lookup_piece_atop"] = function( assert ) {
-	var board, piece;
-
-	board = Board.create();
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0, 1 ));
-	piece = board.lookup_piece_atop( Position.create( 0, 0, 0 ));
-	assert.ok(
-		piece.color == Piece.color_id( "Black" ) && piece.type == Piece.type_id( "Beetle" ),
-		"Black Beetle is atop White Queen Bee" );
-}
-
-exports["test board lookup_pieces_on_bottom_layer"] = function( assert ) {
-	var board;
-
-	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
-	var bottom_pieces = board.lookup_pieces_on_bottom_layer();
-	assert.equal(
-		_.keys( bottom_pieces ).length,
-		4,
-		"the correct number of pieces is found" );
 }
 
 exports["test board lookup_free_spaces"] = function( assert ) {
 	var board, free_spaces;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
 	free_spaces = board.lookup_free_spaces();
 	assert.deepEqual(
 		_.difference(
 			_.keys( free_spaces ),
-			[ "-2,0,0", "-1,1,0", "1,1,0", "2,0,0", "1,-1,0", "-1,-1,0" ]
+			[ "-2,0", "-1,1", "1,1", "2,0", "1,-1", "-1,-1" ]
 		),
 		[],
 		"free spaces (unfiltered) found exactly match those expected" );
 
 	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
 	
 	free_spaces = board.lookup_free_spaces();
 	assert.deepEqual(
 		_.difference(
 			_.keys( free_spaces ),
-			[ "-3,-1,0", "-2,0,0", "-1,1,0", "0,2,0", "2,2,0", "4,2,0", "5,1,0", "4,0,0", "2,0,0", "1,-1,0", "0,-2,0", "-2,-2,0" ]
+			[ "-3,-1", "-2,0", "-1,1", "0,2", "2,2", "4,2", "5,1", "4,0", "2,0", "1,-1", "0,-2", "-2,-2" ]
 		),
 		[],
 		"free spaces (unfiltered) found exactly match those expected" );
@@ -139,7 +122,7 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 	assert.deepEqual(
 		_.difference(
 			_.keys( free_spaces ),
-			[ "4,2,0", "5,1,0", "4,0,0" ]
+			[ "4,2", "5,1", "4,0" ]
 		),
 		[],
 		"free spaces (White) found exactly match those expected" );
@@ -148,7 +131,7 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 	assert.deepEqual(
 		_.difference(
 			_.keys( free_spaces ),
-			[ "-3,-1,0", "0,2,0", "0,-2,0", "-2,-2,0" ]
+			[ "-3,-1", "0,2", "0,-2", "-2,-2" ]
 		),
 		[],
 		"free spaces (Black) found exactly match those expected" );
@@ -158,11 +141,11 @@ exports["test board check_contiguity"] = function( assert ) {
 	var board;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
 	// board is of course contiguous initially ...
 	var is_contiguous = board.check_contiguity();
 	assert.equal(
@@ -170,7 +153,7 @@ exports["test board check_contiguity"] = function( assert ) {
 		true,
 		"board should confirm that the board WOULD be contiguous" ); // pieces not on the bottom layer are being included
 	// but what would happen if I moved the Black Spider at (1, 1, 0)?
-	var is_contiguous = board.check_contiguity( Position.create( 1, 1, 0 ));
+	var is_contiguous = board.check_contiguity( Position.create( 1, 1 ));
 	assert.equal(
 		is_contiguous,
 		false,
@@ -181,20 +164,20 @@ exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
 	var board;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
-	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1, 0 ));
-	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1 ));
 	// what if I wanted to move the Black Queen?
-	var adjacent_slide_positions = board.lookup_adjacent_slide_positions( Position.create( -1, -1, 0 ));
+	var adjacent_slide_positions = board.lookup_adjacent_slide_positions( Position.create( -1, -1 ));
 	assert.equal(
 		JSON.stringify( adjacent_slide_positions ),
 		JSON.stringify( [
-			{ row: -2, col: 0, layer: 0 },
-			{ row: 0, col: -2, layer: 0 }
+			{ row: -2, col: 0 },
+			{ row: 0, col: -2 }
 		]),
 		"slide positions are correct" );
 }
@@ -203,16 +186,16 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 	var board;
 
 	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0, 1 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1, 0 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1, 0 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
-	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1, 0 ));
-	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1 ));
 	
 	// Queen Bee style
-	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1, 0 ), 1, 1 );
+	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1 ), 1, 1 );
 	var slide_destinations_keys = _.keys( slide_destinations );
 	assert.equal(
 		slide_destinations_keys.length,
@@ -221,13 +204,13 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 	assert.deepEqual(
 		_.difference(
 			slide_destinations_keys,
-			[ "-2,0,0", "0,-2,0" ]
+			[ "-2,0", "0,-2" ]
 		),
 		[],
 		"the expected positions are present (Queen Bee style)" );
 
 	// Spider style
-	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1, 0 ), 3, 3 );
+	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1 ), 3, 3 );
 	var slide_destinations_keys = _.keys( slide_destinations );
 	assert.equal(
 		slide_destinations_keys.length,
@@ -236,13 +219,13 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 	assert.deepEqual(
 		_.difference(
 			slide_destinations_keys,
-			[ "0,2,0", "4,-2,0" ]
+			[ "0,2", "4,-2" ]
 		),
 		[],
 		"the expected positions are present (Spider style)" );
 
 	// Soldier Ant style
-	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1, 0 ), 1, Infinity );
+	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1 ), 1, Infinity );
 	var slide_destinations_keys = _.keys( slide_destinations );
 	assert.equal(
 		slide_destinations_keys.length,
@@ -251,7 +234,7 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 	assert.deepEqual(
 		_.difference(
 			slide_destinations_keys,
-			[ "-2,0,0", "-1,1,0", "0,2,0", "2,2,0", "4,2,0", "5,1,0", "4,0,0", "5,-1,0", "4,-2,0", "2,-2,0", "0,-2,0" ]
+			[ "-2,0", "-1,1", "0,2", "2,2", "4,2", "5,1", "4,0", "5,-1", "4,-2", "2,-2", "0,-2" ]
 		),
 		[],
 		"the expected positions are present (Soldier Ant style)" );

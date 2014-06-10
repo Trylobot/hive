@@ -22,52 +22,62 @@ naturally, in real life, the board itself is imaginary, and really just
 // creates a new, empty board
 function create() {
 	var board = {
-		// map: position_key => piece_object
-		//   location hash is of the form "row,col,layer"
+		// map: position_key => piece_stack
+		//   position_key is of the form "row,col"
+		//   piece_stack: [ bottom_piece, middle_piece, ..., topmost_piece ]
+		//   there are no empty piece_stacks defined here; positions with no pieces will be undefined
 		pieces: {}
 	}
-	// add a new piece to the board at a specific location
+	// add a new piece to the board at a specific position, at the top of the stack at that position
 	board.place_piece = function( piece, position ) {
-		board.pieces[ position.encode() ] = piece;
+		var position_key = position.encode();
+		if( board.pieces[ position_key ])
+			board.pieces[ position_key ].push( piece )
+		else // new stack
+			board.pieces[ position_key ] = [ piece ];
 	}
-	// move an existing piece to a new position
+	// move the piece at the top of the stack of position_0 to the top of the stack at position_1
 	board.move_piece = function( position_0, position_1 ) {
-		var position_key_0 = position_0.encode();
-		var position_key_1 = position_1.encode();
-		board.pieces[position_key_1] = board.pieces[position_key_0];
-		delete board.pieces[position_key_0];
+		board.place_piece( board.remove_piece( position_0 ), position_1 );
+	}
+	// remove and return a piece from the board at a specific position, from the top of the stack at that position
+	board.remove_piece = function( position ) {
+		var piece = undefined;
+		var position_key = position.encode();
+		if( board.pieces[ position_key ]) {
+			piece = board.pieces[ position_key ].pop();
+			if( board.pieces[ position_key ].length == 0 )
+				delete board.pieces[ position_key ];
+		}
+		return piece;
+	}
+	// return the entire piece stack at position (or undefined if not found)
+	board.lookup_piece_stack = function( position ) {
+		var position_key = position.encode();
+		var piece_stack = board.pieces[ position_key ];
+		return piece_stack;
 	}
 	// return piece at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
-		return board.pieces[ position.encode() ];
-	}
-	// return topmost piece at (row, col) given by position (layer ignored), or undefined if no pieces exist
-	board.lookup_topmost_piece = function( position ) {
-		var cursor = Position.create( position.row, position.col, 0 );
-		var piece = board.lookup_piece( cursor );
-		if( typeof piece === "undefined" )
-			return undefined;
-		while( true ) {
-			var piece_atop = board.lookup_piece_atop( cursor );
-			if( typeof piece_atop === "undefined" )
-				break;
-			piece = piece_atop;
-			cursor = cursor.translation( "+layer" );
-		}
+		var position_key = position.encode();
+		var piece_stack = board.pieces[ position_key ];
+		var piece = undefined;
+		if( piece_stack )
+			piece = piece_stack[ piece_stack.length - 1];
 		return piece;
 	}
 	// return the contents of the six positions adjacent to a given position, on the same layer
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
 	// containing the fields: "position", "position_key"; 
 	// the "contents" field will contain the piece at the associated position, or undefined if there is no piece there
-	board.lookup_coplanar_adjacent_positions = function( position ) {
-		return _.mapValues( Position.coplanar_directions_map, function( direction_id, direction_name ) {
-			var translated_position = position.translation( direction_name );
+	board.lookup_adjacent_positions = function( position ) {
+		return _.mapValues( Position.directions_enum, function( direction ) {
+			var translated_position = position.translation( direction );
 			var translated_position_key = translated_position.encode();
 			return {
 				position: translated_position,
 				position_key: translated_position_key,
-				contents: board.pieces[ translated_position_key ]
+				contents: board.pieces[ translated_position_key ] // piece_stack
 			}
 		});
 	}
@@ -77,8 +87,8 @@ function create() {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
 		var occupied_adjacencies_lookup_key_array = [], i;
 		for( i = 0; i < 6; ++i ) {
-			var direction_name = Position.coplanar_directions_list[i];
-			var translated_position = position.translation( direction_name );
+			var direction = Position.directions_enum[i];
+			var translated_position = position.translation( direction );
 			var translated_position_key = translated_position.encode();
 			if( translated_position_key != assuming_empty_position_key 
 			&&  board.pieces[ translated_position_key ])
@@ -91,8 +101,8 @@ function create() {
 		var position_list = [];
 		for( i = 0; i < 6; ++i ) {
 			if( valid_directions_result_key[i] === "1" ) {
-				var direction_name = Position.coplanar_directions_list[i];
-				var translated_position = position.translation( direction_name );
+				var direction = Position.directions_enum[i];
+				var translated_position = position.translation( direction );
 				position_list.push( translated_position );
 			}
 		}
@@ -130,43 +140,26 @@ function create() {
 		}
 		return result;
 	}
-	// return the contents of the position directly above the given position
-	board.lookup_piece_atop = function( position ) {
-		return board.pieces[ position.translation( "+layer" ).encode() ];
-	}
-	// return a map containing the pieces on layer 0
-	board.lookup_pieces_on_bottom_layer = function() {
-		var bottom_pieces = {};
-		_.forEach( board.pieces, function( piece, position_key ) {
-			var position = Position.decode( position_key );
-			if( position.layer == 0 )
-				bottom_pieces[ position_key ] = piece;
-		});
-		return bottom_pieces;
-	}
 	// return a map containing the positions of free spaces adjacent to pieces already placed on the board
 	//   key is the position key, value is the position object representing that space
 	// optionally pass a color name to find free spaces that are adjacent to ONLY that color and no other color
 	board.lookup_free_spaces = function( color_filter ) {
 		var free_spaces = {};
 		var filtered_free_spaces = {};
-		var color_filter_id = Piece.color_id( color_filter );
-		// ignoring pieces higher up than layer 0
-		var bottom_pieces = board.lookup_pieces_on_bottom_layer();
-		// for each piece currently on the board ...
-		_.forEach( bottom_pieces, function( piece_object, piece_position_key ) {
-			var position = Position.decode( piece_position_key );
+		// for each occupied position ...
+		_.forEach( board.pieces, function( piece_stack, position_key ) {
+			var position = Position.decode( position_key );
 			// scan the positions adjacent to it
-			var adjacent_positions = board.lookup_coplanar_adjacent_positions( position );
+			var adjacent_positions = board.lookup_adjacent_positions( position );
 			// for each adjacent position ...
-			_.forEach( adjacent_positions, function( adjacency, direction_name ) {
+			_.forEach( adjacent_positions, function( adjacency, direction ) {
 				if( typeof adjacency.contents === "undefined" ) {
 					// retain each space not occupied by a piece
 					free_spaces[ adjacency.position_key ] = adjacency.position;
 					// mark free spaces adjacent to piece-stacks not matching the color filter for later exclusion
-					if( typeof color_filter_id !== "undefined" ) {
-						var topmost_piece_object = board.lookup_topmost_piece( position );
-						if( color_filter_id != topmost_piece_object.color )
+					if( typeof color_filter !== "undefined" ) {
+						var effective_stack_color = piece_stack[ piece_stack.length - 1 ].color;
+						if( color_filter != effective_stack_color )
 							filtered_free_spaces[ adjacency.position_key ] = true;
 					}
 				}
@@ -183,8 +176,7 @@ function create() {
 	// optionally, treat a specific position as empty
 	board.check_contiguity = function( assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
-		var bottom_pieces = board.lookup_pieces_on_bottom_layer();
-		var piece_position_keys = _.keys( bottom_pieces );
+		var piece_position_keys = _.keys( board.pieces );
 		var occupied_space_count = piece_position_keys.length;
 		if( occupied_space_count == 0 )
 			return true;
@@ -196,7 +188,7 @@ function create() {
 		while( pieces_to_visit.length > 0 ) {
 			var position = pieces_to_visit.pop();
 			// scan the positions adjacent to it
-			var adjacent_positions = board.lookup_coplanar_adjacent_positions( position );
+			var adjacent_positions = board.lookup_adjacent_positions( position );
 			// for each adjacent position ...
 			_.forEach( adjacent_positions, function( adjacency, direction_name ) {
 				// if the position is occupied

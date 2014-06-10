@@ -12,13 +12,12 @@ this module is used to represent a single hive piece.
 
 // data
 
-var colors_list = [
+var colors_enum = [
 	"White",
 	"Black"
 ];
-var colors_map = invert_list( colors_list );
 
-var types_list = [
+var types_enum = [
 	"Queen Bee",
 	"Beetle",
 	"Grasshopper",
@@ -28,44 +27,21 @@ var types_list = [
 	"Ladybug",
 	"Pillbug"
 ];
-var types_map = invert_list( types_list );
 
 // functions
 
 function create( color, type ) {
 	var piece = {
-		color: colors_map[color],
-		type: types_map[type]
+		color: color,
+		type: type
 	}
 	return piece;
 }
 
-function type_name( type_id ) {
-	return types_list[type_id];
-}
-
-function type_id( type_name ) {
-	return types_map[type_name];
-}
-
-function color_name( color_id ) {
-	return colors_list[color_id];
-}
-
-function color_id( color_name ) {
-	return colors_map[color_name];
-}
-
 // exports
 
-exports.types_list = types_list;
-exports.types_map = types_map;
-exports.colors_list = colors_list;
-exports.colors_map = colors_map;
+exports.types_enum = types_enum;
+exports.colors_enum = colors_enum;
 
 exports.create = create;
-exports.type_name = type_name;
-exports.type_id = type_id;
-exports.color_name = color_name;
-exports.color_id = color_id;
 

@@ -73,47 +73,45 @@ Unable to Move or Place
 
 */
 function find_valid_placement( piece, board, turn_number ) {
-	return board.lookup_free_spaces( Piece.color_name( piece.color ));
+	return board.lookup_free_spaces( piece.color );
 }
 
 function find_valid_movement( piece, board, position, turn_number ) {
-	var piece_type = Piece.type_name( piece.type );
-	var piece_color = Piece.color_name( piece.color );
 	switch( piece_type )
 	{
 		case "Queen Bee":
-			return find_valid_movement__Queen_Bee( piece_color, board, position );
+			return find_valid_movement__Queen_Bee( piece.color, board, position );
 			break;
 
 		case "Beetle":
-			return find_valid_movement__Beetle( piece_color, board, position );			
+			return find_valid_movement__Beetle( piece.color, board, position );			
 			break;
 
 		case "Grasshopper":
-			return find_valid_movement__Grasshopper( piece_color, board, position );			
+			return find_valid_movement__Grasshopper( piece.color, board, position );			
 			break;
 
 		case "Spider":
-			return find_valid_movement__Spider( piece_color, board, position );			
+			return find_valid_movement__Spider( piece.color, board, position );			
 			break;
 
 		case "Soldier Ant":
-			return find_valid_movement__Soldier_Ant( piece_color, board, position );			
+			return find_valid_movement__Soldier_Ant( piece.color, board, position );			
 			break;
 
 		case "Mosquito":
-			return find_valid_movement__Mosquito( piece_color, board, position );			
+			return find_valid_movement__Mosquito( piece.color, board, position );			
 			break;
 
 		case "Ladybug":
-			return find_valid_movement__Ladybug( piece_color, board, position );			
+			return find_valid_movement__Ladybug( piece.color, board, position );			
 			break;
 
 		case "Pillbug":
-			return find_valid_movement__Pillbug( piece_color, board, position );			
+			return find_valid_movement__Pillbug( piece.color, board, position );			
 			break;
 	}
-	throw "invalid piece type: " + piece_type;
+	throw "invalid piece type: " + piece.type;
 }
 
 /*
