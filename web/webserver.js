@@ -3,7 +3,7 @@
 // basic config
 var fs = require('fs');
 var cfg = JSON.parse(
-	fs.readFileSync( 'app.cfg.json', 'utf8' ));
+	fs.readFileSync( 'web.cfg.json', 'utf8' ));
 // module dependencies
 var express = require('express');
 var compress = require('compression');
@@ -14,7 +14,6 @@ var server = app.listen( cfg.server_port );
 console.log( "express server listening on port " + cfg.server_port );
 var io = require('socket.io').listen( server );
 require('datejs');
-var mt = require('mersenne').MersenneTwister19937;
 var _ = require('lodash');
 // module configs
 app.use( compress() ); // gzip compression

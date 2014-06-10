@@ -2,7 +2,7 @@
 	"name": "hive",
 	"version": "0.0.1",
 	"description": "Hive AI Development Tool",
-	"main": "index.js",
+	"main": "web/webserver.js",
 	"scripts": {
 		"test": "node test/all-tests.js"
 	},
@@ -24,7 +24,6 @@
 		"compression": "^1.0.2",
 		"datejs": "^1.0.0-beta",
 		"express": "^4.2.0",
-		"mersenne": "0.0.3",
 		"serve-favicon": "^2.0.0",
 		"socket.io": "^0.9.16",
 		"lodash": "^2.4.1",

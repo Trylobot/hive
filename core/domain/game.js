@@ -69,6 +69,7 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 	game.hands["White"]["Soldier Ant"] += 1;
 	game.hands["White"]["Soldier Ant"] += 1;
 	game.hands["White"]["Soldier Ant"] += 1;
+	// ---
 	game.hands["Black"]["Queen Bee"] += 1;
 	game.hands["Black"]["Queen Bee"] += 1;
 	game.hands["Black"]["Beetle"] += 1;

@@ -5,10 +5,8 @@
 			"path": "..",
 			"folder_exclude_patterns": [
 				".git",
-				"node_modules"
-			],
-			"file_exclude_patterns": [
-				".sublime-workspace"
+				"node_modules",
+				"project"
 			]
 		}
 	]
