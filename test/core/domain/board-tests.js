@@ -199,7 +199,7 @@ exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
 		"slide positions are correct" );
 }
 
-exports["test board lookup_free_position_chain"] = function( assert ) {
+exports["test board lookup_slide_destinations_within_range"] = function( assert ) {
 	var board;
 
 	board = Board.create();
@@ -210,15 +210,51 @@ exports["test board lookup_free_position_chain"] = function( assert ) {
 	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1, 0 ));
 	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1, 0 ));
 	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1, 0 ));
-	// what if I wanted to move the Black Queen?
-	var free_position_chain = board.lookup_free_position_chain( Position.create( -1, -1, 0 ));
+	
+	// Queen Bee style
+	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1, 0 ), 1, 1 );
+	var slide_destinations_keys = _.keys( slide_destinations );
 	assert.equal(
-		_.keys( free_position_chain ).length,
+		slide_destinations_keys.length,
+		2,
+		"there are the correct number of positions (Queen Bee style)" );
+	assert.deepEqual(
+		_.difference(
+			slide_destinations_keys,
+			[ "-2,0,0", "0,-2,0" ]
+		),
+		[],
+		"the expected positions are present (Queen Bee style)" );
+
+	// Spider style
+	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1, 0 ), 3, 3 );
+	var slide_destinations_keys = _.keys( slide_destinations );
+	assert.equal(
+		slide_destinations_keys.length,
+		2,
+		"there are the correct number of positions (Spider style)" );
+	assert.deepEqual(
+		_.difference(
+			slide_destinations_keys,
+			[ "0,2,0", "4,-2,0" ]
+		),
+		[],
+		"the expected positions are present (Spider style)" );
+
+	// Soldier Ant style
+	var slide_destinations = board.lookup_slide_destinations_within_range( Position.create( -1, -1, 0 ), 1, Infinity );
+	var slide_destinations_keys = _.keys( slide_destinations );
+	assert.equal(
+		slide_destinations_keys.length,
 		11,
-		"there are the correct number of positions in the chain" );
-	assert.ok(
-		!("2,0,0" in free_position_chain),
-		"the interior (inaccessible) position was not included" );
+		"there are the correct number of positions (Soldier Ant style)" );
+	assert.deepEqual(
+		_.difference(
+			slide_destinations_keys,
+			[ "-2,0,0", "-1,1,0", "0,2,0", "2,2,0", "4,2,0", "5,1,0", "4,0,0", "5,-1,0", "4,-2,0", "2,-2,0", "0,-2,0" ]
+		),
+		[],
+		"the expected positions are present (Soldier Ant style)" );
 
 }
 

@@ -72,15 +72,21 @@ function create() {
 		});
 	}
 	// return a list of positions valid to slide into, using the can_slide_lookup_table
-	board.lookup_adjacent_slide_positions = function( position ) {
-		var occupied_adjacencies_lookup_key = "......", i;
+	// optionally, treat a specific position as empty
+	board.lookup_adjacent_slide_positions = function( position, assuming_empty_position ) {
+		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+		var occupied_adjacencies_lookup_key_array = [], i;
 		for( i = 0; i < 6; ++i ) {
 			var direction_name = Position.coplanar_directions_list[i];
 			var translated_position = position.translation( direction_name );
 			var translated_position_key = translated_position.encode();
-			if( board.pieces[ translated_position_key ])
-				occupied_adjacencies_lookup_key[i] = "1";
+			if( translated_position_key != assuming_empty_position_key 
+			&&  board.pieces[ translated_position_key ])
+				occupied_adjacencies_lookup_key_array.push( "1" );
+			else
+				occupied_adjacencies_lookup_key_array.push( "." );
 		}
+		var occupied_adjacencies_lookup_key = occupied_adjacencies_lookup_key_array.join( "" );
 		var valid_directions_result_key = can_slide_lookup_table[ occupied_adjacencies_lookup_key ];
 		var position_list = [];
 		for( i = 0; i < 6; ++i ) {
@@ -91,6 +97,38 @@ function create() {
 			}
 		}
 		return position_list;
+	}
+	// return a map of free spaces that are within a specific range from a start position
+	//   default min_distance is 0
+	//   default max_distance is Infinity
+	board.lookup_slide_destinations_within_range = function( start_position, min_distance, max_distance ) {
+		min_distance = (typeof min_distance !== "undefined") ? min_distance : 1;
+		max_distance = (typeof max_distance !== "undefined") ? max_distance : Infinity;
+		var result = {};
+		var visited = {};
+		var distance = 1;
+		var to_visit = [ start_position ];
+		// travel outwards from the origin (start_position) until the specified max_distance is reached
+		// if max_distance is infinity, the loop will execute until no new adjacencies can be found
+		while( to_visit.length > 0 && distance <= max_distance ) {
+			var to_visit_next = [];
+			_.forEach( to_visit, function( position ) {
+				var position_key = position.encode();
+				visited[ position_key ] = true;
+				var adjacencies = board.lookup_adjacent_slide_positions( position, start_position );
+				_.forEach( adjacencies, function( adjacent_position ) {
+					var adjacent_position_key = adjacent_position.encode();
+					if( !(adjacent_position_key in visited) ) {
+						if( distance >= min_distance )
+							result[ adjacent_position_key ] = adjacent_position;
+						to_visit_next.push( adjacent_position );
+					}
+				});
+			});
+			to_visit = to_visit_next;
+			distance++;
+		}
+		return result;
 	}
 	// return the contents of the position directly above the given position
 	board.lookup_piece_atop = function( position ) {
@@ -175,13 +213,6 @@ function create() {
 		// the number of visited pieces should equal the number of piece-stacks on the board
 		var visited_pieces_count = _.keys( visited_pieces ).length;
 		return (visited_pieces_count == occupied_space_count);
-	}
-	// return a map containing a set of free spaces which is adjacent to a given start position
-	board.lookup_free_position_chain = function( start_position ) {
-		var chain = {};
-		var start_position_key = start_position.encode();
-
-		return chain;
 	}
 	// -------------
 	return board;
