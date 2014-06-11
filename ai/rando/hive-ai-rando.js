@@ -1,8 +1,10 @@
 "use strict";
 
 /* 
-ai-rando.js
-this is an example ai that chooses a move at rando[m]
+hive-ai-rando.js
+"Rando"
+	this is a simple ai that chooses a move at rando[m]
+	for api reference look in api/
 */
 
 var zmq = require("zmq");
@@ -10,9 +12,51 @@ var responder = zmq.socket("rep");
 
 responder.connect( "tcp://localhost:19855" );
 
-responder.on( "message", function( data_string ) {
-	var data = JSON.parse( data_string );
-	var move_index = Math.floor( Math.random() * data.possible_moves );
-	responder.send( move_index );
+responder.on( "message", function( message_string ) {
+	var message = JSON.parse( message_string );
+	var response;
+	switch( message.request_type ) {
+		case "GREETINGS":
+			response = {
+				response_type: message.request_type,
+				name: "Rando[m]",
+				version: "0.0.1",
+				author: "T.W.R. Cole",
+				project_url: "https://github.com/Trylobot/hive/tree/master/ai/rando",
+				language: "Javascript"
+			};
+			break;
+		case "CHOOSE_TURN":
+			response = {
+				response_type: message.request_type,
+				game_id: message.game_id
+			};
+			response.turn_type = random_object_key( message.possible_turns );
+			switch( response.turn_type ) {
+				case "Placement":
+					response.piece_type = random_object_key( message.game_state.hands[ message.game_state.player_turn ]);
+					response.destination = random_array_item( message.possible_turns[ response.turn_type ]);
+					break;
+				case "Movement":
+					response.source = random_object_key( message.possible_turns[ response.turn_type ]);
+					response.destination = random_array_item( message.possible_turns[ response.turn_type ][ response.source ]);
+					break;
+			}
+			break;
+	}
+	responder.send( JSON.stringify( response ));
 });
+
+function random_object_key( object ) {
+	var keys = Object.keys( object );
+	return keys[ random_int( 0, keys.length - 1 )];
+}
+
+function random_array_item( array ) {
+	return array[ random_int( 0, array.length - 1 )];
+}
+
+function random_int( min, max ) {
+	return Math.floor( Math.random() * (max - min + 1) ) + min;
+}
 

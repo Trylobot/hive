@@ -1,5 +1,7 @@
 "use strict";
 
+var package_json = require("../package.json");
+
 var _ = require("lodash");
 var zmq = require("zmq");
 var requester = zmq.socket("req");
