@@ -20,6 +20,12 @@ it encapsulates all of the hive rules, and allows for
 
 // creates a new game board and initializes player hands, with optional add-on pieces
 function create( use_mosquito, use_ladybug, use_pillbug ) {
+	if( use_mosquito )
+		throw "not yet implemented";
+	if( use_ladybug )
+		throw "not yet implemented";
+	if( use_pillbug )
+		throw "not yet implemented";
 	var game = {
 		board: Board.create(),
 		hands: {  // initialize every piece_counter with a value of 0
@@ -32,6 +38,12 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		winner: null,
 		is_draw: false,
 		state_history: []
+	}
+	game.get_next_player_turn = function( player_turn ) {
+		if( player_turn === "White" )
+			return "Black";
+		else if( player_turn === "Black" )
+			return "White";
 	}
 	game.record_current_state = function() {
 		// serialize everything except the state_history, since this data will be copied into the state_history
@@ -46,14 +58,25 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		});
 		game.state_history.push( serialized_game_state );
 	}
-	game.perform_placement = function( player, hand_piece_index, position ) {
-		var hand = board.hands[ player ];
-		var piece = hand[ hand_piece_index ];
-		_.pull( hand, piece );
-		board.place_piece( position );
+	game.advance_state = function() {
+		game.turn_number++;
+		game.player_turn = game.get_next_player_turn( game.player_turn );
+		game.record_current_state();
+	}
+	game.perform_placement = function( piece_color, piece_type, position ) {
+		var hand = board.hands[ piece_color ];
+		hand[ piece_type ]--;
+		if( hand[ piece_type ] <= 0 )
+			delete hand[ piece_type ];
+		var piece = Piece.create( piece_color, piece_type );
+		board.place_piece( piece, position );
+		game.advance_state();
 	}
 	game.perform_movement = function( position_0, position_1 ) {
 		board.move_piece( position_0, position_1 );
+		game.turn_number++;
+		game.player_turn = game.get_next_player_turn( game.player_turn );
+		game.advance_state();
 	}
 	// -------------------
 	// default hands (no addons)
@@ -84,17 +107,14 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 	game.hands["Black"]["Soldier Ant"] += 1;
 	// optional addon pieces
 	if( use_mosquito ) {
-		throw "not yet implemented";
 		game.hands["White"]["Mosquito"] += 1;
 		game.hands["Black"]["Mosquito"] += 1;
 	}
 	if( use_ladybug ) {
-		throw "not yet implemented";
 		game.hands["White"]["Ladybug"] += 1;
 		game.hands["Black"]["Ladybug"] += 1;
 	}
 	if( use_pillbug ) {
-		throw "not yet implemented";
 		game.hands["White"]["Pillbug"] += 1;
 		game.hands["Black"]["Pillbug"] += 1;
 	}

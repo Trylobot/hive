@@ -11,7 +11,6 @@ var zmq = require("zmq");
 var responder = zmq.socket("rep");
 
 responder.connect( "tcp://localhost:19855" );
-
 responder.on( "message", function( message_string ) {
 	var message = JSON.parse( message_string );
 	var response;

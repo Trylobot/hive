@@ -1,11 +1,8 @@
 "use strict";
 
-var package_json = require("../package.json");
-
 var _ = require("lodash");
-var zmq = require("zmq");
-var requester = zmq.socket("req");
-var uuid = require('uuid-v4');
+var uuid = require("uuid-v4");
+var async = require("async");
 
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
@@ -28,11 +25,12 @@ this module manages game instances, and handles communications between players a
 
 function create() {
 	var core = {
-		games: {},
+		game_instances: {},
 	}
-	core.start_game = function( game, white_player, black_player ) {
+	core.start_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
+		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
 		var game_id = uuid();
-		core.games[ game_id ] = {
+		var game_instance = {
 			game: game,
 			game_id: game_id,
 			players: {
@@ -40,7 +38,55 @@ function create() {
 				"Black": black_player
 			}
 		};
-		// TODO: call players in an async-loop for moves until game.game_over
+		core.game_instances[ game_id ] = game_instance;
+		// -----------
+		white_player.greetings();
+		black_player.greetings();
+		async.whilst(
+			function() { // test
+				return !game.game_over;
+			},
+			function( iteration_complete ) { // function (body)
+				var game_state = {};
+				var possible_turns = {};
+				// send data (to somewhere)
+				game_instance.players[ game.player_turn ]
+					.choose_turn(
+						game_id, 
+						game_state, 
+						possible_turns, 
+						function( turn_choice ) { 
+							// receive response (from somewhere)
+							switch( turn_choice.turn_type ) {
+								case: "Placement":
+									game.perform_placement(
+										game.player_turn,
+										turn_choice.piece_type,
+										turn_choice.destination );
+									break;
+								case: "Movement":
+									game.perform_movement(
+										turn_choice.source,
+										turn_choice.destination );
+									break;
+							}
+							iteration_complete();
+						});
+			},
+			function( err ) { // callback (when all done)
+				core.end_game( game_id );
+			}
+		);
+		return game_id;
+	}
+	core.end_game = function( game_id ) {
+		// TODO: save game to archive
+		//   html + embedded game history as JSON + auto playback + turn navigation
+		//delete games[ game_id ];
+	}
+	core.set_player = function( game_id, color, player ) {
+		games[ game_id ].players[ color ] = player;
+		player.greetings();
 	}
 	return core;
 }

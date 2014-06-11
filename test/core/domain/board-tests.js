@@ -15,17 +15,6 @@ exports["test board place_piece"] = function( assert ) {
 		"expected 1 piece on the board" )
 }
 
-exports["test board lookup_piece"] = function( assert ) {
-	var board;
-
-	board = Board.create();
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
-	var piece = board.lookup_piece( Position.create( 0, 0 ));
-	assert.ok(
-		piece.color == "White" && piece.type == "Queen Bee",
-		"expected to find placed piece at specified position" )
-}
-
 exports["test board move_piece"] = function( assert ) {
 	var board, piece;
 
@@ -72,6 +61,14 @@ exports["test board lookup_piece"] = function( assert ) {
 	assert.ok(
 		piece.color == "Black" && piece.type == "Beetle",
 		"Black Beetle is on top" );
+}
+
+exports["test board count_pieces"] = function( assert ) {
+	
+}
+
+exports["test board search_pieces"] = function( assert ) {
+	
 }
 
 exports["test board lookup_adjacent_positions"] = function( assert ) {
@@ -138,29 +135,6 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 		"free spaces (Black) found exactly match those expected" );
 }
 
-exports["test board check_contiguity"] = function( assert ) {
-	var board;
-
-	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
-	// board is of course contiguous initially ...
-	var is_contiguous = board.check_contiguity();
-	assert.equal(
-		is_contiguous,
-		true,
-		"board should confirm that the board WOULD be contiguous" ); // pieces not on the bottom layer are being included
-	// but what would happen if I moved the Black Spider at (1, 1, 0)?
-	var is_contiguous = board.check_contiguity( Position.create( 1, 1 ));
-	assert.equal(
-		is_contiguous,
-		false,
-		"board should confirm that the board would NOT BE contiguous" );
-}
-
 exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
 	var board;
 
@@ -181,6 +155,10 @@ exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
 			{ row: 0, col: -2 }
 		]),
 		"slide positions are correct" );
+}
+
+exports["test board lookup_occupied_adjacencies"] = function( assert ) {
+	
 }
 
 exports["test board lookup_slide_destinations_within_range"] = function( assert ) {
@@ -240,6 +218,33 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 		[],
 		"the expected positions are present (Soldier Ant style)" );
 
+}
+
+exports["test board find_free_space_in_direction"] = function( assert ) {
+	
+}
+
+exports["test board check_contiguity"] = function( assert ) {
+	var board;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
+	// board is of course contiguous initially ...
+	var is_contiguous = board.check_contiguity();
+	assert.equal(
+		is_contiguous,
+		true,
+		"board should confirm that the board WOULD be contiguous" ); // pieces not on the bottom layer are being included
+	// but what would happen if I moved the Black Spider at (1, 1, 0)?
+	var is_contiguous = board.check_contiguity( Position.create( 1, 1 ));
+	assert.equal(
+		is_contiguous,
+		false,
+		"board should confirm that the board would NOT BE contiguous" );
 }
 
 exports["test board can_slide_lookup_table"] = function( assert ) {

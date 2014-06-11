@@ -73,7 +73,10 @@ exports["test position translation"] = function( assert ) {
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: -1, col: -1 }),
 		"10 o'clock" );
+}
 
+exports["test position copy"] = function( assert ) {
+	
 }
 
 if( module == require.main )

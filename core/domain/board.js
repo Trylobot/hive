@@ -51,19 +51,55 @@ function create() {
 		}
 		return piece;
 	}
-	// return the entire piece stack at position (or undefined if not found)
+	// return count of pieces
+	// optionally filter by type and/or color
+	board.count_pieces = function( piece_color, piece_type ) {
+		return _.reduce( board.pieces, function( piece_stack, sum ) {
+			return sum + _.reduce( piece_stack, function( piece, sum ) {
+				if( (piece.type == piece_type   || typeof piece_type === "undefined")
+				&&  (piece.color == piece_color || typeof piece_color === "undefined") )
+					return sum + 1;
+				else
+					return sum;
+			}, 0 );
+		}, 0 );
+	}
+	// return list of search results
+	// optionally filter by type and/or color
+	board.search_pieces = function( piece_color, piece_type ) {
+		var results = [];
+		_.forEach( board.pieces, function( piece_stack, position_key ) {
+			_.forEach( piece_stack, function( piece, layer ) {
+				if( (piece.type == piece_type   || typeof piece_type === "undefined")
+				&&  (piece.color == piece_color || typeof piece_color === "undefined") ) {
+					results.push({
+						position_key: position_key,
+						position: Position.decode( position_key ),
+						layer: layer,
+						piece: piece
+					});
+				}
+			});
+		});
+		return results;
+	}
+	// return the entire piece-stack at position (or undefined if not found)
 	board.lookup_piece_stack = function( position ) {
 		var position_key = position.encode();
 		var piece_stack = board.pieces[ position_key ];
 		return piece_stack;
 	}
-	// return piece at position (or undefined if not found)
+	// return the height of the piece-stack
+	board.lookup_piece_stack_height = function( position ) {
+		return board.pieces[ position_key ].height;
+	}
+	// return the piece at the top of the piece-stack at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
 		var position_key = position.encode();
 		var piece_stack = board.pieces[ position_key ];
 		var piece = undefined;
 		if( piece_stack )
-			piece = piece_stack[ piece_stack.length - 1];
+			piece = piece_stack[ piece_stack.length - 1 ];
 		return piece;
 	}
 	// return the contents of the six positions adjacent to a given position, on the same layer
@@ -106,6 +142,17 @@ function create() {
 				position_list.push( translated_position );
 			}
 		}
+		return position_list;
+	}
+	// return a list of positions occupied by one or more stacked pieces
+	board.lookup_occupied_adjacencies = function( position ) {
+		var position_list = [];
+		_.forEach( Position.directions_enum, function( direction ) {
+			var adjacent_position = position.translation( direction );
+			var adjacent_position_key = translated_position.encode();
+			if( board.pieces[ translated_position_key ])
+				position_list.push( adjacent_position );
+		});
 		return position_list;
 	}
 	// return a map of free spaces that are within a specific range from a start position
@@ -170,6 +217,14 @@ function create() {
 			return (free_position_key in filtered_free_spaces);
 		});
 		return free_spaces;
+	}
+	// return the first free space found, tracing a line from an origin extending outward in a specified direction
+	// note: includes position immediately adjacent
+	board.find_free_space_in_direction = function( position, direction ) {
+		var cursor = position.translation( direction );
+		while( typeof board.pieces[ cursor.encode() ] !== "undefined" )
+			cursor = cursor.translation( direction );
+		return cursor;
 	}
 	// check whether a board is contiguous
 	//   returns true if contiguous

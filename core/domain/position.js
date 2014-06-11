@@ -39,6 +39,9 @@ function create( row, col ) {
 	position.translation = function( direction ) {
 		return translation( position, direction );
 	}
+	position.copy = function() {
+		return create( position.row, position.col );
+	}
 	return position;
 }
 
@@ -63,6 +66,10 @@ function translation( position, direction ) {
 	}
 }
 
+function copy( position ) {
+	return position.copy();
+}
+
 // exports
 
 exports.directions_enum = directions_enum;
@@ -71,4 +78,5 @@ exports.create = create;
 exports.encode = encode;
 exports.decode = decode;
 exports.translation = translation;
+exports.copy = copy;
 

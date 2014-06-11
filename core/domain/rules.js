@@ -42,8 +42,8 @@ Placing your Queen Bee
 	must place your Queen Bee on your fourth turn if you have not placed it before.
 
 */
-function check_placement_possible( piece, board, turn_number ) {
-	throw "not yet implemented";
+function check_force_queen_placement( color, board, turn_number ) {
+	return ( board.count_pieces( color, "Queen Bee" ) <= 0 && turn_number >= 4 );
 }
 
 /*
@@ -59,8 +59,57 @@ Moving
 	connection between two parts of the Hive, it may not be moved. (See 'One Hive rule')
 
 */
-function check_movement_possible( color, board ) {
-	throw "not yet implemented";
+function check_any_movement_possible( color, board ) {
+	return ( board.count_pieces( color, "Queen Bee" ) > 0 );
+}
+
+/*
+
+The End of the Game
+	The game ends as soon as one Queen Bee is completely surrounded by pieces of any colour.
+	The person whose Queen Bee is surrounded loses the game, unless the last piece to
+	surround their Queen Bee also completes the surrounding of the other Queen Bee. In that
+	case the game is drawn. A draw may also be agreed if both players are in a position where
+	they are forced to move the same two pieces over and over again, without any possibility
+	of the stalemate being resolved.
+
+*/
+// returns an object with fields:
+//   game_over: true if game is over, false otherwise
+//   is_draw: true if game is over and game ended in a draw, false otherwise
+//   winner: color_name string corresponding to the winning player if any, undefined otherwise
+function check_if_game_over( board ) {
+	var result = {
+		game_over: false,
+		is_draw: false,
+		winner: undefined
+	};
+	var search = board.search_pieces( "White", "Queen Bee" );
+	if( search.length > 0 ) {
+		var White_Queen_Bee = search[0];
+		var occupied_adjacencies = board.lookup_occupied_adjacencies( White_Queen_Bee.position );
+		var occupied_adjacencies_count = occupied_adjacencies.length;
+		if( occupied_adjacencies_count >= 6 ) {
+			result.game_over = true;
+			result.winner = "White";
+		}
+	}
+	var search = board.search_pieces( "Black", "Queen Bee" );
+	if( search.length > 0 ) {
+		var Black_Queen_Bee = search[0];
+		var occupied_adjacencies = board.lookup_occupied_adjacencies( Black_Queen_Bee.position );
+		var occupied_adjacencies_count = occupied_adjacencies.length;
+		if( occupied_adjacencies_count >= 6 ) {
+			if( typeof result.winner === "undefined" ) {
+				result.game_over = true;
+				result.winner = "Black";
+			} else {
+				result.is_draw = true;
+				result.winner = undefined;
+			}
+		}
+	}
+	return result;
 }
 
 /*
@@ -76,42 +125,43 @@ function find_valid_placement( piece, board, turn_number ) {
 	return board.lookup_free_spaces( piece.color );
 }
 
-function find_valid_movement( piece, board, position, turn_number ) {
-	switch( piece_type )
-	{
-		case "Queen Bee":
-			return find_valid_movement__Queen_Bee( piece.color, board, position );
-			break;
+/*
 
-		case "Beetle":
-			return find_valid_movement__Beetle( piece.color, board, position );			
-			break;
+One Hive rule
+	The pieces in play must be linked at all times. At no time can you leave a piece
+	stranded (not joined to the Hive) or separate the Hive in two.
 
-		case "Grasshopper":
-			return find_valid_movement__Grasshopper( piece.color, board, position );			
-			break;
+Freedom to Move
+	The creatures can only move in a sliding movement. If a piece is surrounded to
+	the point that it can no longer physically slide out of its position, it may
+	not be moved. The only exceptions are the Grasshopper (which jumps into or out
+	of a space), the Beetle and Ladybug (which climb up and down) and the Mosquito
+	(which can mimic one of the three). Similarly, no piece may move into a space
+	that it cannot physically slide into.
 
-		case "Spider":
-			return find_valid_movement__Spider( piece.color, board, position );			
-			break;
+	When first introduced to the game, a piece may be placed into a space that is
+	surrounded as long as it does not violate any of the placing rules, in particular
+	the rule about pieces not being allowed to touch pieces of the other colour when
+	they are first placed.
 
-		case "Soldier Ant":
-			return find_valid_movement__Soldier_Ant( piece.color, board, position );			
-			break;
-
-		case "Mosquito":
-			return find_valid_movement__Mosquito( piece.color, board, position );			
-			break;
-
-		case "Ladybug":
-			return find_valid_movement__Ladybug( piece.color, board, position );			
-			break;
-
-		case "Pillbug":
-			return find_valid_movement__Pillbug( piece.color, board, position );			
-			break;
+*/
+function find_valid_movement( board, position ) {
+	var piece = board.lookup_piece( position );
+	// one hive rule
+	if( !board.check_contiguity( position ))
+		return null; 
+	// freedom to move rule (varies by piece)
+	switch( piece.type )
+	{   
+		case "Queen Bee":   return find_valid_movement_Queen_Bee(   board, position ); break;
+		case "Beetle":      return find_valid_movement_Beetle(      board, position ); break;
+		case "Grasshopper": return find_valid_movement_Grasshopper( board, position ); break;
+		case "Spider":      return find_valid_movement_Spider(      board, position ); break;
+		case "Soldier Ant": return find_valid_movement_Soldier_Ant( board, position ); break;
+		case "Mosquito":    return find_valid_movement_Mosquito(    board, position ); break;
+		case "Ladybug":     return find_valid_movement_Ladybug(     board, position ); break;
+		case "Pillbug":     return find_valid_movement_Pillbug(     board, position ); break;
 	}
-	throw "invalid piece type: " + piece.type;
 }
 
 /*
@@ -120,10 +170,8 @@ Queen Bee
 	The Queen Bee can move only one space per turn.
 
 */
-function find_valid_movement__Queen_Bee( color, board, position ) {
-	// lookup a position chain for this piece
-	// find chain items up to 1 space away
-	throw "not yet implemented";
+function find_valid_movement_Queen_Bee( board, position ) {
+	return board.lookup_adjacent_slide_positions( position );
 }
 
 /*
@@ -147,8 +195,15 @@ Beetle
 	be moved there later.
 
 */
-function find_valid_movement__Beetle( color, board, position ) {
-	throw "not yet implemented";
+function find_valid_movement_Beetle( board, position ) {
+	var height = board.lookup_piece_stack_height( position );
+	if( height == 0 )
+		return _.union( 
+			board.lookup_adjacent_slide_positions( position ),
+			board.lookup_occupied_adjacencies( position ) 
+		);
+	else
+		return position.adjacencies();
 }
 
 /*
@@ -163,8 +218,15 @@ Grasshopper
 	surrounded by other pieces.
 
 */
-function find_valid_movement__Grasshopper( color, board, position ) {
-	throw "not yet implemented";
+function find_valid_movement_Grasshopper( board, position ) {
+	var adjacent_positions = board.lookup_adjacent_positions( position );
+	var valid_movement = [];
+	return _.forEach( adjacent_positions, function( adjacency, direction ) {
+		if( typeof adjacency.contents !== "undefined" )
+			valid_movement.push( 
+				board.find_free_space_in_direction( adjacency.position, direction ));
+	});
+	return valid_movement;
 }
 
 /*
@@ -176,8 +238,8 @@ Spider
 	across to a piece that it is not in direct contact with.
 
 */
-function find_valid_movement__Spider( color, board, position ) {
-	throw "not yet implemented";
+function find_valid_movement_Spider( board, position ) {
+	return board.lookup_slide_destinations_within_range( position, 3, 3 );
 }
 
 /*
@@ -187,8 +249,8 @@ Soldier Ant
 	Hive provided the restrictions are adhered to.
 
 */
-function find_valid_movement__Soldier_Ant( color, board, position ) {
-	throw "not yet implemented";
+function find_valid_movement_Soldier_Ant( board, position ) {
+	return board.lookup_slide_destinations_within_range( position, 1, Infinity );
 }
 
 /*
@@ -206,7 +268,7 @@ Mosquito
 	and no other piece, it may not move.
 
 */
-function find_valid_movement__Mosquito( color, board, position ) {
+function find_valid_movement_Mosquito( board, position ) {
 	throw "not yet implemented";
 }
 
@@ -221,7 +283,7 @@ Ladybug
 	spaces. It also has the advantage of being much faster.
 
 */
-function find_valid_movement__Ladybug( color, board, position ) {
+function find_valid_movement_Ladybug( board, position ) {
 	throw "not yet implemented";
 }
 
@@ -246,79 +308,23 @@ Pillbug
 	immobile by another Pillbug.
 
 */
-function find_valid_movement__Pillbug( color, board, position ) {
+function find_valid_movement_Pillbug( board, position ) {
 	throw "not yet implemented";
-}
-
-/*
-
-One Hive rule
-	The pieces in play must be linked at all times. At no time can you leave a piece
-	stranded (not joined to the Hive) or separate the Hive in two.
-
-*/
-function check_one_hive_rule( board, newly_empty_position ) {
-	throw "not yet implemented";
-}
-
-/*
-
-Freedom to Move
-	The creatures can only move in a sliding movement. If a piece is surrounded to
-	the point that it can no longer physically slide out of its position, it may
-	not be moved. The only exceptions are the Grasshopper (which jumps into or out
-	of a space), the Beetle and Ladybug (which climb up and down) and the Mosquito
-	(which can mimic one of the three). Similarly, no piece may move into a space
-	that it cannot physically slide into.
-
-	When first introduced to the game, a piece may be placed into a space that is
-	surrounded as long as it does not violate any of the placing rules, in particular
-	the rule about pieces not being allowed to touch pieces of the other colour when
-	they are first placed.
-
-*/
-function check_freedom_to_move_rule( board, start_position, end_position, sliding_moves_position_chain ) {
-	throw "not yet implemented";
-}
-
-/*
-
-The End of the Game
-	The game ends as soon as one Queen Bee is completely surrounded by pieces of any colour.
-	The person whose Queen Bee is surrounded loses the game, unless the last piece to
-	surround their Queen Bee also completes the surrounding of the other Queen Bee. In that
-	case the game is drawn. A draw may also be agreed if both players are in a position where
-	they are forced to move the same two pieces over and over again, without any possibility
-	of the stalemate being resolved.
-
-*/
-// returns an object with fields:
-//   game_over: true if game is over, false otherwise
-//   is_draw: true if game is over and game ended in a draw, false otherwise
-//   winner: color_name string corresponding to the winning player if any, undefined otherwise
-function check_if_game_over( board ) {
-	throw "not yet implemented";
-	return {
-		game_over: false,
-		is_draw: false,
-		winner: undefined
-	};
 }
 
 // exports
 
-exports.check_placement_possible = check_placement_possible;
-exports.check_movement_possible = check_movement_possible;
+exports.check_force_queen_placement = check_force_queen_placement;
+exports.check_any_movement_possible = check_any_movement_possible;
+exports.check_if_game_over = check_if_game_over;
 exports.find_valid_placement = find_valid_placement;
 exports.find_valid_movement = find_valid_movement;
-exports.find_valid_movement__Queen_Bee = find_valid_movement__Queen_Bee;
-exports.find_valid_movement__Beetle = find_valid_movement__Beetle;
-exports.find_valid_movement__Grasshopper = find_valid_movement__Grasshopper;
-exports.find_valid_movement__Spider = find_valid_movement__Spider;
-exports.find_valid_movement__Soldier_Ant = find_valid_movement__Soldier_Ant;
-exports.find_valid_movement__Mosquito = find_valid_movement__Mosquito;
-exports.find_valid_movement__Ladybug = find_valid_movement__Ladybug;
-exports.find_valid_movement__Pillbug = find_valid_movement__Pillbug;
-exports.check_one_hive_rule = check_one_hive_rule;
-exports.check_freedom_to_move_rule = check_freedom_to_move_rule;
-exports.check_if_game_over = check_if_game_over;
+exports.find_valid_movement_Queen_Bee = find_valid_movement_Queen_Bee;
+exports.find_valid_movement_Beetle = find_valid_movement_Beetle;
+exports.find_valid_movement_Grasshopper = find_valid_movement_Grasshopper;
+exports.find_valid_movement_Spider = find_valid_movement_Spider;
+exports.find_valid_movement_Soldier_Ant = find_valid_movement_Soldier_Ant;
+exports.find_valid_movement_Mosquito = find_valid_movement_Mosquito;
+exports.find_valid_movement_Ladybug = find_valid_movement_Ladybug;
+exports.find_valid_movement_Pillbug = find_valid_movement_Pillbug;
+
