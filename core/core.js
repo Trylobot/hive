@@ -44,6 +44,7 @@ function create() {
 		black_player.greetings();
 		async.whilst(
 			function() { // test
+				_.assign( game, Rules.check_if_game_over( game.board ));
 				return !game.game_over;
 			},
 			function( iteration_complete ) { // function (body)
