@@ -5,6 +5,7 @@ var package_json = require("../package.json");
 var _ = require("lodash");
 var zmq = require("zmq");
 var requester = zmq.socket("req");
+var uuid = require('uuid-v4');
 
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
@@ -28,15 +29,15 @@ this module manages game instances, and handles communications between players a
 function create() {
 	var core = {
 		games: {},
-		game_sequence: 0
 	}
-	core.start_game = function( game, player0, player1 ) {
-		var sequence = core.game_sequence++;
-		core.games[ sequence ] = {
+	core.start_game = function( game, white_player, black_player ) {
+		var game_id = uuid();
+		core.games[ game_id ] = {
 			game: game,
+			game_id: game_id,
 			players: {
-				"White": player0,
-				"Black": player1
+				"White": white_player,
+				"Black": black_player
 			}
 		};
 		// TODO: call players in an async-loop for moves until game.game_over

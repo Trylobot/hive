@@ -27,7 +27,8 @@
 		"serve-favicon": "^2.0.0",
 		"socket.io": "^0.9.16",
 		"lodash": "^2.4.1",
-		"zmq": "^2.7.0"
+		"zmq": "^2.7.0",
+		"uuid-v4": "^0.1.0"
 	},
 	"devDependencies": {
 		"test": ">=0.0.5"
