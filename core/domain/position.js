@@ -49,9 +49,21 @@ function encode( position ) {
 	return position.row + "," + position.col;
 }
 
+function encode_all( array_of_positions ) {
+	return _.map( array_of_positions, function( position ) {
+		return position.encode();
+	});
+}
+
 function decode( position_key ) {
 	var parts = position_key.split( "," );
 	return create( parseInt( parts[0] ), parseInt( parts[1] ));
+}
+
+function decode_all( array_of_position_keys ) {
+	return _.map( array_of_position_keys, function( position_key ) {
+		return decode( position_key );
+	});
 }
 
 function translation( position, direction ) {
@@ -76,7 +88,9 @@ exports.directions_enum = directions_enum;
 
 exports.create = create;
 exports.encode = encode;
+exports.encode_all = encode_all;
 exports.decode = decode;
+exports.decode_all = decode_all;
 exports.translation = translation;
 exports.copy = copy;
 

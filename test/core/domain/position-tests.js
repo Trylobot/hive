@@ -1,6 +1,6 @@
 var Position = require("../../../core/domain/position");
 
-exports["test position create, encode, decode"] = function( assert ) {
+exports["test position create, encode, decode, encode_all, decode_all"] = function( assert ) {
 	var position, position_key;
 
 	position = Position.create( 0, 0 );
@@ -31,6 +31,11 @@ exports["test position create, encode, decode"] = function( assert ) {
 		JSON.stringify( position ),
 		JSON.stringify( { row: -3, col: 5 } ),
 		"decoded position has the correct data" );
+
+	// TODO: test encode_all
+
+	// TODO: test decode_all
+	
 }
 
 exports["test position translation"] = function( assert ) {

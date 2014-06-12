@@ -29,6 +29,10 @@ The Hive
 
 // functions
 
+function lookup_possible_moves( color, board, turn_number ) {
+	
+}
+
 /*
 
 Placing
@@ -120,8 +124,11 @@ Unable to Move or Place
 	until the player is able to move or place one of their pieces, or until their
 	Queen Bee is surrounded.
 
+	http://boardspace.net/english/about_hive.html
+	  Rules Change: at boardspace the "Queen" opening has been forbidden for both black and white.
+	  John Yianni supports this change, which is intended to eliminate the problem of excess draws in "queen opening" games.
 */
-function find_valid_placement( piece, board, turn_number ) {
+function find_valid_placement_positions( piece, board, turn_number ) {
 	return board.lookup_free_spaces( piece.color );
 }
 
@@ -149,7 +156,7 @@ function find_valid_movement( board, position ) {
 	var piece = board.lookup_piece( position );
 	// one hive rule
 	if( !board.check_contiguity( position ))
-		return null; 
+		return []; 
 	// freedom to move rule (varies by piece)
 	switch( piece.type )
 	{   
@@ -194,6 +201,9 @@ Beetle
 	pieces. It cannot be placed directly on top of the Hive, even though it can
 	be moved there later.
 
+	http://www.boardgamegeek.com/wiki/page/Hive_FAQ#toc8
+	  Q: Are beetles affected by the Freedom To Move rule?
+	  A: Yes. (albeit in a different way)
 */
 function find_valid_movement_Beetle( board, position ) {
 	var height = board.lookup_piece_stack_height( position );
@@ -314,6 +324,7 @@ function find_valid_movement_Pillbug( board, position ) {
 
 // exports
 
+exports.lookup_possible_moves = lookup_possible_moves;
 exports.check_force_queen_placement = check_force_queen_placement;
 exports.check_any_movement_possible = check_any_movement_possible;
 exports.check_if_game_over = check_if_game_over;

@@ -38,11 +38,16 @@ CHOOSE_TURN request
   request_type: "CHOOSE_TURN",
   game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
   possible_turns: {
-    "Placement": [ 
-      "-2,0",
-      "-1,-1", 
-      "1,-1"
-    ],
+    "Placement": {
+      piece_types: [
+        "Soldier Ant"
+      ],
+      positions: [ 
+        "-2,0",
+        "-1,-1", 
+        "1,-1"
+      ]
+    },
     "Movement": {
       "0,0": [
         "2,0",

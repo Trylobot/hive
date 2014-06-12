@@ -33,8 +33,8 @@ responder.on( "message", function( message_string ) {
 			response.turn_type = random_object_key( message.possible_turns );
 			switch( response.turn_type ) {
 				case "Placement":
-					response.piece_type = random_object_key( message.game_state.hands[ message.game_state.player_turn ]);
-					response.destination = random_array_item( message.possible_turns[ response.turn_type ]);
+					response.piece_type = random_array_item( message.possible_turns[ response.turn_type ].piece_types );
+					response.destination = random_array_item( message.possible_turns[ response.turn_type ].positions );
 					break;
 				case "Movement":
 					response.source = random_object_key( message.possible_turns[ response.turn_type ]);
