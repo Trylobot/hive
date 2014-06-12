@@ -6,9 +6,6 @@ var fs = require("fs");
 var cfg = JSON.parse(
 	fs.readFileSync( "web.cfg.json", "utf8" ));
 // module dependencies
-var compress = require("compression");
-var favicon = require("serve-favicon");
-var express_json = require("express-json");
 var express = require("express");
 var http = require("http");
 var app = express();
@@ -17,6 +14,12 @@ console.log( "express server listening on port " + cfg.server_port );
 var io = require("socket.io").listen( server );
 require("datejs");
 var _ = require("lodash");
+// module configs
+app.use( require("compression")() ); // gzip compression
+app.use( require("serve-favicon")( "favicon.png" ));
+app.use( require("express-json")() );
+io.set( "log level", cfg.socket_io_log_level ); // 0 - 4, ascending verbosity
+// internal libs
 // var Piece = require("./core/domain/piece");
 // var Position = require("./core/domain/position");
 // var Turn = require("./core/domain/turn");
@@ -25,11 +28,6 @@ var _ = require("lodash");
 // var Game = require("./core/domain/game");
 var Player = require("./core/domain/player");
 var Core = require("./core/core");
-// module configs
-app.use( compress() ); // gzip compression
-app.use( favicon( "favicon.png" ));
-app.use( express_json() );
-io.set( "log level", cfg.socket_io_log_level ); // 0 - 4, ascending verbosity
 
 
 /*
@@ -73,7 +71,7 @@ app.post( "/new", function( request, response ) {
 app.get( "/play", function( request, response ) {
 	var game_id = extract_valid_game_id( request );
 	if( game_id ) {
-		response.sendfile( "play_hive_game.html" )
+		response.sendfile( "play_game.html" )
 	} else {
 		response.send( 400 ); // bad request
 	}

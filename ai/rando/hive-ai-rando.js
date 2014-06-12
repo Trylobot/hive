@@ -10,7 +10,10 @@ hive-ai-rando.js
 var zmq = require("zmq");
 var responder = zmq.socket("rep");
 
-responder.connect( "tcp://localhost:19855" );
+var zmq_uri = "tcp://localhost:19855";
+responder.connect( zmq_uri );
+console.log( "ØMQ socket rep " + zmq_uri );
+
 responder.on( "message", function( message_string ) {
 	var message = JSON.parse( message_string );
 	var response;

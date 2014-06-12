@@ -4,9 +4,7 @@
 		{
 			"path": "..",
 			"folder_exclude_patterns": [
-				".git",
-				"node_modules",
-				"project"
+				".git"
 			]
 		}
 	]
