@@ -1,26 +1,38 @@
-angular.module( "hive_app", ["btford.socket-io", "hive_app.main_controller"] )
-.factory( "socket", function( socket_factory ) {
-	return socket_factory();
-});
+"use strict";
 
-angular.module( "hive_app.main_controller", ["btford.socket-io"])
-.controller( "main_controller", function( $scope, socket ) {
-	socket.forward( "connect", $scope );
-	socket.forward( "update_game", $scope );
-	socket.forward( "choose_turn", $scope );
-	socket.forward( "disconnect", $scope );
-	// ----
-	$scope.$on( "socket:connect", function( _event ) {
-		$scope.connected = true;
+var hive_app = angular.module( "hive_app", [] )
+.config( function( $locationProvider ) {
+	$locationProvider.html5Mode( true );
+})
+.controller( "main_controller", function( $scope, $location ) {
+	// monkey patch
+	$scope.safeApply = function() {
+		var phase = this.$root.$$phase;
+		if( phase != '$apply' && phase != '$digest' )
+			this.$apply();
+	};	
+	// vars
+	var model = {
+		connected: false
+	};
+	$scope.model = model;
+	// init
+	var socket = io.connect();
+	// socket receive
+	socket.on( "connect", function() {
+		model.connected = true;
+		$scope.safeApply();
 	});
-	$scope.$on( "socket:update_game", function( _event, game ) {
-		$scope.game = game;
+	socket.on( "update_game", function( game ) {
+		model.game = game;
+		$scope.safeApply();
 	});
+	socket.on( "disconnect", function() {
+		model.connected = false;
+		$scope.safeApply();
+	});
+	// socket send
 	$scope.choose_turn = function( turn ) {
 		socket.emit( "choose_turn", turn );
 	};
-	$scope.$on( "socket:disconnect", function( _event ) {
-		$scope.connected = false;
-	});
 });
-

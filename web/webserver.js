@@ -2,7 +2,7 @@
 
 // basic config
 var _ = require("lodash");
-_(global).extend(require("./core/domain/util"));
+_(global).extend(require("../core/domain/util"));
 var cfg = require("./web.cfg.json");
 // module dependencies
 var express = require("express");
@@ -17,8 +17,8 @@ app.use( require("serve-favicon")( "favicon.png" ));
 app.use( require("express-json")() );
 io.set( "log level", cfg.socket_io_log_level ); // 0 - 4, ascending verbosity
 // internal libs
-var Player = require("./core/domain/player");
-var Core = require("./core/core");
+var Player = require("../core/domain/player");
+var Core = require("../core/core");
 
 /*
 core.js
