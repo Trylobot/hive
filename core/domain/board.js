@@ -91,7 +91,8 @@ function create() {
 	}
 	// return the height of the piece-stack
 	board.lookup_piece_stack_height = function( position ) {
-		return board.pieces[ position_key ].height;
+		var position_key = position.encode();
+		return board.pieces[ position_key ].length;
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
 	board.lookup_piece = function( position ) {

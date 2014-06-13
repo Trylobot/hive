@@ -4,7 +4,13 @@
 		{
 			"path": "..",
 			"folder_exclude_patterns": [
-				".git"
+				".git",
+				"node_modules/.bin"
+			],
+			"file_exclude_patterns": [
+				"*.sublime-workspace",
+				"node_modules/*",
+				"web/public/lib/*"
 			]
 		}
 	]

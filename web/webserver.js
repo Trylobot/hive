@@ -1,10 +1,9 @@
 "use strict";
 
 // basic config
-_(global).extend(require("./domain/util"));
-var fs = require("fs");
-var cfg = JSON.parse(
-	fs.readFileSync( "web.cfg.json", "utf8" ));
+var _ = require("lodash");
+_(global).extend(require("./core/domain/util"));
+var cfg = require("./web.cfg.json");
 // module dependencies
 var express = require("express");
 var http = require("http");
@@ -12,23 +11,14 @@ var app = express();
 var server = app.listen( cfg.server_port );
 console.log( "express server listening on port " + cfg.server_port );
 var io = require("socket.io").listen( server );
-require("datejs");
-var _ = require("lodash");
 // module configs
 app.use( require("compression")() ); // gzip compression
 app.use( require("serve-favicon")( "favicon.png" ));
 app.use( require("express-json")() );
 io.set( "log level", cfg.socket_io_log_level ); // 0 - 4, ascending verbosity
 // internal libs
-// var Piece = require("./core/domain/piece");
-// var Position = require("./core/domain/position");
-// var Turn = require("./core/domain/turn");
-// var Board = require("./core/domain/board");
-// var Rules = require("./core/domain/rules");
-// var Game = require("./core/domain/game");
 var Player = require("./core/domain/player");
 var Core = require("./core/core");
-
 
 /*
 core.js
@@ -43,38 +33,14 @@ this module manages game instances, and handles communications between players a
 var core = Core.create();
 
 // routing - index page
+//   landing page, about, links, etc.
 app.get( "/", function( request, response ) {
 	response.sendfile( "index.html" );
 });
 
-// routing - create new game
-//   expects application/json in post body
-app.post( "/new", function( request, response ) {
-	if( validate_create_game_request( request )) {
-		var game_id = core.start_game( 
-			Player.create(
-				request.body.white_player.player_type,
-				request.body.white_player.zmq_uri ),
-			Player.create(
-				request.body.black_player.player_type,
-				request.body.black_player.zmq_uri ),
-			request.body.use_mosquito,
-			request.body.use_ladybug,
-			request.body.use_pillbug );
-		response.redirect( "/play?" + game_id )
-	} else {
-		response.send( 400 ); // bad request
-	}
-});
-
-// routing - play/spectate existing game
+// routing - play or spectate games
 app.get( "/play", function( request, response ) {
-	var game_id = extract_valid_game_id( request );
-	if( game_id ) {
-		response.sendfile( "play_game.html" )
-	} else {
-		response.send( 400 ); // bad request
-	}
+	response.sendfile( "play_game.html" )
 });
 
 // static fileserver
@@ -82,9 +48,52 @@ app.use( express.static( __dirname+"/public", {
 	maxAge: 31557600000 // default cache-expiry: one year
 }));
 
+// socket event handlers
 io.sockets.on( "connection", function( socket ) {
-	// TODO: send CHOOSE_TURN requests to human(s)
-	// TODO: receive CHOOSE_TURN responses from human(s)
+	// create a new game
+	socket.on( "start_game", function( game_config ) {
+		// create game objects and put game into initial state
+		// TODO: include the socket.id into the Player object so that players can't hijack each other
+		var game_id = core.start_game(
+			Player.create(
+				game_config.white_player.player_type,
+				game_config.white_player.zmq_uri ),
+			Player.create(
+				game_config.black_player.player_type,
+				game_config.black_player.zmq_uri ),
+			game_config.use_mosquito,
+			game_config.use_ladybug,
+			game_config.use_pillbug );
+		// disconnect from any previous game(s)
+		_.forEach( _.keys( io.sockets.manager.roomClients[ socket.id ]), function( game_id ) {
+			socket.leave( game_id );
+		});
+		socket.join( game_id );
+		// send game state
+		socket.emit( "update_game", game_instance.game );
+	});
+	// join existing game
+	socket.on( "join_game", function( game_id ) {
+		var game_instance = core.lookup_game( game_id );
+		if( game_instance ) {
+			socket.join( game_id );
+			// send game state
+			socket.emit( "update_game", game_instance.game );
+		}
+	})
+	// choose_turn: a human player is sending their turn choice for a game_instance
+	socket.on( "choose_turn", function( turn ) {
+		// TODO: when the board state changes, notify all connected participants via:
+		// io.sockets.in( game_id ).emit( "update_game", game_instance.game );
+	});
+	// set_player: human player is setting the configuration options for one of the players in a game_instance
+	//   for example, setting the white or black player to human or AI, or swapping an AI module out for another
+	socket.on( "set_player", function( player ) {
+
+	});
+	socket.on( "disconnect", function() {
+
+	});
 });
 
 // ---------------------

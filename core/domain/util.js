@@ -1,5 +1,3 @@
-"use strict";
-
 /*
 utils.js
 misc utilities
@@ -12,7 +10,7 @@ Array.prototype.insert = function( index, item ) {
 }
 
 // repositions the last character of a string to the beginning
-String.prototype.rotate = function( num ) {
+String.prototype.cycle_chars = function( num ) {
 	if( typeof num === 'undefined' )
 		num = 1; // default value
 	num = num % this.length; // normalize
@@ -20,6 +18,8 @@ String.prototype.rotate = function( num ) {
 		num = this.length + num; // wrap
 	return this.substr( this.length - num ) + this.substr( 0, this.length - num );
 }
+
+// the following are well-tested externally sourced functions
 
 function base62_encode( a ) { // positive base10 encoded integer
 	var b, c;

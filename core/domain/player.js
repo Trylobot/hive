@@ -1,6 +1,6 @@
 "use strict";
 
-var package_json = require("../package.json");
+var package_json = require("../../package.json");
 
 var _ = require("lodash");
 _(global).extend(require("./util"));
@@ -88,7 +88,7 @@ function create( player_type, zmq_uri ) {
 
 // exports
 
-exports.types_enum = types_enum;
+exports.player_types_enum = player_types_enum;
 exports.message_types_enum = message_types_enum;
 exports.create = create;
 

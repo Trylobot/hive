@@ -27,6 +27,7 @@ function create() {
 	var core = {
 		game_instances: {},
 	}
+	// TODO: support pausing the game indefinitely while waiting for human input
 	core.start_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
 		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
 		var game_id = generate_game_id();

@@ -8,9 +8,9 @@ exports["test util Array insert"] = function( assert ) {
 		"actual matches expected" );
 }
 
-exports["test util String rotate"] = function( assert ) {
+exports["test util String cycle_chars"] = function( assert ) {
 	assert.deepEqual(
-		"12345".rotate( 1 ),
+		"12345".cycle_chars( 1 ),
 		"51234",
 		"actual matches expected" );
 }

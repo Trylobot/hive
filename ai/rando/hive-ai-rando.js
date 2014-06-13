@@ -12,7 +12,7 @@ var responder = zmq.socket("rep");
 
 var zmq_uri = "tcp://localhost:19855";
 responder.connect( zmq_uri );
-console.log( "ØMQ socket rep " + zmq_uri );
+console.log( "zmq socket req/[rep] " + zmq_uri );
 
 responder.on( "message", function( message_string ) {
 	var message = JSON.parse( message_string );
