@@ -43,8 +43,11 @@ function pad( val, len ) {
 	return str;
 }
 
-
 function isNumber( n ) {
 	return !isNaN(parseFloat(n)) && isFinite(n);
 }
+
+exports.base62_encode = base62_encode;
+exports.pad = pad;
+exports.isNumber = isNumber;
 

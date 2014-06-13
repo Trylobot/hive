@@ -2,7 +2,7 @@
 
 var _ = require("lodash");
 var async = require("async");
-var mt = new require('mersenne').MersenneTwister19937;
+var mt = new (require('mersenne').MersenneTwister19937);
 
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
@@ -30,7 +30,7 @@ function create() {
 	// TODO: support pausing the game indefinitely while waiting for human input
 	core.start_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
 		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
-		var game_id = generate_game_id();
+		var game_id = core.generate_game_id();
 		var game_instance = {
 			game: game,
 			game_id: game_id,
@@ -83,27 +83,25 @@ function create() {
 		return game_id;
 	}
 	core.lookup_game = function( game_id ) {
-		return game_instances[ game_id ];
+		return core.game_instances[ game_id ];
 	}
 	core.end_game = function( game_id ) {
 		// TODO: save game to archive
 		//   html + embedded game history as JSON + auto playback + turn navigation
-		delete game_instances[ game_id ];
+		delete core.game_instances[ game_id ];
 	}
 	core.set_player = function( game_id, color, player ) {
-		game_instances[ game_id ].players[ color ] = player;
+		core.game_instances[ game_id ].players[ color ] = player;
 		player.greetings();
 	}
 	core.generate_game_id = function() {
-		var p_b62_id;
+		var id;
 		do {
-			mt.init_genrand( now().getTime() % 1000000000 );
-			var r = mt.genrand_real2();
-			var id = Math.floor( r*(62*62*62*62*62) );
-			var b62_id = base62_encode( id );
-			var p_b62_id = pad( b62_id, 5 );
-		} while( !(p_62_id in core.game_instances) );
-		return p_b62_id;
+			mt.init_genrand( (new Date()).getTime() % 1000000000 );
+			var num = Math.floor( mt.genrand_real2()*(62*62*62*62*62) );
+			var id = pad( base62_encode( num ), 5 );
+		} while( id in core.game_instances );
+		return id;
 	}
 	// ---------------
 	return core;

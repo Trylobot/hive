@@ -1,22 +1,19 @@
 "use strict";
 
-// basic config
+// dependencies
 var _ = require("lodash");
 _(global).extend(require("../core/domain/util"));
 var cfg = require("./web.cfg.json");
-// module dependencies
-var express = require("express");
 var http = require("http");
+var express = require("express");
+var font = require("ansi-font");
 var app = express();
-var server = app.listen( cfg.server_port );
-console.log( "express server listening on port " + cfg.server_port );
-var io = require("socket.io").listen( server );
-// module configs
-app.use( require("compression")() ); // gzip compression
-app.use( require("serve-favicon")( "favicon.png" ));
-app.use( require("express-json")() );
-io.set( "log level", cfg.socket_io_log_level ); // 0 - 4, ascending verbosity
-// internal libs
+var server = app.listen( cfg.server_port ); // startup webserver
+console.info( font.cyan("   info  - ")+"express started" );
+var io = require("socket.io").listen( server ); // startup socket listener
+app.use( require("compression")() ); // use gzip compression on responses
+app.use( require("serve-favicon")( "favicon.png" )); // serve up favicons
+io.set( "log level", cfg.socket_io_log_level ); // socket.io logging level 0 - 4, in order of ascending verbosity
 var Player = require("../core/domain/player");
 var Core = require("../core/core");
 
@@ -64,13 +61,19 @@ io.sockets.on( "connection", function( socket ) {
 			game_config.use_mosquito,
 			game_config.use_ladybug,
 			game_config.use_pillbug );
-		// disconnect from any previous game(s)
-		_.forEach( _.keys( io.sockets.manager.roomClients[ socket.id ]), function( game_id ) {
-			socket.leave( game_id );
-		});
-		socket.join( game_id );
-		// send game state
-		socket.emit( "update_game", game_instance.game );
+		if( game_id != null ) {
+			var game_instance = core.lookup_game( game_id );
+			// disconnect from any previous game(s)
+			_.forEach( _.keys( io.sockets.manager.roomClients[ socket.id ]), function( game_id ) {
+				socket.leave( game_id );
+			});
+			socket.join( game_id );
+			// send game state
+			socket.emit( "update_game", game_instance.game );
+			console.info( font.cyan("   info  - ")+"new game "+font.bold(font.yellow( game_id )) );
+		} else {
+			socket.emit( "bad_request", game_config ); // couldn't start the game, yo
+		}
 	});
 	// join existing game
 	socket.on( "join_game", function( game_id ) {
@@ -79,8 +82,10 @@ io.sockets.on( "connection", function( socket ) {
 			socket.join( game_id );
 			// send game state
 			socket.emit( "update_game", game_instance.game );
+		} else {
+			socket.emit( "not_found", game_id ); // not found, yo
 		}
-	})
+	});
 	// choose_turn: a human player is sending their turn choice for a game_instance
 	socket.on( "choose_turn", function( turn ) {
 		// TODO: when the board state changes, notify all connected participants via:
@@ -92,7 +97,7 @@ io.sockets.on( "connection", function( socket ) {
 
 	});
 	socket.on( "disconnect", function() {
-
+		// not much to do here, yet
 	});
 });
 

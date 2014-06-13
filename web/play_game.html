@@ -14,9 +14,9 @@
 </head>
 <body>
 <div>
-
-connected = <span ng-bind="model.connected">false</span>
-
+	<div>connected:<span ng-bind="model.connected">false</span></div>
+	<div>game_id:"<span ng-bind="model.game_id"></span>"</div>
+	<div><button ng-click="start_game()">start_game</button></div>
 </div>
 <script src="play_game.js?v0.0.1"></script>
 </body>

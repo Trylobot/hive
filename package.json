@@ -21,24 +21,23 @@
 	},
 	"homepage": "https://github.com/Trylobot/hive",
 	"engines": {
-		"node": "^0.10.28",
-		"npm": "^1.4.9"
+		"node": "~0.10.28",
+		"npm": "~1.4.9"
 	},
 	"dependencies": {
-		"bower": "^1.3.5",
-		"compression": "^1.0.2",
-		"serve-favicon": "^2.0.0",
-		"express-json": "^1.0.0",
-		"express": "^4.2.0",
-		"datejs": "^1.0.0-beta",
-		"socket.io": "^0.9.16",
-		"mersenne": "^0.0.3",
-		"lodash": "^2.4.1",
-		"zmq": "^2.7.0",
-		"async": "^0.9.0",
-		"cli": "^0.6.3"
+		"bower": "~1.3.5",
+		"compression": "~1.0.2",
+		"serve-favicon": "~2.0.0",
+		"express": "~4.2.0",
+		"ansi-font": "~0.0.2",
+		"socket.io": "~0.9.16",
+		"mersenne": "~0.0.3",
+		"lodash": "~2.4.1",
+		"zmq": "~2.7.0",
+		"async": "~0.9.0",
+		"cli": "~0.6.3"
 	},
 	"devDependencies": {
-		"test": "^0.6.0"
+		"test": "~0.6.0"
 	}
 }
