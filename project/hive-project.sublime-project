@@ -10,6 +10,7 @@
 			"file_exclude_patterns": [
 				"*.sublime-workspace",
 				"node_modules/*",
+				"nw/node_modules/*",
 				"web/public/lib/*"
 			]
 		}

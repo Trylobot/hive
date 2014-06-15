@@ -1,0 +1,33 @@
+{
+	"name": "hive",
+	"version": "0.0.1",
+	"dependencies": {
+		"bower": "~1.3.5",
+		"mersenne": "~0.0.3",
+		"lodash": "~2.4.1",
+		"zmq": "~2.7.0",
+		"async": "~0.9.0",
+		"nodewebkit": "~0.8.6"
+	},
+	"scripts": {
+		"start": "nodewebkit"
+	},
+	"main": "index.html",
+	"window": {
+		"title": "Hive AI Development Tool",
+		"icon": "favicon.png",
+		"toolbar": true,
+		"frame": true,
+		"width": 1280,
+		"height": 720,
+		"min_width": 1280,
+		"min_height": 720,
+		"max_width": 1280,
+		"max_height": 720,
+		"position": "mouse"
+	},
+	"renderer": {
+		"width": 1240,
+		"height": 640
+	}
+}
