@@ -83,6 +83,14 @@ function create() {
 		});
 		return results;
 	}
+	// 
+	board.lookup_occupied_position_keys = function() {
+		return _.keys( board.pieces );
+	}
+	// 
+	board.lookup_occupied_positions = function() {
+		return Position.decode_all( board.lookup_occupied_position_keys );
+	}
 	// return the entire piece-stack at position (or undefined if not found)
 	board.lookup_piece_stack = function( position ) {
 		var position_key = position.encode();
@@ -96,6 +104,11 @@ function create() {
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
+		var position_key = position.encode();
+		return board.lookup_piece_by_key( position_key );
+	}
+	// return the piece at the top of the piece-stack at position (or undefined if not found)
+	board.lookup_piece_by_key = function( position_key ) {
 		var position_key = position.encode();
 		var piece_stack = board.pieces[ position_key ];
 		var piece = undefined;

@@ -40,10 +40,7 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		state_history: []
 	}
 	game.get_next_player_turn = function( player_turn ) {
-		if( player_turn === "White" )
-			return "Black";
-		else if( player_turn === "Black" )
-			return "White";
+		return Piece.opposite_color( player_turn );
 	}
 	game.record_current_state = function() {
 		// serialize everything except the state_history, since this data will be copied into the state_history

@@ -38,10 +38,18 @@ function create( color, type ) {
 	return piece;
 }
 
+function opposite_color( color ) {
+	switch( color ) {
+		case "White": return "Black";
+		case "Black": return "White";
+	}
+}
+
 // exports
 
-exports.types_enum = types_enum;
 exports.colors_enum = colors_enum;
+exports.types_enum = types_enum;
 
 exports.create = create;
+exports.opposite_color = opposite_color;
 

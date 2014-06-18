@@ -1,0 +1,139 @@
+{ 
+	"frames": {
+	
+		"White Tile": {
+			"frame":            { "x":   1,"y": 269, "w": 183,"h": 162 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 183,"h": 162 },
+			"sourceSize":       {                    "w": 183,"h": 162 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Tile": {
+			"frame":            { "x": 186,"y": 269, "w": 183,"h": 162 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 183,"h": 162 },
+			"sourceSize":       {                    "w": 183,"h": 162 },
+			"rotated": false,
+			"trimmed": false
+		},
+
+		"White Queen Bee": {
+			"frame":            { "x":   0,"y":   0, "w": 125,"h":  91 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 125,"h":  91 },
+			"sourceSize":       {                    "w": 125,"h":  91 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Beetle": {
+			"frame":            { "x": 126,"y":   0, "w":  95,"h": 133 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  95,"h": 133 },
+			"sourceSize":       {                    "w":  95,"h": 133 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Grasshopper": {
+			"frame":            { "x": 222,"y":   0, "w":  81,"h": 128 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  81,"h": 128 },
+			"sourceSize":       {                    "w":  81,"h": 128 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Spider": {
+			"frame":            { "x": 304,"y":   0, "w": 109,"h": 127 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 109,"h": 127 },
+			"sourceSize":       {                    "w": 109,"h": 127 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Soldier Ant": {
+			"frame":            { "x": 414,"y":   0, "w": 101,"h": 115 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 101,"h": 115 },
+			"sourceSize":       {                    "w": 101,"h": 115 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Mosquito": {
+			"frame":            { "x": 516,"y":   0, "w": 141,"h": 134 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 141,"h": 134 },
+			"sourceSize":       {                    "w": 141,"h": 134 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Ladybug": {
+			"frame":            { "x": 658,"y":   0, "w":  92,"h": 111 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  92,"h": 111 },
+			"sourceSize":       {                    "w":  92,"h": 111 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"White Pillbug": {
+			"frame":            { "x": 751,"y":   0, "w":  96,"h": 120 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  96,"h": 120 },
+			"sourceSize":       {                    "w":  96,"h": 120 },
+			"rotated": false,
+			"trimmed": false
+		},
+
+		"Black Queen Bee": {
+			"frame":            { "x":   0,"y": 135, "w": 125,"h":  91 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 125,"h":  91 },
+			"sourceSize":       {                    "w": 125,"h":  91 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Beetle": {
+			"frame":            { "x": 126,"y": 135, "w":  95,"h": 133 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  95,"h": 133 },
+			"sourceSize":       {                    "w":  95,"h": 133 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Grasshopper": {
+			"frame":            { "x": 222,"y": 135, "w":  81,"h": 128 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  81,"h": 128 },
+			"sourceSize":       {                    "w":  81,"h": 128 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Spider": {
+			"frame":            { "x": 304,"y": 135, "w": 109,"h": 127 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 109,"h": 127 },
+			"sourceSize":       {                    "w": 109,"h": 127 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Soldier Ant": {
+			"frame":            { "x": 414,"y": 135, "w": 101,"h": 115 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 101,"h": 115 },
+			"sourceSize":       {                    "w": 101,"h": 115 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Mosquito": {
+			"frame":            { "x": 516,"y": 135, "w": 141,"h": 134 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 141,"h": 134 },
+			"sourceSize":       {                    "w": 141,"h": 134 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Ladybug": {
+			"frame":            { "x": 658,"y": 135, "w":  92,"h": 111 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  92,"h": 111 },
+			"sourceSize":       {                    "w":  92,"h": 111 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Pillbug": {
+			"frame":            { "x": 751,"y": 135, "w":  96,"h": 120 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w":  96,"h": 120 },
+			"sourceSize":       {                    "w":  96,"h": 120 },
+			"rotated": false,
+			"trimmed": false
+		}
+	},
+	"meta": {
+		"image": "spritemap.png",
+		"format": "RGBA8888",
+		"size": { "w":847, "h":434 },
+		"scale": 1
+	}
+}

@@ -28,7 +28,7 @@ exports["test board move_piece"] = function( assert ) {
 		"expected to find moved piece at specified position" );
 }
 
-exports["test board lookup_piece"] = function( assert ) {
+exports["test board lookup_piece, lookup_piece_by_key"] = function( assert ) {
 	var board, piece;
 
 	board = Board.create();
@@ -61,6 +61,10 @@ exports["test board lookup_piece"] = function( assert ) {
 	assert.ok(
 		piece.color == "Black" && piece.type == "Beetle",
 		"Black Beetle is on top" );
+}
+
+exports["test board lookup_occupied_positions, lookup_occupied_position_keys"] = function( assert ) {
+	
 }
 
 exports["test board count_pieces"] = function( assert ) {
