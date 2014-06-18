@@ -28,7 +28,7 @@ function create() {
 		game_instances: {},
 	}
 	// TODO: support pausing the game indefinitely while waiting for human input
-	core.start_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
+	core.create_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
 		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
 		var game_id = core.generate_game_id();
 		var game_instance = {
@@ -40,7 +40,22 @@ function create() {
 			}
 		};
 		core.game_instances[ game_id ] = game_instance;
-		// -----------
+	}
+	core.lookup_game = function( game_id ) {
+		return core.game_instances[ game_id ];
+	}
+	core.end_game = function( game_id ) {
+		// TODO: save game to archive
+		//   html + embedded game history as JSON + auto playback + turn navigation
+		delete core.game_instances[ game_id ];
+	}
+	core.start_game_Human_vs_Human = function( game_id ) {
+		// not really much to do, here
+	}
+	core.start_game_AI_vs_AI = function( game_id ) {
+		var game_instance = core.lookup_game( game_id );
+		if( !game_instance )
+			return;
 		white_player.greetings();
 		black_player.greetings();
 		async.whilst(
@@ -82,15 +97,7 @@ function create() {
 		);
 		return game_id;
 	}
-	core.lookup_game = function( game_id ) {
-		return core.game_instances[ game_id ];
-	}
-	core.end_game = function( game_id ) {
-		// TODO: save game to archive
-		//   html + embedded game history as JSON + auto playback + turn navigation
-		delete core.game_instances[ game_id ];
-	}
-	core.set_player = function( game_id, color, player ) {
+	core.set_AI_player = function( game_id, color, player ) {
 		core.game_instances[ game_id ].players[ color ] = player;
 		player.greetings();
 	}

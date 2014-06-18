@@ -12,7 +12,7 @@
 	"scripts": {
 		"start": "nodewebkit"
 	},
-	"main": "index.html",
+	"main": "nw-index.html",
 	"window": {
 		"title": "Hive AI Development Tool",
 		"icon": "favicon.png",

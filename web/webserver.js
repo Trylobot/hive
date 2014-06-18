@@ -51,7 +51,7 @@ io.sockets.on( "connection", function( socket ) {
 	socket.on( "start_game", function( game_config ) {
 		// create game objects and put game into initial state
 		// TODO: include the socket.id into the Player object so that players can't hijack each other
-		var game_id = core.start_game(
+		var game_id = core.create_game(
 			Player.create(
 				game_config.white_player.player_type,
 				game_config.white_player.zmq_uri ),
@@ -63,6 +63,7 @@ io.sockets.on( "connection", function( socket ) {
 			game_config.use_pillbug );
 		if( game_id != null ) {
 			var game_instance = core.lookup_game( game_id );
+			core.start_game( game_id );
 			// disconnect from any previous game(s)
 			_.forEach( _.keys( io.sockets.manager.roomClients[ socket.id ]), function( game_id ) {
 				socket.leave( game_id );
