@@ -19,24 +19,27 @@ this module manages game instances, and handles communications between players a
 	players can be humans only, on the same machine (for now).
 */
 
-// angular
-var hive_app = angular.module( "hive_app", [] )
-.controller( "main_controller", function( $scope ) {
-	// angular monkey patch
-	$scope.safeApply = function( fn ) {
-		var phase = this.$root.$$phase;
-		if( phase == '$apply' || phase == '$digest' ) {
-			if( fn && typeof fn === "function" ) {
-				fn();
-			}
-		} else {
-			this.$apply( fn );
-		}
-	};
+// // angular
+// var hive_app = angular.module( "hive_app", [] )
+// .controller( "main_controller", function( $scope ) {
+// 	// angular monkey patch
+// 	$scope.safeApply = function( fn ) {
+// 		var phase = this.$root.$$phase;
+// 		if( phase == '$apply' || phase == '$digest' ) {
+// 			if( fn && typeof fn === "function" ) {
+// 				fn();
+// 			}
+// 		} else {
+// 			this.$apply( fn );
+// 		}
+// 	};
 	// view-model
 	var model = {
 		// pixi.js
 		stage: null,
+		background_color: null,
+		renderer_width: null,
+		renderer_height: null,
 		renderer: null,
 		spritemap_loader: null,
 		textures: null,
@@ -47,22 +50,88 @@ var hive_app = angular.module( "hive_app", [] )
 		game_id: null,
 		game_instance: null
 	};
-	$scope.model = model;
+	// $scope.model = model;
 	// page-load initialization: pixi.js
 	//   spritemap
 	model.spritemap_loader = new PIXI.AssetLoader([ "spritemap.json" ]);
-	model.spritemap_loader.onComplete( on_assets_loaded );
+	model.spritemap_loader.onComplete = on_assets_loaded;
 	model.spritemap_loader.load();
 	//   stage
-	model.stage = new PIXI.Stage(0x66FF99);
+	model.background_color = 0x808080;
+	model.stage = new PIXI.Stage( model.background_color );
 	//   renderer
+	model.renderer_width = window.innerWidth - 5;
+	model.renderer_height = window.innerHeight - 5;
 	model.renderer = PIXI.autoDetectRenderer( 
-		package_json.renderer.width, 
-		package_json.renderer.height );
-	document.body.appendChild( renderer.view );
+		model.renderer_width, 
+		model.renderer_height );
+	document.body.appendChild( model.renderer.view );
 	requestAnimFrame( animate );
 	//   functions
-	function on_assets_loaded() {
+	function create_pixi_piece( hive_piece ) {
+		var tile_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " Tile" ]);
+		tile_sprite.anchor.x = 0.5;
+		tile_sprite.anchor.y = 0.5;
+		var symbol_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
+		symbol_sprite.anchor.x = 0.5;
+		symbol_sprite.anchor.y = 0.5;
+		var container = new PIXI.DisplayObjectContainer();
+		container.addChild( tile_sprite );
+		container.addChild( symbol_sprite );
+		return container;
+	}
+	function create_pixi_board( hive_board ) {
+		// for now, only shows pieces on top of each piece-stack
+		// due to top-down orthogonal view
+		var container = new PIXI.DisplayObjectContainer();
+		var occupied_position_keys = hive_board.lookup_occupied_position_keys();
+		_.forEach( occupied_position_keys, function( position_key ) {
+			var hive_piece = hive_board.lookup_piece_by_key( position_key );
+			var pixi_piece = create_pixi_piece( hive_piece );
+			var position = Position.decode( position_key );
+			pixi_piece.position.x = position.col * model.col_delta_x;
+			pixi_piece.position.y = position.row * model.row_delta_y;
+			container.addChild( pixi_piece );
+		});
+		return container;
+	}
+	function create_pixi_hand( hive_hand ) {
+
+	}
+	function arrange_dynamic_elements( pixi_stage, pixi_board, pixi_white_hand, pixi_black_hand, player_turn ) {
+		pixi_board.position.x = Math.floor( model.renderer_width / 2 );
+		pixi_board.position.y = Math.floor( model.renderer_height / 2 );
+		pixi_stage.addChild( pixi_board );
+	}
+	function animate() {
+		model.renderer.render( model.stage );
+		requestAnimFrame( animate );
+	}
+	// page-load initialization: hive domain
+	var core = Core.create();
+	model.core = core;
+	// angular ui event handlers
+	function start_game() { //$scope.start_game = function() {
+		model.game_id = core.create_game(
+			Player.create( "Human" ), // White Player
+			Player.create( "Human" ), // Black Player
+			false, // Game: Use Mosquito?
+			false, // Game: Use Ladybug?
+			false ); // Game: Use Pillbug?
+		model.game_instance = core.lookup_game( model.game_id );
+		// TODO: setup actual first turn
+		
+		var hive_board = model.game_instance.game.board;
+		hive_board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+		hive_board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 1, 1 ));
+		var pixi_board = create_pixi_board( hive_board );
+		var pixi_white_hand = null;
+		var pixi_black_hand = null;
+		arrange_dynamic_elements( model.stage, pixi_board, pixi_white_hand, pixi_black_hand, "White" );
+
+		//$scope.safeApply();
+	}
+	function initialize_textures() {
 		model.textures = {};
 		_.forEach( Piece.colors_enum, function( piece_color ) {
 			// add tiles (2x)
@@ -75,68 +144,10 @@ var hive_app = angular.module( "hive_app", [] )
 			});
 		});
 	}
-	function create_pixi_piece( hive_piece ) {
-		var tile_sprite = PIXI.Sprite( model.textures[ hive_piece.color + " Tile" ]);
-		tile_sprite.anchor.x = 0.5;
-		tile_sprite.anchor.y = 0.5;
-		var symbol_sprite = PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
-		symbol_sprite.anchor.x = 0.5;
-		symbol_sprite.anchor.y = 0.5;
-		var container = new PIXI.DisplayObjectContainer();
-		container.addChild( tile_sprite );
-		container.addChild( symbol_sprite );
-		container.anchor.x = 0.5;
-		container.anchor.y = 0.5;
-		return container;
+	function on_assets_loaded() {
+		initialize_textures();
+		// start game immediately (ultimately this will be a form submit)
+		start_game(); //$scope.start_game();
 	}
-	function create_pixi_board( hive_board ) {
-		// for now, only shows pieces on top of each piece-stack
-		// due to top-down orthogonal view
-		var container = new PIXI.DisplayObjectContainer();
-		var occupied_position_keys = hive_board.lookup_occupied_position_keys();
-		_.forEach( occupied_position_keys, function( position_key ) {
-			var hive_piece = board.lookup_piece_by_key( position_key );
-			var pixi_piece = create_pixi_piece( hive_piece );
-			var position = Position.decode( position_key );
-			pixi_piece.position.x = position.col * model.col_delta_x;
-			pixi_piece.position.y = position.row * model.row_delta_y;
-			container.addChild( pixi_piece );
-		})
-		return container;
-	}
-	function create_pixi_hand( hive_hand ) {
-
-	}
-	function arrange_dynamic_elements( pixi_stage, pixi_board, pixi_white_hand, pixi_black_hand, player_turn ) {
-		pixi_stage.addChild( pixi_board );
-	}
-	function animate() {
-		model.renderer.render( model.stage );
-		requestAnimFrame( animate );
-	}
-	// page-load initialization: hive domain + angular ui event handlers
-	model.core = Core.create();
-	$scope.start_game = function() {
-		model.game_id = core.create_game(
-			Player.create( "Human" ), // White Player
-			Player.create( "Human" ), // Black Player
-			false, // Game: Use Mosquito?
-			false, // Game: Use Ladybug?
-			false ); // Game: Use Pillbug?
-		model.game_instance = core.lookup_game( model.game_id );
-		// TODO: setup actual first turn
-		
-		var hive_board = model.game_instance.board;
-		hive_board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
-		hive_board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 1, 1 ));
-		var pixi_board = create_pixi_board( hive_board );
-		var pixi_white_hand = null;
-		var pixi_black_hand = null;
-		arrange_dynamic_elements( model.stage, pixi_board, pixi_white_hand, pixi_black_hand, "White" );
-
-		$scope.safeApply();
-	}
-	// start game immediately
-	$scope.start_game();
-});
+//});
 

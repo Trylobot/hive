@@ -40,6 +40,7 @@ function create() {
 			}
 		};
 		core.game_instances[ game_id ] = game_instance;
+		return game_id;
 	}
 	core.lookup_game = function( game_id ) {
 		return core.game_instances[ game_id ];

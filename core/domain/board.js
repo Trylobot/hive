@@ -109,7 +109,6 @@ function create() {
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
 	board.lookup_piece_by_key = function( position_key ) {
-		var position_key = position.encode();
 		var piece_stack = board.pieces[ position_key ];
 		var piece = undefined;
 		if( piece_stack )
