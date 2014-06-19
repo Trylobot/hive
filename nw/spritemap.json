@@ -16,6 +16,21 @@
 			"trimmed": false
 		},
 
+		"White Marquee": {
+			"frame":            { "x": 379,"y": 277, "w": 183,"h": 162 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 183,"h": 162 },
+			"sourceSize":       {                    "w": 183,"h": 162 },
+			"rotated": false,
+			"trimmed": false
+		},
+		"Black Marquee": {
+			"frame":            { "x": 565,"y": 277, "w": 183,"h": 162 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 183,"h": 162 },
+			"sourceSize":       {                    "w": 183,"h": 162 },
+			"rotated": false,
+			"trimmed": false
+		},
+
 		"White Queen Bee": {
 			"frame":            { "x":   0,"y":   0, "w": 125,"h":  91 },
 			"spriteSourceSize": { "x":   0,"y":   0, "w": 125,"h":  91 },

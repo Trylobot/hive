@@ -1,5 +1,34 @@
+@font-face{ 
+	font-family: 'DINPro';
+	font-weight: 400;
+	src: url('fonts/DINPro-Regular.otf');
+}
+@font-face{ 
+	font-family: 'DINPro';
+	font-weight: 700;
+	src: url('fonts/DINPro-Bold.otf');
+}
+@font-face{ 
+	font-family: 'DINPro';
+	font-weight: 100;
+	src: url('fonts/DINPro-Light.otf');
+}
+@font-face{ 
+	font-family: 'DINPro';
+	font-weight: 200;
+	src: url('fonts/DINPro-Medium.otf');
+}
+@font-face{ 
+	font-family: 'DINPro';
+	font-weight: 900;
+	src: url('fonts/DINPro-Black.otf');
+}
+
 body {
 	margin: 0;
 	padding: 0;
 	background-color: black;
+}
+.PIXI-Renderer {
+	position: absolute;
 }
