@@ -41,8 +41,6 @@ var model = {
 	status_text_bg: null,
 	col_delta_x: (140 -   1), // based on size of sprite at scale=1
 	row_delta_y: (351 - 269),
-	drag_start_interaction_position: null,
-	drag_start_pixi_board_position: null,
 	// hive domain
 	core: null,
 	game_id: null,
@@ -116,6 +114,9 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			pixi_piece.interactive = true;
 			pixi_piece.mouseover = pixi_piece_mouseover;
 			pixi_piece.mouseout = pixi_piece_mouseout;
+			pixi_piece.mousedown = pixi_piece_mousedown;
+			pixi_piece.mousemove = pixi_piece_mousemove;
+			pixi_piece.mouseup = pixi_piece_mouseup;
 		}
 	});
 	return container;
@@ -218,36 +219,74 @@ function update_status_text( model ) {
 	model.status_text_bg.setStyle({ font: "700 48px DINPro", fill: Piece.opposite_color( color )});
 }
 
-// right-click drag: start
 function background_mousedown( interactionData ) {
+	// right-click drag: start
 	if( interactionData.originalEvent.button == 2 && model.pixi_board ) {
-		model.drag_start_mouse = _.clone( interactionData.global );
-		model.drag_start_pixi_board = _.clone( model.pixi_board.position );
+		model.pixi_board.__hive_drag_start_mouse = _.clone( interactionData.global );
+		model.pixi_board.__hive_drag_start_pixi_board = _.clone( model.pixi_board.position );
 		document.body.style.cursor = "move";
 	}
 }
-// right-click drag: move pixi_board around
 function background_mousemove( interactionData ) {
-	if( model.drag_start_mouse && model.pixi_board ) {
-		model.pixi_board.position.x = model.drag_start_pixi_board.x + (interactionData.global.x - model.drag_start_mouse.x);
-		model.pixi_board.position.y = model.drag_start_pixi_board.y + (interactionData.global.y - model.drag_start_mouse.y);
+	// right-click drag: move pixi_board around
+	if( model.pixi_board.__hive_drag_start_mouse && model.pixi_board ) {
+		model.pixi_board.position.x = model.pixi_board.__hive_drag_start_pixi_board.x + (interactionData.global.x - model.pixi_board.__hive_drag_start_mouse.x);
+		model.pixi_board.position.y = model.pixi_board.__hive_drag_start_pixi_board.y + (interactionData.global.y - model.pixi_board.__hive_drag_start_mouse.y);
 	}
 }
-// right-click drag: end
 function background_mouseup( interactionData ) {
-	if( model.drag_start_mouse ) {
-		model.drag_start_mouse = null;
-		model.drag_start_pixi_board = null;
+	// right-click drag: end
+	if( model.pixi_board.__hive_drag_start_mouse ) {
+		model.pixi_board.__hive_drag_start_mouse = null;
+		model.pixi_board.__hive_drag_start_pixi_board = null;
 		document.body.style.cursor = "inherit";
 	}
 }
 
 // mouse-in: only applied to pieces that can be interacted with
 function pixi_piece_mouseover( interactionData ) {
+	// mouseover style
 	document.body.style.cursor = "pointer";
+	// show marquee on hover
 }
 function pixi_piece_mouseout( interactionData ) {
-	document.body.style.cursor = "inherit";
+	// mouseover style (if not dragging)
+	if( ! this.__hive_drag_start_mouse ) {
+		document.body.style.cursor = "inherit";
+	}
+	// hide marquee
+}
+function pixi_piece_mousedown( interactionData ) {
+	// left-click drag: start
+	if( interactionData.originalEvent.button == 0 ) {
+		this.__hive_drag_start_mouse = _.clone( interactionData.global );
+		this.__hive_drag_start_pixi_piece = _.clone( this.position );
+		// show marquees for all potential move locations
+		
+	}
+}
+function pixi_piece_mousemove( interactionData ) {
+	// left-click drag: move piece around
+	if( this.__hive_drag_start_mouse ) {
+		this.position.x = this.__hive_drag_start_pixi_piece.x + (interactionData.global.x - this.__hive_drag_start_mouse.x);
+		this.position.y = this.__hive_drag_start_pixi_piece.y + (interactionData.global.y - this.__hive_drag_start_mouse.y);
+		// if close enough, show ghost of potential move by showing a transparent version of the piece at the nearby move location
+
+	}
+}
+function pixi_piece_mouseup( interactionData ) {
+	// left-click drag: end
+	if( this.__hive_drag_start_mouse ) {
+		// move piece permanently to new location, or revert to old location
+		this.position.x = this.__hive_drag_start_pixi_piece.x;
+		this.position.y = this.__hive_drag_start_pixi_piece.y;
+		// remove all move-marquees and ghost
+
+		// revert drag state and possible mouseover style
+		document.body.style.cursor = "inherit";
+		this.__hive_drag_start_mouse = null;
+		this.__hive_drag_start_pixi_piece = null;
+	}
 }
 
 function log_point( pixi_point, msg ) {
