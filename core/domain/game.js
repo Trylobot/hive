@@ -28,9 +28,9 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		throw "not yet implemented";
 	var game = {
 		board: Board.create(),
-		hands: {  // initialize every piece_counter with a value of 0
-			"White": _.mapValues( Piece.types_enum, function() { return 0 }),
-			"Black": _.mapValues( Piece.types_enum, function() { return 0 })
+		hands: {
+			"White": {},
+			"Black": {}
 		},
 		player_turn: "White",
 		turn_number: 0,
@@ -61,63 +61,46 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.record_current_state();
 	}
 	game.perform_placement = function( piece_color, piece_type, position ) {
-		var hand = board.hands[ piece_color ];
+		var hand = game.hands[ piece_color ];
 		hand[ piece_type ]--;
 		if( hand[ piece_type ] <= 0 )
 			delete hand[ piece_type ];
 		var piece = Piece.create( piece_color, piece_type );
-		board.place_piece( piece, position );
+		game.board.place_piece( piece, position );
 		game.advance_state();
 	}
 	game.perform_movement = function( position_0, position_1 ) {
-		board.move_piece( position_0, position_1 );
+		game.board.move_piece( position_0, position_1 );
 		game.turn_number++;
 		game.player_turn = game.get_next_player_turn( game.player_turn );
 		game.advance_state();
 	}
 	// -------------------
 	// default hands (no addons)
-	game.hands["White"]["Queen Bee"] += 1;
-	game.hands["White"]["Queen Bee"] += 1;
-	game.hands["White"]["Beetle"] += 1;
-	game.hands["White"]["Beetle"] += 1;
-	game.hands["White"]["Grasshopper"] += 1;
-	game.hands["White"]["Grasshopper"] += 1;
-	game.hands["White"]["Grasshopper"] += 1;
-	game.hands["White"]["Spider"] += 1;
-	game.hands["White"]["Spider"] += 1;
-	game.hands["White"]["Soldier Ant"] += 1;
-	game.hands["White"]["Soldier Ant"] += 1;
-	game.hands["White"]["Soldier Ant"] += 1;
+	game.hands["White"]["Queen Bee"] = 1;
+	game.hands["White"]["Beetle"] = 2;
+	game.hands["White"]["Grasshopper"] = 3;
+	game.hands["White"]["Spider"] = 2;
+	game.hands["White"]["Soldier Ant"] = 3;
 	// ---
-	game.hands["Black"]["Queen Bee"] += 1;
-	game.hands["Black"]["Queen Bee"] += 1;
-	game.hands["Black"]["Beetle"] += 1;
-	game.hands["Black"]["Beetle"] += 1;
-	game.hands["Black"]["Grasshopper"] += 1;
-	game.hands["Black"]["Grasshopper"] += 1;
-	game.hands["Black"]["Grasshopper"] += 1;
-	game.hands["Black"]["Spider"] += 1;
-	game.hands["Black"]["Spider"] += 1;
-	game.hands["Black"]["Soldier Ant"] += 1;
-	game.hands["Black"]["Soldier Ant"] += 1;
-	game.hands["Black"]["Soldier Ant"] += 1;
+	game.hands["Black"]["Queen Bee"] = 1;
+	game.hands["Black"]["Beetle"] = 2;
+	game.hands["Black"]["Grasshopper"] = 3;
+	game.hands["Black"]["Spider"] = 2;
+	game.hands["Black"]["Soldier Ant"] = 3;
 	// optional addon pieces
 	if( use_mosquito ) {
-		game.hands["White"]["Mosquito"] += 1;
-		game.hands["Black"]["Mosquito"] += 1;
+		game.hands["White"]["Mosquito"] = 1;
+		game.hands["Black"]["Mosquito"] = 1;
 	}
 	if( use_ladybug ) {
-		game.hands["White"]["Ladybug"] += 1;
-		game.hands["Black"]["Ladybug"] += 1;
+		game.hands["White"]["Ladybug"] = 1;
+		game.hands["Black"]["Ladybug"] = 1;
 	}
 	if( use_pillbug ) {
-		game.hands["White"]["Pillbug"] += 1;
-		game.hands["Black"]["Pillbug"] += 1;
+		game.hands["White"]["Pillbug"] = 1;
+		game.hands["Black"]["Pillbug"] = 1;
 	}
-	// remove any piece_counter keys that are still 0, for brevity during serialization and recording of game states
-	game.hands["White"] = _.compact( game.hands["White"] );
-	game.hands["Black"] = _.compact( game.hands["Black"] );
 	// initialize history with initial game state
 	game.record_current_state();
 	return game;

@@ -33,7 +33,7 @@ function lookup_possible_turns( color, board, hand, turn_number ) {
 	var possible_turns = {};
 	var valid_placement_positions = find_valid_placement_positions( color, board, turn_number );
 
-	if( check_if_game_over( board )) {
+	if( check_if_game_over( board ).game_over ) {
 		return possible_turns;
 	}
 	
@@ -61,11 +61,10 @@ function lookup_possible_turns( color, board, hand, turn_number ) {
 	};
 	var positions_of_owned_pieces = board.search_pieces( color );
 	possible_turns["Movement"] = {};
-	_.forEach( positions_of_owned_pieces, function( position_key ) {
-		var position = Position.decode( position_key );
-		var movement = find_valid_movement( board, position );
+	_.forEach( positions_of_owned_pieces, function( lookup_result ) {
+		var movement = find_valid_movement( board, lookup_result.position );
 		if( typeof movement !== "undefined" && movement != null && movement.length > 0 ) {
-			possible_turns["Movement"][ position_key ] = movement;
+			possible_turns["Movement"][ lookup_result.position_key ] = movement;
 		}
 	});
 	return possible_turns;
@@ -167,7 +166,7 @@ Unable to Move or Place
 	  John Yianni supports this change, which is intended to eliminate the problem of excess draws in "queen opening" games.
 */
 function find_valid_placement_positions( color, board, turn_number ) {
-	return board.lookup_free_spaces( color );
+	return board.lookup_free_spaces( (turn_number >= 2) ? color : undefined );
 }
 
 /*

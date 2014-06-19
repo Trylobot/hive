@@ -57,6 +57,14 @@ model.spritemap_loader.load();
 model.background_color = 0x808080;
 var interactive = true;
 model.stage = new PIXI.Stage( model.background_color, interactive );
+// font usage causing load
+var status_text_fg = new PIXI.Text( "", { font: "200 48px DINPro", fill: "White" });
+var status_text_bg = new PIXI.Text( "", { font: "200 48px DINPro", fill: "Black" });
+model.status_text_fg = status_text_fg;
+model.status_text_bg = status_text_bg;
+model.stage.addChild( status_text_bg );
+model.stage.addChild( status_text_fg );
+// 
 model.background = new PIXI.DisplayObjectContainer();
 model.background.setInteractive( interactive );
 update_background_hit_rect( model );
@@ -103,6 +111,12 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		pixi_piece.position.x = position.col * model.col_delta_x;
 		pixi_piece.position.y = position.row * model.row_delta_y;
 		container.addChild( pixi_piece );
+		// movement for this piece ?
+		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
+			pixi_piece.interactive = true;
+			pixi_piece.mouseover = pixi_piece_mouseover;
+			pixi_piece.mouseout = pixi_piece_mouseout;
+		}
 	});
 	return container;
 }
@@ -152,37 +166,31 @@ function start_game() { //$scope.start_game = function() {
 		false, // Game: Use Ladybug?
 		false ); // Game: Use Pillbug?
 	model.game_instance = core.lookup_game( model.game_id );
-	setup_mock_game();
+	setup_first_turn();
 }
-function setup_mock_game() {
+function setup_first_turn() {
 	// TODO: setup actual first turn
-	var status_text_fg = new PIXI.Text( "", { font: "200 48px DINPro", fill: "black" });
-	var status_text_bg = new PIXI.Text( "", { font: "200 48px DINPro", fill: "white" });
-	model.status_text_fg = status_text_fg;
-	model.status_text_bg = status_text_bg;
-	position_status_text( model );
-	// ----
 	var hive_game = model.game_instance.game;
-	var hive_board = hive_game.board;
-	hive_board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
-	hive_board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 1, 1 ));
+	hive_game.perform_placement( "White", "Queen Bee", Position.create( 0, 0 ));
+	hive_game.perform_placement( "Black", "Queen Bee", Position.create( 1, 1 ));
 	var hive_possible_turns = Rules.lookup_possible_turns( 
 		hive_game.player_turn, 
 		hive_game.board, 
 		hive_game.hands[ hive_game.player_turn ],
 		hive_game.turn_number );
-	var pixi_board = create_pixi_board( hive_board, hive_possible_turns );
+	//
+	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns );
 	model.pixi_board = pixi_board;
 	pixi_board.position.x = model.renderer_halfWidth;
 	pixi_board.position.y = model.renderer_halfHeight;
+	model.stage.addChild( pixi_board );
+	//
 	var pixi_white_hand = null;
 	var pixi_black_hand = null;
 	model.pixi_white_hand = pixi_white_hand;
 	model.pixi_black_hand = pixi_black_hand;	
-	// ----
-	model.stage.addChild( pixi_board );
-	model.stage.addChild( status_text_bg );
-	model.stage.addChild( status_text_fg );
+	//
+	position_status_text( model );
 	update_status_text( model );
 }
 
@@ -200,11 +208,14 @@ function position_status_text( model ) {
 	model.status_text_fg.position.x = 12;
 	model.status_text_fg.position.y = model.renderer_height - 62;
 	model.status_text_bg.position.x = model.status_text_fg.position.x;
-	model.status_text_bg.position.y = model.status_text_fg.position.y - 2;
+	model.status_text_bg.position.y = model.status_text_fg.position.y - 3;
 }
 function update_status_text( model ) {
-	model.status_text_fg.setText( model.game_instance.game.player_turn + "'s turn" );
-	model.status_text_bg.setText( model.game_instance.game.player_turn + "'s turn" );
+	var color = model.game_instance.game.player_turn;
+	model.status_text_fg.setText( color + "'s turn" );
+	model.status_text_bg.setText( color + "'s turn" );
+	model.status_text_fg.setStyle({ font: "700 48px DINPro", fill: color });
+	model.status_text_bg.setStyle({ font: "700 48px DINPro", fill: Piece.opposite_color( color )});
 }
 
 // right-click drag: start
@@ -224,9 +235,19 @@ function background_mousemove( interactionData ) {
 }
 // right-click drag: end
 function background_mouseup( interactionData ) {
-	model.drag_start_mouse = null;
-	model.drag_start_pixi_board = null;
-	document.body.style.cursor = "auto";
+	if( model.drag_start_mouse ) {
+		model.drag_start_mouse = null;
+		model.drag_start_pixi_board = null;
+		document.body.style.cursor = "inherit";
+	}
+}
+
+// mouse-in: only applied to pieces that can be interacted with
+function pixi_piece_mouseover( interactionData ) {
+	document.body.style.cursor = "pointer";
+}
+function pixi_piece_mouseout( interactionData ) {
+	document.body.style.cursor = "inherit";
 }
 
 function log_point( pixi_point, msg ) {

@@ -17,6 +17,10 @@ naturally, in real life, the board itself is imaginary, and really just
 	the collection of pieces on whatever surface the players are putting them on.
 */
 
+// data
+
+var origin = Position.create( 0, 0 );
+
 // functions
 
 // creates a new, empty board
@@ -54,8 +58,8 @@ function create() {
 	// return count of pieces
 	// optionally filter by type and/or color
 	board.count_pieces = function( piece_color, piece_type ) {
-		return _.reduce( board.pieces, function( piece_stack, sum ) {
-			return sum + _.reduce( piece_stack, function( piece, sum ) {
+		return _.reduce( board.pieces, function( sum, piece_stack ) {
+			return sum + _.reduce( piece_stack, function( sum, piece ) {
 				if( (piece.type == piece_type   || typeof piece_type === "undefined")
 				&&  (piece.color == piece_color || typeof piece_color === "undefined") )
 					return sum + 1;
@@ -204,7 +208,12 @@ function create() {
 	//   key is the position key, value is the position object representing that space
 	// optionally pass a color name to find free spaces that are adjacent to ONLY that color and no other color
 	board.lookup_free_spaces = function( color_filter ) {
+		// base case (empty board with no pieces)
 		var free_spaces = {};
+		if( _.keys( board.pieces ).length == 0 ) {
+			free_spaces[ origin.encode() ] = origin;
+			return free_spaces;
+		}
 		var filtered_free_spaces = {};
 		// for each occupied position ...
 		_.forEach( board.pieces, function( piece_stack, position_key ) {
@@ -356,6 +365,8 @@ var can_slide_lookup_table = {
 };
 
 // exports
+
+exports.origin = origin;
 
 exports.create = create;
 exports.can_slide_lookup_table = can_slide_lookup_table;
