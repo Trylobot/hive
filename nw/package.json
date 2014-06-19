@@ -19,10 +19,8 @@
 		"frame": true,
 		"width": 1280,
 		"height": 720,
-		"min_width": 1280,
-		"min_height": 720,
-		"max_width": 1280,
-		"max_height": 720,
+		"min_width": 320,
+		"min_height": 200,
 		"position": "mouse"
 	}
 }

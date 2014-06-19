@@ -162,8 +162,8 @@ function create() {
 		var position_list = [];
 		_.forEach( Position.directions_enum, function( direction ) {
 			var adjacent_position = position.translation( direction );
-			var adjacent_position_key = translated_position.encode();
-			if( board.pieces[ translated_position_key ])
+			var adjacent_position_key = adjacent_position.encode();
+			if( board.pieces[ adjacent_position_key ])
 				position_list.push( adjacent_position );
 		});
 		return position_list;

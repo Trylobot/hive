@@ -5,8 +5,11 @@ var Position = require("../../../core/domain/position");
 var Board = require("../../../core/domain/board");
 var Rules = require("../../../core/domain/rules");
 
-exports["test rules lookup_possible_moves"] = function( assert ) {
+exports["test rules lookup_possible_turns"] = function( assert ) {
 	var board;
+
+	// TODO: test that (0,0) is the only valid placement position for an empty board
+	// TODO: test that placement can occur next to a piece of the opposite color when the board contains exactly one piece
 
 	// TODO: test that Queen Bee cannot be placed on turn# 0 (first turn)
 	
@@ -17,11 +20,7 @@ exports["test rules lookup_possible_moves"] = function( assert ) {
 	//   (when a player has legal moves)
 }
 
-exports["test rules check_any_placement_possible"] = function( assert ) {
-
-}
-
-exports["test rules check_any_movement_possible"] = function( assert ) {
+exports["test rules check_any_movement_allowed"] = function( assert ) {
 
 }
 
@@ -29,7 +28,7 @@ exports["test rules check_if_game_over"] = function( assert ) {
 
 }
 
-exports["test rules find_valid_placement"] = function( assert ) {
+exports["test rules find_valid_placement_positions"] = function( assert ) {
 	
 }
 

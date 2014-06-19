@@ -29,8 +29,46 @@ The Hive
 
 // functions
 
-function lookup_possible_moves( color, board, turn_number ) {
+function lookup_possible_turns( color, board, hand, turn_number ) {
+	var possible_turns = {};
+	var valid_placement_positions = find_valid_placement_positions( color, board, turn_number );
+
+	if( check_if_game_over( board )) {
+		return possible_turns;
+	}
 	
+	if( check_force_queen_placement( color, board, turn_number )) {
+		possible_turns["Placement"] = {
+			piece_types: [ "Queen Bee" ],
+			positions: valid_placement_positions
+		};
+		return possible_turns;
+	}
+	
+	var valid_placement_piece_types = _.keys( hand );
+	if( !check_any_movement_allowed( color, board )) {
+		possible_turns["Placement"] = {
+			piece_types: valid_placement_piece_types,
+			positions: valid_placement_positions
+		};
+		return possible_turns;
+	}
+	
+	// normal turn
+	possible_turns["Placement"] = {
+		piece_types: valid_placement_piece_types,
+		positions: valid_placement_positions
+	};
+	var positions_of_owned_pieces = board.search_pieces( color );
+	possible_turns["Movement"] = {};
+	_.forEach( positions_of_owned_pieces, function( position_key ) {
+		var position = Position.decode( position_key );
+		var movement = find_valid_movement( board, position );
+		if( typeof movement !== "undefined" && movement != null && movement.length > 0 ) {
+			possible_turns["Movement"][ position_key ] = movement;
+		}
+	});
+	return possible_turns;
 }
 
 /*
@@ -63,7 +101,7 @@ Moving
 	connection between two parts of the Hive, it may not be moved. (See 'One Hive rule')
 
 */
-function check_any_movement_possible( color, board ) {
+function check_any_movement_allowed( color, board ) {
 	return ( board.count_pieces( color, "Queen Bee" ) > 0 );
 }
 
@@ -128,8 +166,8 @@ Unable to Move or Place
 	  Rules Change: at boardspace the "Queen" opening has been forbidden for both black and white.
 	  John Yianni supports this change, which is intended to eliminate the problem of excess draws in "queen opening" games.
 */
-function find_valid_placement_positions( piece, board, turn_number ) {
-	return board.lookup_free_spaces( piece.color );
+function find_valid_placement_positions( color, board, turn_number ) {
+	return board.lookup_free_spaces( color );
 }
 
 /*
@@ -324,9 +362,9 @@ function find_valid_movement_Pillbug( board, position ) {
 
 // exports
 
-exports.lookup_possible_moves = lookup_possible_moves;
+exports.lookup_possible_turns = lookup_possible_turns;
 exports.check_force_queen_placement = check_force_queen_placement;
-exports.check_any_movement_possible = check_any_movement_possible;
+exports.check_any_movement_allowed = check_any_movement_allowed;
 exports.check_if_game_over = check_if_game_over;
 exports.find_valid_placement_positions = find_valid_placement_positions;
 exports.find_valid_movement = find_valid_movement;
