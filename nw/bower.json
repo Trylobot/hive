@@ -2,7 +2,7 @@
 	"name": "hive-node-webkit",
 	"version": "0.0.1",
 	"dependencies": {
-		"angular": "~1.3.0",
-		"pixi.js": "~1.5.2"
+		"pixi.js": "~1.5.2",
+		"TweenJS": "#release_v0.5.1"
 	}
 }
