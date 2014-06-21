@@ -64,7 +64,6 @@ var interactive = true;
 model.stage = new PIXI.Stage( model.background_color, interactive );
 // status text (global)
 model.status_text_font = "700 48px DINPro";
-model.status_text_font_tiny = "700 10px DINPro";
 var status_text_fg = new PIXI.Text( "", { font: model.status_text_font, fill: "White" });
 var status_text_bg = new PIXI.Text( "", { font: model.status_text_font, fill: "Black" });
 model.status_text_fg = status_text_fg;
@@ -160,8 +159,8 @@ function show_hive_game( model ) {
 	model.stage.addChild( pixi_white_hand );
 	model.stage.addChild( pixi_black_hand );
 	//
-	position_status_text( model );
 	update_status_text( model );
+	position_status_text( model );
 	position_hands( model );
 }
 function clear_hive_game( model ) {
@@ -273,19 +272,24 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 function create_pixi_hand( color, hive_hand ) {
 	var container = new PIXI.DisplayObjectContainer();
 	var opposite_color = Piece.opposite_color( color );
-	var idx = 0;
+	var scale = 0.75;
+	var font = "700 36px DINPro";
+	var margin = 0;
+	var c_x = 0;
 	_.forEach( hive_hand, function( count, piece_type ) {
 		var sprite = new PIXI.Sprite( model.textures[ color + " " + piece_type ]);
-		sprite.scale.set( 0.5, 0.5 );
-		var count_text_fg = new PIXI.Text( "" + count, { font: model.status_text_font_tiny, fill: color });
-		var count_text_bg = new PIXI.Text( "" + count, { font: model.status_text_font_tiny, fill: opposite_color });
-		count_text_fg.position.set( 20, 20 );
-		count_text_bg.position.set( 20, 18 );
-		sprite.addChild( count_text_fg );
-		sprite.addChild( count_text_bg );
-		sprite.position.set( idx * 40, 0 );
+		sprite.anchor.set( 0.5, 0.5 );
+		sprite.scale.set( scale, scale );
+		sprite.position.set( c_x, 0 );
 		container.addChild( sprite );
-		idx++;
+		var bounds = sprite.getBounds();
+		var count_text_fg = new PIXI.Text( count + "x", { font: font, fill: opposite_color });
+		var count_text_bg = new PIXI.Text( count + "x", { font: font, fill: color });
+		count_text_fg.position.set( c_x - 19, -90 );
+		count_text_bg.position.set( c_x - 19, -88 );
+		container.addChild( count_text_fg );
+		container.addChild( count_text_bg );
+		c_x += bounds.width*scale + margin;
 	});
 	return container;
 }
@@ -311,9 +315,21 @@ function window_resize() {
 	model.renderer.resize( model.renderer_width, model.renderer_height );
 	update_background_hit_rect( model );
 	position_status_text( model );
+	position_hands( model );
 }
 function update_background_hit_rect( model ) {
 	model.background.hitArea = new PIXI.Rectangle( 0, 0, model.renderer_width, model.renderer_height );	
+}
+function position_hands( model ) {
+	// call this function AFTER update_status_text, as it relies upon status_text bounding box for positioning
+	var margin = 80;
+	var common_y = model.renderer_height - (50*0.75);
+	var st_b = model.status_text_fg.getBounds();
+	var x = st_b.x + st_b.width + margin;
+	model.pixi_white_hand.position.set( x, common_y );
+	var wh_b = model.pixi_white_hand.getBounds();
+	x = wh_b.x + wh_b.width + margin;
+	model.pixi_black_hand.position.set( x, common_y );
 }
 function position_status_text( model ) {
 	model.status_text_fg.position.set( 12, model.renderer_height - 62 );
@@ -330,11 +346,6 @@ function update_status_text( model ) {
 function clear_status_text( model ) {
 	model.status_text_fg.setText( "" );
 	model.status_text_bg.setText( "" );
-}
-function position_hands( model ) {
-	// white: bottom-middle, black: bottom-right
-	model.pixi_white_hand.position.set( model.renderer_halfWidth, model.renderer_height - 100 );
-	model.pixi_black_hand.position.set( model.renderer_width - model.pixi_black_hand.getBounds().width - 10, model.renderer_height - 100 );
 }
 
 function background_mousedown( interactionData ) {
