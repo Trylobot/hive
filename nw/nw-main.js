@@ -89,13 +89,16 @@ requestAnimFrame( animate );
 // functions
 function create_pixi_piece( hive_piece ) {
 	var container = create_pixi_tile_sprite_container( hive_piece );
+	var ghost_container = create_pixi_tile_sprite_container( hive_piece );
+	ghost_container.visible = false;
+	ghost_container.alpha = 0.333;
 	var marquee = create_pixi_marquee( hive_piece.color ); // not immediately shown
-	marquee.alpha = 0;
+	marquee.visible = false;
 	container.addChild( marquee );
+	// ghost is added to the board separately, but not as a child object of this piece.
 	container.__hive_piece = hive_piece;
 	container.__hive_pixi_marquee = marquee;
-	self.__hive_pixi_ghost = create_pixi_tile_sprite_container( hive_piece );
-	self.__hive_pixi_ghost.alpha = 0;
+	container.__hive_pixi_ghost = ghost_container;
 	return container;
 }
 function create_pixi_tile_sprite_container( hive_piece ) {
@@ -112,6 +115,7 @@ function create_pixi_marquee( piece_color ) {
 	var pixi_marquee = new PIXI.Sprite( model.textures[ piece_color + " Marquee" ]);
 	pixi_marquee.anchor.x = 0.5;
 	pixi_marquee.anchor.y = 0.5;
+	pixi_marquee.alpha = 0.666;
 	return pixi_marquee;
 }
 function create_pixi_board( hive_board, hive_possible_turns ) {
@@ -137,7 +141,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var position = Position.decode( position_key );
 		pixi_piece.position.x = position.col * model.col_delta_x;
 		pixi_piece.position.y = position.row * model.row_delta_y;
-		container.addChild( self.__hive_pixi_ghost );
+		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
 		// movement for this piece ?
 		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
@@ -166,8 +170,8 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var y = position.row * model.row_delta_y;
 		position_register["White Marquee"].position.set( x, y );
 		position_register["Black Marquee"].position.set( x, y );
-		position_register["White Marquee"].alpha = 0;
-		position_register["Black Marquee"].alpha = 0;
+		position_register["White Marquee"].visible = false;
+		position_register["Black Marquee"].visible = false;
 		container.addChildAt( position_register["White Marquee"], 0 ); // underneath all existing objects
 		container.addChildAt( position_register["Black Marquee"], 0 ); // underneath all existing objects
 		container.__hive_positions[ position_key ] = position_register;
@@ -315,8 +319,12 @@ function pixi_piece_mouseover( interactionData ) {
 	var self = this;
 	// mouseover style
 	document.body.style.cursor = "pointer";
-	// show marquee on hover
-	self.__hive_pixi_marquee.alpha = 1;
+	// if the user mouses over, then leaves the window, then comes back onto the piece, this might happen.
+	// where the mouseover fires again, but the piece is still being dragged. don't want the marquee to re-appear in that case.
+	if( ! self.__hive_drag_start_mouse ) {
+		// show marquee on hover
+		self.__hive_pixi_marquee.visible = true;
+	}
 }
 function pixi_piece_mouseout( interactionData ) {
 	var self = this;
@@ -324,35 +332,37 @@ function pixi_piece_mouseout( interactionData ) {
 	if( ! self.__hive_drag_start_mouse ) {
 		document.body.style.cursor = "inherit";
 		// hide marquee
-		self.__hive_pixi_marquee.alpha = 0;
+		self.__hive_pixi_marquee.visible = false;
 	}
 }
 function pixi_piece_mousedown( interactionData ) {
 	var self = this;
 	// left-click drag: start
 	if( interactionData.originalEvent.button == 0 ) {
-		// TODO: move this piece to the highest z-layer so it's overtop everything else
-		// TODO: create a "ghost" in place of the piece that is being moved, so the player can see where it used to be
+		// move this piece to the highest z-layer so it's overtop everything else
+		model.pixi_board.removeChild( self );
+		model.pixi_board.addChild( self );
+		// create a "ghost" in place of the piece that is being moved, so the player can see where it used to be
 		self.__hive_drag_start_mouse = _.clone( interactionData.global );
 		self.__hive_drag_start_pixi_piece = _.clone( self.position );
 		// hide piece marquee
-		self.__hive_pixi_marquee.alpha = 0;
+		self.__hive_pixi_marquee.visible = false;
 		// show marquees for all potential move locations
-		pixi_piece_set_move_marquee_alpha.call( self, 1 );
+		pixi_piece_set_move_marquee_visible.call( self, 1 );
 		// show ghost-piece representing destination
-		self.__hive_pixi_ghost.alpha = 0.333;
+		self.__hive_pixi_ghost.visible = true;
 	}
 }
-function pixi_piece_set_move_marquee_alpha( alpha ) {
+function pixi_piece_set_move_marquee_visible( visible ) {
 	var self = this;
 	_.forEach( self.__hive_moves, function( position ) {
 		var position_key = position.encode();
 		var position_register = model.pixi_board.__hive_positions[ position_key ];
 		if( position_register.occupied ) {
-			position_register.pixi_piece.__hive_pixi_marquee.alpha = alpha;
+			position_register.pixi_piece.__hive_pixi_marquee.visible = visible;
 		} else {
 			var color = self.__hive_piece.color;
-			position_register[ color + " Marquee" ].alpha = alpha;
+			position_register[ color + " Marquee" ].visible = visible;
 		}
 	});
 }
@@ -366,40 +376,58 @@ function pixi_piece_mousemove( interactionData ) {
 		var min_squared = Infinity;
 		var closest_position_key = null;
 		var closest_pixi_position = null;
-		_.forEach( self.__hive_moves, function( position ) {
+		var self_hive_position = Position.decode( self.__hive_position_key );
+		var hive_moves_and_current_position = _.flatten([ self_hive_position, self.__hive_moves ]);
+		_.forEach( hive_moves_and_current_position, function( position ) {
 			var position_key = position.encode();
-			var position_register = model.pixi_board.__hive_positions[ position_key ];
-			var pos;
-			if( position_register.occupied ) {
-				pos = position_register.pixi_piece.position;
+			var move_position;
+			if( self_hive_position != position ) {
+				var position_register = model.pixi_board.__hive_positions[ position_key ];
+				if( position_register.occupied ) {
+					move_position = position_register.pixi_piece.position;
+				} else {
+					move_position = position_register["White Marquee"].position;
+				}
 			} else {
-				pos = position_register["White Marquee"].position;
+				move_position = self.__hive_drag_start_pixi_piece;
 			}
-			var x = pos.x - self.position.x;
-			var y = pos.y - self.position.y;
-			var d_s = x*x + y*y;
-			if( d_s < min_squared ) {
-				min_squared = d_s;
+			var distance_squared = get_distance_squared( move_position, self.position );
+			if( distance_squared < min_squared ) {
+				min_squared = distance_squared;
 				closest_position_key = position_key;
-				closest_pixi_position = _.clone( position_register.pixi_piece.position );
+				closest_pixi_position = move_position;
 			}
 		});
 		self.__hive_pixi_ghost.position.set( closest_pixi_position.x, closest_pixi_position.y );
+		self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
 	}
+}
+function get_distance_squared( pos0, pos1 ) {
+	var x = pos1.x - pos0.x;
+	var y = pos1.y - pos0.y;
+	return x*x + y*y;
+}
+function point_equal( pos0, pos1 ) {
+	return (pos0.x == pos1.x 
+		&&  pos0.y == pos1.y);
 }
 function pixi_piece_mouseup( interactionData ) {
 	var self = this;
 	// left-click drag: end
 	if( self.__hive_drag_start_mouse ) {
-		// move piece permanently to new location, or revert to old location
-		self.position.x = self.__hive_drag_start_pixi_piece.x;
-		self.position.y = self.__hive_drag_start_pixi_piece.y;
 		// re-show piece marquee, because the mouse is assumed to be still over the piece
-		self.__hive_pixi_marquee.alpha = 1;
+		self.__hive_pixi_marquee.visible = true;
 		// hide all move-marquees
-		pixi_piece_set_move_marquee_alpha.call( self, 0 );
-		// TODO: hide ghost
-		self.__hive_pixi_ghost.alpha = 0;
+		pixi_piece_set_move_marquee_visible.call( self, false );
+		// hide ghost
+		self.__hive_pixi_ghost.visible = false;
+		// verify that the new position is not the same as the original position
+		if( ! point_equal( self.__hive_drag_start_pixi_piece, self.__hive_pixi_ghost.position )) {
+			// TODO: A MOVE HAS BEEN PERFORMED; UPDATE BOARD
+			// for piece at    Position.decode( self.__hive_position_key )
+			// to position at  Position.decode( self.__hive_pixi_ghost.__hive_position_key )
+		}
+		// move this actual piece
 		self.position.set( self.__hive_pixi_ghost.position.x, self.__hive_pixi_ghost.position.y );
 		// revert drag state and possible mouseover style
 		document.body.style.cursor = "inherit";
