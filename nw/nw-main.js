@@ -39,6 +39,7 @@ var model = {
 	pixi_black_hand: null,
 	scale_values: null,
 	scale_i: null,
+	status_text_font: null,
 	status_text_fg: null,
 	status_text_bg: null,
 	col_delta_x: 138, // based on size of sprite at scale=1
@@ -61,9 +62,11 @@ model.spritemap_loader.load();
 model.background_color = 0x808080;
 var interactive = true;
 model.stage = new PIXI.Stage( model.background_color, interactive );
-// font usage causing load
-var status_text_fg = new PIXI.Text( "", { font: "200 48px DINPro", fill: "White" });
-var status_text_bg = new PIXI.Text( "", { font: "200 48px DINPro", fill: "Black" });
+// status text (global)
+model.status_text_font = "700 48px DINPro";
+model.status_text_font_tiny = "700 10px DINPro";
+var status_text_fg = new PIXI.Text( "", { font: model.status_text_font, fill: "White" });
+var status_text_bg = new PIXI.Text( "", { font: model.status_text_font, fill: "Black" });
 model.status_text_fg = status_text_fg;
 model.status_text_bg = status_text_bg;
 model.stage.addChild( status_text_bg );
@@ -86,7 +89,97 @@ model.renderer = PIXI.autoDetectRenderer(
 model.renderer.view.className = "PIXI-Renderer";
 document.body.appendChild( model.renderer.view );
 requestAnimFrame( animate );
-// functions
+// hive domain
+var core = Core.create();
+model.core = core;
+
+//////////////////////////////////////////////////////////////////
+// first-tier functions
+//////////////////////////////////////////////////////////////////
+function register_window_size( model ) {
+	model.renderer_width = window.innerWidth;
+	model.renderer_height = window.innerHeight;
+	model.renderer_halfWidth = Math.floor( window.innerWidth / 2 );
+	model.renderer_halfHeight = Math.floor( window.innerHeight / 2 );
+}
+function animate() {
+	model.renderer.render( model.stage );
+	requestAnimFrame( animate );
+}
+function on_assets_loaded() {
+	initialize_textures();
+	// start game after an arbitrary delay to allow fonts to be loaded (ultimately this will be in response to a form submit)
+	start_game();
+}
+function initialize_textures() {
+	model.textures = {};
+	_.forEach( Piece.colors_enum, function( piece_color ) {
+		// add tiles (2x)
+		var frame_key = piece_color + " Tile";
+		model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
+		// add marquee (2x)
+		var frame_key = piece_color + " Marquee";
+		model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
+		// add symbols (16x)
+		_.forEach( Piece.types_enum, function( piece_type ) {
+			var frame_key = piece_color + " " + piece_type;
+			model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
+		});
+	});
+}
+//
+function start_game() { //$scope.start_game = function() {
+	model.game_id = core.create_game(
+		Player.create( "Human" ), // White Player
+		Player.create( "Human" ), // Black Player
+		false, // Game: Use Mosquito?
+		false, // Game: Use Ladybug?
+		false ); // Game: Use Pillbug?
+	model.game_instance = core.lookup_game( model.game_id );
+	clear_hive_game( model );
+	show_hive_game( model );
+}
+function show_hive_game( model ) {
+	var hive_game = model.game_instance.game;
+	var hive_possible_turns = Rules.lookup_possible_turns( 
+		hive_game.player_turn, 
+		hive_game.board, 
+		hive_game.hands[ hive_game.player_turn ],
+		hive_game.turn_number );
+	//
+	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns );
+	model.pixi_board = pixi_board;
+	model.scale_i = model.default_scale_i; // default
+	pixi_board.position.set( model.renderer_halfWidth, model.renderer_halfHeight );
+	model.stage.addChild( pixi_board );
+	//
+	var pixi_white_hand = create_pixi_hand( "White", hive_game.hands["White"] );
+	var pixi_black_hand = create_pixi_hand( "Black", hive_game.hands["Black"] );
+	model.pixi_white_hand = pixi_white_hand;
+	model.pixi_black_hand = pixi_black_hand;
+	model.stage.addChild( pixi_white_hand );
+	model.stage.addChild( pixi_black_hand );
+	//
+	position_status_text( model );
+	update_status_text( model );
+	position_hands( model );
+}
+function clear_hive_game( model ) {
+	if( model.pixi_board ) {
+		// TODO: memory leak?
+		model.stage.removeChild( model.pixi_board );
+		model.pixi_board = null;
+		model.stage.removeChild( model.pixi_white_hand );
+		model.stage.removeChild( model.pixi_black_hand );
+		model.pixi_white_hand = null;
+		model.pixi_black_hand = null;
+		clear_status_text( model );
+	}
+}
+
+//////////////////////////////////////////////////////////////////
+// second-tier functions
+//////////////////////////////////////////////////////////////////
 function create_pixi_piece( hive_piece ) {
 	var container = create_pixi_tile_sprite_container( hive_piece );
 	var ghost_container = create_pixi_tile_sprite_container( hive_piece );
@@ -113,8 +206,7 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 }
 function create_pixi_marquee( piece_color ) {
 	var pixi_marquee = new PIXI.Sprite( model.textures[ piece_color + " Marquee" ]);
-	pixi_marquee.anchor.x = 0.5;
-	pixi_marquee.anchor.y = 0.5;
+	pixi_marquee.anchor.set( 0.5, 0.5 );
 	pixi_marquee.alpha = 0.666;
 	return pixi_marquee;
 }
@@ -133,14 +225,14 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			hive_piece: null,
 			pixi_piece: null
 		};
+		// TODO: add all pieces in the stack; only check the top piece for potential interactivity
 		container.__hive_positions[ position_key ] = position_register;
 		var hive_piece = hive_board.lookup_piece_by_key( position_key );
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
 		position_register.pixi_piece = pixi_piece;
 		var position = Position.decode( position_key );
-		pixi_piece.position.x = position.col * model.col_delta_x;
-		pixi_piece.position.y = position.row * model.row_delta_y;
+		pixi_piece.position.set( position.col * model.col_delta_x, position.row * model.row_delta_y );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
 		// movement for this piece ?
@@ -178,82 +270,29 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	});
 	return container;
 }
-function create_pixi_hand( hive_hand ) {
-
-}
-function register_window_size( model ) {
-	model.renderer_width = window.innerWidth;
-	model.renderer_height = window.innerHeight;
-	model.renderer_halfWidth = Math.floor( window.innerWidth / 2 );
-	model.renderer_halfHeight = Math.floor( window.innerHeight / 2 );
-}
-function animate() {
-	model.renderer.render( model.stage );
-	requestAnimFrame( animate );
-}
-// hive domain
-var core = Core.create();
-model.core = core;
-//
-function on_assets_loaded() {
-	initialize_textures();
-	// start game after an arbitrary delay to allow fonts to be loaded (ultimately this will be in response to a form submit)
-	start_game();
-}
-function initialize_textures() {
-	model.textures = {};
-	_.forEach( Piece.colors_enum, function( piece_color ) {
-		// add tiles (2x)
-		var frame_key = piece_color + " Tile";
-		model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
-		// add marquee (2x)
-		var frame_key = piece_color + " Marquee";
-		model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
-		// add symbols (16x)
-		_.forEach( Piece.types_enum, function( piece_type ) {
-			var frame_key = piece_color + " " + piece_type;
-			model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
-		});
+function create_pixi_hand( color, hive_hand ) {
+	var container = new PIXI.DisplayObjectContainer();
+	var opposite_color = Piece.opposite_color( color );
+	var idx = 0;
+	_.forEach( hive_hand, function( count, piece_type ) {
+		var sprite = new PIXI.Sprite( model.textures[ color + " " + piece_type ]);
+		sprite.scale.set( 0.5, 0.5 );
+		var count_text_fg = new PIXI.Text( "" + count, { font: model.status_text_font_tiny, fill: color });
+		var count_text_bg = new PIXI.Text( "" + count, { font: model.status_text_font_tiny, fill: opposite_color });
+		count_text_fg.position.set( 20, 20 );
+		count_text_bg.position.set( 20, 18 );
+		sprite.addChild( count_text_fg );
+		sprite.addChild( count_text_bg );
+		sprite.position.set( idx * 40, 0 );
+		container.addChild( sprite );
+		idx++;
 	});
-}
-function start_game() { //$scope.start_game = function() {
-	model.game_id = core.create_game(
-		Player.create( "Human" ), // White Player
-		Player.create( "Human" ), // Black Player
-		false, // Game: Use Mosquito?
-		false, // Game: Use Ladybug?
-		false ); // Game: Use Pillbug?
-	model.game_instance = core.lookup_game( model.game_id );
-	setup_first_turn();
-}
-function setup_first_turn() {
-	// TODO: setup actual first turn
-	var hive_game = model.game_instance.game;
-	hive_game.perform_placement( "White", "Queen Bee", Position.create( 0, 0 ));
-	hive_game.perform_placement( "Black", "Queen Bee", Position.create( 1, 1 ));
-	var hive_possible_turns = Rules.lookup_possible_turns( 
-		hive_game.player_turn, 
-		hive_game.board, 
-		hive_game.hands[ hive_game.player_turn ],
-		hive_game.turn_number );
-	//
-	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns );
-	model.pixi_board = pixi_board;
-	model.scale_i = model.default_scale_i; // default
-	pixi_board.position.x = model.renderer_halfWidth;
-	pixi_board.position.y = model.renderer_halfHeight;
-	model.stage.addChild( pixi_board );
-	//
-	var pixi_white_hand = null;
-	var pixi_black_hand = null;
-	model.pixi_white_hand = pixi_white_hand;
-	model.pixi_black_hand = pixi_black_hand;	
-	//
-	position_status_text( model );
-	update_status_text( model );
+	return container;
 }
 
-// events
+//////////////////////////////////////////////////////////////////
+// third-tier functions
+//////////////////////////////////////////////////////////////////
 function document_mousewheel( event ) {
 	var ticks = event.wheelDelta / 120;
 	model.scale_i += ticks;
@@ -277,17 +316,25 @@ function update_background_hit_rect( model ) {
 	model.background.hitArea = new PIXI.Rectangle( 0, 0, model.renderer_width, model.renderer_height );	
 }
 function position_status_text( model ) {
-	model.status_text_fg.position.x = 12;
-	model.status_text_fg.position.y = model.renderer_height - 62;
-	model.status_text_bg.position.x = model.status_text_fg.position.x;
-	model.status_text_bg.position.y = model.status_text_fg.position.y - 3;
+	model.status_text_fg.position.set( 12, model.renderer_height - 62 );
+	model.status_text_bg.position.set( model.status_text_fg.position.x, model.status_text_fg.position.y - 3 );
 }
 function update_status_text( model ) {
 	var color = model.game_instance.game.player_turn;
-	model.status_text_fg.setText( color + "'s turn" );
-	model.status_text_bg.setText( color + "'s turn" );
-	model.status_text_fg.setStyle({ font: "700 48px DINPro", fill: color });
-	model.status_text_bg.setStyle({ font: "700 48px DINPro", fill: Piece.opposite_color( color )});
+	var player_turn_friendly = Math.floor( model.game_instance.game.turn_number / 2 ) + 1;
+	model.status_text_fg.setText( color + "'s turn " + player_turn_friendly );
+	model.status_text_bg.setText( color + "'s turn " + player_turn_friendly );
+	model.status_text_fg.setStyle({ font: model.status_text_font, fill: color });
+	model.status_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
+}
+function clear_status_text( model ) {
+	model.status_text_fg.setText( "" );
+	model.status_text_bg.setText( "" );
+}
+function position_hands( model ) {
+	// white: bottom-middle, black: bottom-right
+	model.pixi_white_hand.position.set( model.renderer_halfWidth, model.renderer_height - 100 );
+	model.pixi_black_hand.position.set( model.renderer_width - model.pixi_black_hand.getBounds().width - 10, model.renderer_height - 100 );
 }
 
 function background_mousedown( interactionData ) {
@@ -301,8 +348,9 @@ function background_mousedown( interactionData ) {
 function background_mousemove( interactionData ) {
 	// right-click drag: move pixi_board around
 	if( model.pixi_board && model.pixi_board.__hive_drag_start_mouse ) {
-		model.pixi_board.position.x = model.pixi_board.__hive_drag_start_pixi_board.x + (interactionData.global.x - model.pixi_board.__hive_drag_start_mouse.x);
-		model.pixi_board.position.y = model.pixi_board.__hive_drag_start_pixi_board.y + (interactionData.global.y - model.pixi_board.__hive_drag_start_mouse.y);
+		model.pixi_board.position.set(
+			model.pixi_board.__hive_drag_start_pixi_board.x + (interactionData.global.x - model.pixi_board.__hive_drag_start_mouse.x),
+			model.pixi_board.__hive_drag_start_pixi_board.y + (interactionData.global.y - model.pixi_board.__hive_drag_start_mouse.y) );
 	}
 }
 function background_mouseup( interactionData ) {
@@ -370,8 +418,9 @@ function pixi_piece_mousemove( interactionData ) {
 	var self = this;
 	// left-click drag: move piece around
 	if( self.__hive_drag_start_mouse ) {
-		self.position.x = self.__hive_drag_start_pixi_piece.x + ((interactionData.global.x - self.__hive_drag_start_mouse.x) / model.pixi_board.scale.x);
-		self.position.y = self.__hive_drag_start_pixi_piece.y + ((interactionData.global.y - self.__hive_drag_start_mouse.y) / model.pixi_board.scale.y);
+		self.position.set(
+			self.__hive_drag_start_pixi_piece.x + ((interactionData.global.x - self.__hive_drag_start_mouse.x) / model.pixi_board.scale.x),
+			self.__hive_drag_start_pixi_piece.y + ((interactionData.global.y - self.__hive_drag_start_mouse.y) / model.pixi_board.scale.y) );
 		// TODO: check distance and if close enough, move ghost piece to the nearby potential move destination
 		var min_squared = Infinity;
 		var closest_position_key = null;
@@ -402,15 +451,6 @@ function pixi_piece_mousemove( interactionData ) {
 		self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
 	}
 }
-function get_distance_squared( pos0, pos1 ) {
-	var x = pos1.x - pos0.x;
-	var y = pos1.y - pos0.y;
-	return x*x + y*y;
-}
-function point_equal( pos0, pos1 ) {
-	return (pos0.x == pos1.x 
-		&&  pos0.y == pos1.y);
-}
 function pixi_piece_mouseup( interactionData ) {
 	var self = this;
 	// left-click drag: end
@@ -423,9 +463,17 @@ function pixi_piece_mouseup( interactionData ) {
 		self.__hive_pixi_ghost.visible = false;
 		// verify that the new position is not the same as the original position
 		if( ! point_equal( self.__hive_drag_start_pixi_piece, self.__hive_pixi_ghost.position )) {
-			// TODO: A MOVE HAS BEEN PERFORMED; UPDATE BOARD
+			// update hive game state and re-create entire hive board
 			// for piece at    Position.decode( self.__hive_position_key )
 			// to position at  Position.decode( self.__hive_pixi_ghost.__hive_position_key )
+			_.defer( function() {
+				clear_hive_game( model );
+				var turn = Turn.create_movement( 
+					Position.decode( self.__hive_position_key ),
+					Position.decode( self.__hive_pixi_ghost.__hive_position_key ));
+				model.game_instance.game.perform_turn( turn );
+				show_hive_game( model );
+			});
 		}
 		// move this actual piece
 		self.position.set( self.__hive_pixi_ghost.position.x, self.__hive_pixi_ghost.position.y );
@@ -436,8 +484,20 @@ function pixi_piece_mouseup( interactionData ) {
 	}
 }
 
-
+//////////////////////////////////////////////////////////////////
+// fourth-tier functions
+//////////////////////////////////////////////////////////////////
+function get_distance_squared( pos0, pos1 ) {
+	var x = pos1.x - pos0.x;
+	var y = pos1.y - pos0.y;
+	return x*x + y*y;
+}
+function point_equal( pos0, pos1 ) {
+	return (pos0.x == pos1.x 
+		&&  pos0.y == pos1.y);
+}
 
 function log_point( pixi_point, msg ) {
 	console.log( "("+pixi_point.x+","+pixi_point.y+") " + msg?msg:"" );
 }
+

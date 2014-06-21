@@ -5,6 +5,7 @@ _(global).extend(require("./util"));
 var Piece = require("./piece");
 var Board = require("./board");
 var Rules = require("./rules");
+var Turn = require("./turn");
 
 /*
 game.js
@@ -59,6 +60,21 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.turn_number++;
 		game.player_turn = game.get_next_player_turn( game.player_turn );
 		game.record_current_state();
+	}
+	game.perform_turn = function( turn_object ) {
+		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?
+		switch( turn_object.turn_type ) {
+			case "Placement": game.perform_placement(
+				game.player_turn, 
+				turn_object.piece_type, 
+				turn_object.destination ); 
+				break;
+			case "Movement": game.perform_movement( 
+				turn_object.source, 
+				turn_object.destination ); 
+				break;
+		}
+		throw "invalid turn object: " + JSON.stringify( turn_object );
 	}
 	game.perform_placement = function( piece_color, piece_type, position ) {
 		var hand = game.hands[ piece_color ];
