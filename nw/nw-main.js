@@ -88,20 +88,24 @@ document.body.appendChild( model.renderer.view );
 requestAnimFrame( animate );
 // functions
 function create_pixi_piece( hive_piece ) {
-	var tile_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " Tile" ]);
-	tile_sprite.anchor.x = 0.5;
-	tile_sprite.anchor.y = 0.5;
-	var symbol_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
-	symbol_sprite.anchor.x = 0.5;
-	symbol_sprite.anchor.y = 0.5;
+	var container = create_pixi_tile_sprite_container( hive_piece );
 	var marquee = create_pixi_marquee( hive_piece.color ); // not immediately shown
-	var container = new PIXI.DisplayObjectContainer();
-	container.addChild( tile_sprite );
-	container.addChild( symbol_sprite );
+	marquee.alpha = 0;
 	container.addChild( marquee );
 	container.__hive_piece = hive_piece;
 	container.__hive_pixi_marquee = marquee;
-	marquee.alpha = 0;
+	self.__hive_pixi_ghost = create_pixi_tile_sprite_container( hive_piece );
+	self.__hive_pixi_ghost.alpha = 0;
+	return container;
+}
+function create_pixi_tile_sprite_container( hive_piece ) {
+	var tile_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " Tile" ]);
+	tile_sprite.anchor.set( 0.5, 0.5 );
+	var symbol_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
+	symbol_sprite.anchor.set( 0.5, 0.5 );
+	var container = new PIXI.DisplayObjectContainer();
+	container.addChild( tile_sprite );
+	container.addChild( symbol_sprite );
 	return container;
 }
 function create_pixi_marquee( piece_color ) {
@@ -133,6 +137,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var position = Position.decode( position_key );
 		pixi_piece.position.x = position.col * model.col_delta_x;
 		pixi_piece.position.y = position.row * model.row_delta_y;
+		container.addChild( self.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
 		// movement for this piece ?
 		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
@@ -334,6 +339,8 @@ function pixi_piece_mousedown( interactionData ) {
 		self.__hive_pixi_marquee.alpha = 0;
 		// show marquees for all potential move locations
 		pixi_piece_set_move_marquee_alpha.call( self, 1 );
+		// show ghost-piece representing destination
+		self.__hive_pixi_ghost.alpha = 0.333;
 	}
 }
 function pixi_piece_set_move_marquee_alpha( alpha ) {
@@ -356,7 +363,28 @@ function pixi_piece_mousemove( interactionData ) {
 		self.position.x = self.__hive_drag_start_pixi_piece.x + ((interactionData.global.x - self.__hive_drag_start_mouse.x) / model.pixi_board.scale.x);
 		self.position.y = self.__hive_drag_start_pixi_piece.y + ((interactionData.global.y - self.__hive_drag_start_mouse.y) / model.pixi_board.scale.y);
 		// TODO: check distance and if close enough, move ghost piece to the nearby potential move destination
-
+		var min_squared = Infinity;
+		var closest_position_key = null;
+		var closest_pixi_position = null;
+		_.forEach( self.__hive_moves, function( position ) {
+			var position_key = position.encode();
+			var position_register = model.pixi_board.__hive_positions[ position_key ];
+			var pos;
+			if( position_register.occupied ) {
+				pos = position_register.pixi_piece.position;
+			} else {
+				pos = position_register["White Marquee"].position;
+			}
+			var x = pos.x - self.position.x;
+			var y = pos.y - self.position.y;
+			var d_s = x*x + y*y;
+			if( d_s < min_squared ) {
+				min_squared = d_s;
+				closest_position_key = position_key;
+				closest_pixi_position = _.clone( position_register.pixi_piece.position );
+			}
+		});
+		self.__hive_pixi_ghost.position.set( closest_pixi_position.x, closest_pixi_position.y );
 	}
 }
 function pixi_piece_mouseup( interactionData ) {
@@ -371,7 +399,8 @@ function pixi_piece_mouseup( interactionData ) {
 		// hide all move-marquees
 		pixi_piece_set_move_marquee_alpha.call( self, 0 );
 		// TODO: hide ghost
-
+		self.__hive_pixi_ghost.alpha = 0;
+		self.position.set( self.__hive_pixi_ghost.position.x, self.__hive_pixi_ghost.position.y );
 		// revert drag state and possible mouseover style
 		document.body.style.cursor = "inherit";
 		self.__hive_drag_start_mouse = null;
@@ -379,7 +408,8 @@ function pixi_piece_mouseup( interactionData ) {
 	}
 }
 
+
+
 function log_point( pixi_point, msg ) {
 	console.log( "("+pixi_point.x+","+pixi_point.y+") " + msg?msg:"" );
 }
-
