@@ -254,11 +254,14 @@ function create() {
 	board.check_contiguity = function( assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
 		var piece_position_keys = _.keys( board.pieces );
+		// do not count the assumed empty position, if it is specified, and occupied (normal case for most lookups)
+		if( typeof assuming_empty_position_key !== "undefined" 
+		&&  typeof board.lookup_piece( assuming_empty_position ) !== "undefined" )
+			_.pull( piece_position_keys, assuming_empty_position_key );
+		// count pieces expected to have been visited at the end
 		var occupied_space_count = piece_position_keys.length;
 		if( occupied_space_count == 0 )
 			return true;
-		// do not count the assumed empty position, if it is specified, and occupied (normal case for most lookups)
-
 		// starting an arbitrary occupied position ...
 		var pieces_to_visit = [ Position.decode( piece_position_keys[0] ) ];
 		var visited_pieces = {};

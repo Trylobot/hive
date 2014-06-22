@@ -22,12 +22,6 @@ it encapsulates all of the hive rules, and allows for
 
 // creates a new game board and initializes player hands, with optional add-on pieces
 function create( use_mosquito, use_ladybug, use_pillbug ) {
-	if( use_mosquito )
-		throw "not yet implemented";
-	if( use_ladybug )
-		throw "not yet implemented";
-	if( use_pillbug )
-		throw "not yet implemented";
 	var game = {
 		board: Board.create(),
 		hands: {
@@ -39,59 +33,39 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game_over: false,
 		winner: null,
 		is_draw: false,
-		state_history: []
-	}
-	game.get_next_player_turn = function( player_turn ) {
-		return Piece.opposite_color( player_turn );
-	}
-	game.record_current_state = function() {
-		// serialize everything except the state_history, since this data will be copied into the state_history
-		var serialized_game_state = JSON.stringify({
-			board: game.board,
-			hands: game.hands,
-			player_turn: game.player_turn,
-			turn_number: game.turn_number,
-			game_over: game.game_over,
-			winner: game.winner,
-			is_draw: game.is_draw
-		});
-		game.state_history.push( serialized_game_state );
-	}
-	game.advance_state = function() {
-		game.turn_number++;
-		game.player_turn = game.get_next_player_turn( game.player_turn );
-		game.record_current_state();
+		creation_parameters: {
+			use_mosquito: use_mosquito,
+			use_ladybug: use_ladybug,
+			use_pillbug: use_pillbug,
+		},
+		turn_history: []
 	}
 	game.perform_turn = function( turn_object ) {
 		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?
-		switch( turn_object.turn_type ) {
-			case "Placement": game.perform_placement(
-				game.player_turn, 
-				turn_object.piece_type, 
-				Position.decode( turn_object.destination )); 
+		var turn_type = turn_object.turn_type;
+		switch( turn_type ) {
+			case "Placement": 
+				var piece_color = game.player_turn;
+				var piece_type = turn_object.piece_type;
+				var piece = Piece.create( piece_color, piece_type );
+				var position = Position.decode( turn_object.destination );
+				var hand = game.hands[ piece_color ];
+				hand[ turn_object.piece_type ]--;
+				if( hand[ turn_object.piece_type ] <= 0 )
+					delete hand[ turn_object.piece_type ];
+				game.board.place_piece( piece, position );
 				break;
-			case "Movement": game.perform_movement( 
-				Position.decode( turn_object.source ), 
-				Position.decode( turn_object.destination )); 
+			case "Movement":
+				var position_0 = Position.decode( turn_object.source );
+				var position_1 = Position.decode( turn_object.destination );
+				game.board.move_piece( position_0, position_1 );
 				break;
 			default:
-				throw "invalid turn type: " + JSON.stringify( turn_object.turn_type );
+				throw "invalid turn type: " + turn_type;
 		}
-	}
-	game.perform_placement = function( piece_color, piece_type, position ) {
-		var hand = game.hands[ piece_color ];
-		hand[ piece_type ]--;
-		if( hand[ piece_type ] <= 0 )
-			delete hand[ piece_type ];
-		var piece = Piece.create( piece_color, piece_type );
-		game.board.place_piece( piece, position );
-		game.advance_state();
-	}
-	game.perform_movement = function( position_0, position_1 ) {
-		game.board.move_piece( position_0, position_1 );
 		game.turn_number++;
-		game.player_turn = game.get_next_player_turn( game.player_turn );
-		game.advance_state();
+		game.player_turn = Piece.opposite_color( game.player_turn );
+		game.turn_history.push( _.clone( turn_object ));
 	}
 	// -------------------
 	// default hands (no addons)
@@ -110,21 +84,34 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 	if( use_mosquito ) {
 		game.hands["White"]["Mosquito"] = 1;
 		game.hands["Black"]["Mosquito"] = 1;
+		throw "not yet implemented";
 	}
 	if( use_ladybug ) {
 		game.hands["White"]["Ladybug"] = 1;
 		game.hands["Black"]["Ladybug"] = 1;
+		throw "not yet implemented";
 	}
 	if( use_pillbug ) {
 		game.hands["White"]["Pillbug"] = 1;
 		game.hands["Black"]["Pillbug"] = 1;
+		throw "not yet implemented";
 	}
-	// initialize history with initial game state
-	game.record_current_state();
+	return game;
+}
+
+function load( creation_parameters, turn_history ) {
+	var game = create( 
+		creation_parameters.use_mosquito,
+		creation_parameters.use_ladybug,
+		creation_parameters.use_pillbug );
+	_.forEach( turn_history, function( turn_object ) {
+		game.perform_turn( turn_object );
+	});
 	return game;
 }
 
 // exports
 
 exports.create = create;
+exports.load = load;
 

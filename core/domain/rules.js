@@ -229,7 +229,7 @@ Queen Bee
 
 */
 function find_valid_movement_Queen_Bee( board, position ) {
-	return board.lookup_adjacent_slide_positions( position );
+	return _.values( board.lookup_slide_destinations_within_range( position, 1, 1 ));
 }
 
 /*
@@ -254,14 +254,14 @@ Beetle
 
 	http://www.boardgamegeek.com/wiki/page/Hive_FAQ#toc8
 	  Q: Are beetles affected by the Freedom To Move rule?
-	  A: Yes. (albeit in a different way)
+	  A: Yes. (albeit in a different way): Beetles cannot slide through "gates"
 */
 function find_valid_movement_Beetle( board, position ) {
 	var height = board.lookup_piece_stack_height( position );
 	if( height == 0 )
 		return _.union( 
-			board.lookup_adjacent_slide_positions( position ),
-			board.lookup_occupied_adjacencies( position ) 
+			_.values( board.lookup_slide_destinations_within_range( position, 1, 1 )),
+			board.lookup_occupied_adjacencies( position )
 		);
 	else
 		return position.adjacencies();
@@ -300,7 +300,7 @@ Spider
 
 */
 function find_valid_movement_Spider( board, position ) {
-	return board.lookup_slide_destinations_within_range( position, 3, 3 );
+	return _.values( board.lookup_slide_destinations_within_range( position, 3, 3 ));
 }
 
 /*
@@ -311,7 +311,7 @@ Soldier Ant
 
 */
 function find_valid_movement_Soldier_Ant( board, position ) {
-	return board.lookup_slide_destinations_within_range( position, 1, Infinity );
+	return _.values( board.lookup_slide_destinations_within_range( position, 1, Infinity ));
 }
 
 /*

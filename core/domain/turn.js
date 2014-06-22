@@ -13,7 +13,8 @@ represents a hive turn (movement, placement)
 
 var turn_types_enum = [
 	"Placement",
-	"Movement"
+	"Movement",
+	"Forfeit"
 ];
 
 // functions
@@ -36,8 +37,16 @@ function create_movement( source, destination ) {
 	return turn;
 }
 
+function create_forfeit() {
+	var turn = {
+		turn_type: "Forfeit"
+	}
+	return turn;
+}
+
 // exports
 
 exports.create_placement = create_placement;
 exports.create_movement = create_movement;
+exports.create_forfeit = create_forfeit;
 

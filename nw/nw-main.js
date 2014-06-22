@@ -450,6 +450,7 @@ function pixi_piece_mousedown( ix ) {
 		// show ghost-piece representing destination
 		self.__hive_pixi_ghost.visible = true;
 	}
+	pixi_piece_mousemove.call( self, ix );
 }
 function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 	var self = this;
@@ -579,6 +580,7 @@ function pixi_hand_mousedown( ix ) {
 	trash_bin.alpha = 0.25;
 	pixi_piece.__trash_bin = trash_bin;
 	model.stage.addChildAt( trash_bin, 0 ); // background
+	pixi_hand_piece_mousemove.call( pixi_piece, ix ); // simulate mouse movement event immediately
 }
 function pixi_hand_piece_mousemove( ix ) {
 	var self = this;
