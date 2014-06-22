@@ -161,6 +161,7 @@ function show_hive_game( model ) {
 	//
 	update_status_text( model );
 	position_status_text( model );
+	position_hands( model );
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
@@ -275,6 +276,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 // depends on global: model
 function create_pixi_hand( color, hive_hand ) {
 	var container = new PIXI.DisplayObjectContainer();
+	container.__color = color;
 	container.__hive_hand = hive_hand;
 	var opposite_color = Piece.opposite_color( color );
 	var default_alpha = 0.25;
@@ -316,11 +318,7 @@ function create_pixi_hand( color, hive_hand ) {
 		sprite.__count_text_bg = count_text_bg;
 		c_x += delta_x;
 	});
-	// positioning hack
-	if( color == "White" )
-		container.position.x = 0;
-	else if( color == "Black" )
-		container.position.x = model.renderer_width - c_x;
+	container.__width = c_x;
 	return container;
 }
 
@@ -350,6 +348,10 @@ function window_resize() {
 }
 function update_background_hit_rect( model ) {
 	model.background.hitArea = new PIXI.Rectangle( 0, 0, model.renderer_width, model.renderer_height );	
+}
+function position_hands( model ) {
+	model.pixi_white_hand.position.x = 0;
+	model.pixi_black_hand.position.x = model.renderer_width - model.pixi_black_hand.__width;
 }
 function position_status_text( model ) {
 	model.status_text_fg.position.set( 12, model.renderer_height - 62 );
