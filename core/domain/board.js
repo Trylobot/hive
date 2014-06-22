@@ -119,6 +119,13 @@ function create() {
 			piece = piece_stack[ piece_stack.length - 1 ];
 		return piece;
 	}
+	// return the piece in a specific stack at a specific height, or undefined
+	board.lookup_piece_at_height = function( position, height ) {
+		var stack = board.lookup_piece_stack( position );
+		if( height <= (stack.length - 1) )
+			return stack[ height ];
+		return undefined;
+	}
 	// return the contents of the six positions adjacent to a given position, on the same layer
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
 	// containing the fields: "position", "position_key"; 
@@ -253,37 +260,36 @@ function create() {
 	// optionally, treat a specific position as empty
 	board.check_contiguity = function( assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
-		var piece_position_keys = _.keys( board.pieces );
+		var occupied_piece_position_keys = _.keys( board.pieces );
 		// do not count the assumed empty position, if it is specified, and occupied (normal case for most lookups)
-		if( typeof assuming_empty_position_key !== "undefined" 
-		&&  typeof board.lookup_piece( assuming_empty_position ) !== "undefined" )
-			_.pull( piece_position_keys, assuming_empty_position_key );
+		_.pull( occupied_piece_position_keys, assuming_empty_position_key ); // does nothing if assuming_empty_position was not specified, or if the specified position is not actually occupied
 		// count pieces expected to have been visited at the end
-		var occupied_space_count = piece_position_keys.length;
+		var occupied_space_count = occupied_piece_position_keys.length;
 		if( occupied_space_count == 0 )
-			return true;
-		// starting an arbitrary occupied position ...
-		var pieces_to_visit = [ Position.decode( piece_position_keys[0] ) ];
+			return true; // empty board is explicitly contiguous
+		// starting at an arbitrary occupied position ...
+		var pieces_to_visit = [ Position.decode( occupied_piece_position_keys[0] ) ];
 		var visited_pieces = {};
-		visited_pieces[ piece_position_keys[0] ] = true;
+		visited_pieces[ occupied_piece_position_keys[0] ] = true;
 		// traverse adjacency graph until no more linked pieces could be found
 		while( pieces_to_visit.length > 0 ) {
-			var position = pieces_to_visit.pop();
-			// scan the positions adjacent to it
-			var adjacent_positions = board.lookup_adjacent_positions( position );
-			// for each adjacent position ...
-			_.forEach( adjacent_positions, function( adjacency ) {
-				// if the position is occupied
-				// and the position is not being filtered via function argument
-				if( typeof adjacency.contents !== "undefined" 
-				&&  !(adjacency.position_key in visited_pieces) ) {
-					visited_pieces[ adjacency.position_key ] = true;
-					if( assuming_empty_position_key !== adjacency.position_key ) {
-						// visit this piece later
-						pieces_to_visit.push( adjacency.position );
+			var pieces_to_visit_next = [];
+			_.forEach( pieces_to_visit, function( position ) {
+				// scan the positions adjacent to it
+				var adjacent_positions = board.lookup_adjacent_positions( position );
+				// for each adjacent position ...
+				_.forEach( adjacent_positions, function( adjacency ) {
+					// if the position is occupied
+					// and the position is not being filtered via function argument
+					if( typeof adjacency.contents !== "undefined" 
+					&& !( adjacency.position_key in visited_pieces )
+					&& adjacency.position_key != assuming_empty_position_key ) {
+						visited_pieces[ adjacency.position_key ] = true;
+						pieces_to_visit_next.push( adjacency.position );
 					}
-				}
+				});
 			});
+			pieces_to_visit = pieces_to_visit_next;
 		}
 		// the number of visited pieces should equal the number of piece-stacks on the board
 		var visited_pieces_count = _.keys( visited_pieces ).length;

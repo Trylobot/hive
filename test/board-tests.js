@@ -63,6 +63,10 @@ exports["test board lookup_piece, lookup_piece_by_key"] = function( assert ) {
 		"Black Beetle is on top" );
 }
 
+exports["test board lookup_piece_at_height"] = function( assert ) {
+	
+}
+
 exports["test board lookup_occupied_positions, lookup_occupied_position_keys"] = function( assert ) {
 	
 }
@@ -232,6 +236,18 @@ exports["test board check_contiguity"] = function( assert ) {
 	var board;
 
 	board = Board.create();
+	assert.ok( board.check_contiguity(), "empty board should be contiguous" );
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	assert.ok( board.check_contiguity(), "board with 1 piece should be contiguous" );
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	assert.ok( board.check_contiguity(), "board should remain contiguous" );
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( -2, 0 ));
+	assert.ok( board.check_contiguity(), "board should remain contiguous" );
+	assert.ok( board.check_contiguity( Position.create( 1, 1 )), "board should confirm that it remains contiguous if we were to move the Black Spider" );
+	assert.ok( board.check_contiguity( Position.create( -2, 0 )), "board should confirm that it remains contiguous if we were to move the White Spider" );
+	assert.equal( board.check_contiguity( Position.create( 0, 0 )), false, "board should confirm that contiguity is BROKEN if we move the White Queen Bee" );
+
+	board = Board.create();
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
@@ -242,13 +258,13 @@ exports["test board check_contiguity"] = function( assert ) {
 	assert.equal(
 		is_contiguous,
 		true,
-		"board should confirm that the board WOULD be contiguous" ); // pieces not on the bottom layer are being included
+		"board should confirm that the board is initially contiguous" ); // pieces not on the bottom layer are being included
 	// but what would happen if I moved the Black Spider at (1, 1, 0)?
 	var is_contiguous = board.check_contiguity( Position.create( 1, 1 ));
 	assert.equal(
 		is_contiguous,
 		false,
-		"board should confirm that the board would NOT BE contiguous" );
+		"board should report contiguity violation in the case of moving the Black Spider" );
 
 }
 
