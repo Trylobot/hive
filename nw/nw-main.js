@@ -537,15 +537,17 @@ function pixi_hand_mousedown( ix ) {
 	pixi_piece.__creator = self;
 	self.__pixi_piece = pixi_piece;
 	model.stage.addChild( pixi_piece );
-	var ix_pos = ix.getLocalPosition( self.parent );
-	self.position.set( ix_pos.x, ix_pos.y );
 	// start dragging new pixi piece
+	pixi_piece.position.set( ix.global.x, ix.global.y );
 	pixi_piece.__hive_drag_start_mouse = _.clone( ix.global );
 	pixi_piece.setInteractive( true );
 	pixi_piece.mousemove = pixi_hand_piece_mousemove;
 	pixi_piece.mouseup = pixi_hand_piece_mouseup;
 	pixi_piece.mouseupoutside = pixi_hand_piece_mouseup;
 	// TODO: show placement position marquees
+	// set: pixi_piece.__hive_moves to the placement locations
+	// pixi_piece_set_move_marquee_visible.call( self, 1 );
+
 	// TODO: create ghost piece
 }
 function pixi_hand_piece_mousemove( ix ) {
@@ -561,7 +563,7 @@ function pixi_hand_piece_mouseup( ix ) {
 	if( self.__hive_drag_start_mouse ) {
 		// TODO: if nearest element is a placement position, perform a placement turn
 		// TODO: else if it's the placement bin, just toss it
-		self.removeStageReference(); // remove stage ref
+		self.parent.removeChild( self ); // remove from stage
 		self.setInteractive( false );
 		self.__creator.__pixi_piece = null; // remove generator ref
 		self.__hive_drag_start_mouse = null;
