@@ -37,6 +37,7 @@ var model = {
 	pixi_board: null,
 	pixi_white_hand: null,
 	pixi_black_hand: null,
+	hand_gutter_size: null,
 	scale_values: null,
 	scale_i: null,
 	status_text_font: null,
@@ -52,6 +53,7 @@ var model = {
 register_window_size( model );
 model.scale_values = [ 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 1, 1.25, 1.5, 2, 2.5, 3 ];
 //                       .05   .05  .1   .1   .1   .1   .15  .15  25  .25   .5 .5   .5
+model.hand_gutter_size = 120;
 model.default_scale_i = model.scale_values.indexOf( 1 );
 model.scale_i = model.default_scale_i;
 // spritemap
@@ -581,7 +583,7 @@ function pixi_hand_piece_mousemove( ix ) {
 		var closest_position_key = null;
 		var closest_pixi_position = null;
 		// invalidate placement if mouse is in the "hand-gutter" at the top of the screen area.
-		if( ix.global.y > 150 ) {
+		if( ix.global.y > model.hand_gutter_size ) {
 			// get position in terms of board coordinates
 			var boardspace_mouse_position = ix.getLocalPosition( model.pixi_board );
 			_.forEach( self.__hive_moves, function( position ) {

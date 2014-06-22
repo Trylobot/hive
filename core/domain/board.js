@@ -257,6 +257,8 @@ function create() {
 		var occupied_space_count = piece_position_keys.length;
 		if( occupied_space_count == 0 )
 			return true;
+		// do not count the assumed empty position, if it is specified, and occupied (normal case for most lookups)
+
 		// starting an arbitrary occupied position ...
 		var pieces_to_visit = [ Position.decode( piece_position_keys[0] ) ];
 		var visited_pieces = {};
@@ -267,15 +269,16 @@ function create() {
 			// scan the positions adjacent to it
 			var adjacent_positions = board.lookup_adjacent_positions( position );
 			// for each adjacent position ...
-			_.forEach( adjacent_positions, function( adjacency, direction_name ) {
+			_.forEach( adjacent_positions, function( adjacency ) {
 				// if the position is occupied
 				// and the position is not being filtered via function argument
 				if( typeof adjacency.contents !== "undefined" 
-				&&  !(adjacency.position_key in visited_pieces) 
-				&&  assuming_empty_position_key !== adjacency.position_key ) {
-					// add it to the pieces_to_visit stack, if it is not already visited
-					pieces_to_visit.push( adjacency.position );
+				&&  !(adjacency.position_key in visited_pieces) ) {
 					visited_pieces[ adjacency.position_key ] = true;
+					if( assuming_empty_position_key !== adjacency.position_key ) {
+						// visit this piece later
+						pieces_to_visit.push( adjacency.position );
+					}
 				}
 			});
 		}

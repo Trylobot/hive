@@ -249,6 +249,23 @@ exports["test board check_contiguity"] = function( assert ) {
 		is_contiguous,
 		false,
 		"board should confirm that the board would NOT BE contiguous" );
+
+}
+
+exports["test board check_contiguity bug1"] = function( assert ) {
+	var board;
+
+	// regression-tests, bug1
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -3, 1 ));
+	var is_contiguous = board.check_contiguity( Position.create( 1, 1 ));
+	assert.equal(
+		is_contiguous,
+		true,
+		"board should confirm that moving the White Queen Bee would not break contiguity" );
 }
 
 exports["test board can_slide_lookup_table"] = function( assert ) {
