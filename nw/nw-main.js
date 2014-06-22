@@ -224,7 +224,7 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 function create_pixi_marquee( piece_color ) {
 	var pixi_marquee = new PIXI.Sprite( model.textures[ piece_color + " Marquee" ]);
 	pixi_marquee.anchor.set( 0.5, 0.5 );
-	pixi_marquee.alpha = 0.666;
+	pixi_marquee.alpha = 0.333;
 	return pixi_marquee;
 }
 // depends on global: model
@@ -570,8 +570,15 @@ function pixi_hand_mousedown( ix ) {
 	pixi_piece.__hive_pixi_ghost = create_pixi_piece( Piece.create( self.__hive_color, self.__hive_piece_type ));
 	pixi_piece.__hive_pixi_ghost.alpha = 0.333;
 	pixi_piece.__hive_pixi_ghost.position.set( pixi_piece.position.x, pixi_piece.position.y );
-	model.stage.addChild( pixi_piece.__hive_pixi_ghost );
+	model.pixi_board.addChild( pixi_piece.__hive_pixi_ghost );
 	model.stage.addChild( pixi_piece );
+	var trash_bin = new PIXI.Graphics();
+	trash_bin.beginFill( 0x000000 );
+	trash_bin.drawRect( 0, 0, model.renderer_width, model.hand_gutter_size );
+	trash_bin.endFill();
+	trash_bin.alpha = 0.25;
+	pixi_piece.__trash_bin = trash_bin;
+	model.stage.addChildAt( trash_bin, 0 ); // background
 }
 function pixi_hand_piece_mousemove( ix ) {
 	var self = this;
@@ -624,9 +631,11 @@ function pixi_hand_piece_mouseup( ix ) {
 		// cleanup
 		pixi_piece_set_move_marquee_visible.call( self, false, true );
 		self.setInteractive( false );
-		self.parent.removeChild( self.__hive_pixi_ghost ); // remove ghost from stage
+		model.pixi_board.removeChild( self.__hive_pixi_ghost ); // remove ghost from stage
+		self.parent.removeChild( self.__trash_bin ); // remove trash bin object from stage
+		self.__trash_bin = null;
 		self.__hive_pixi_ghost = null;
-		self.parent.removeChild( self ); // remove from stage
+		self.parent.removeChild( self ); // remove self from stage
 		self.__creator.__pixi_piece = null; // remove generator ref
 		self.__hive_drag_start_mouse = null; // indicate no longer dragging mode
 	}
