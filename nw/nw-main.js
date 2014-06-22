@@ -290,8 +290,9 @@ function create_pixi_hand( color, hive_hand ) {
 	else if( color == "Black" )
 		piece_types = _(hive_hand).keys().value();
 	_.forEach( piece_types, function( piece_type ) {
-		var count = hive_hand[ piece_type ];
 		var sprite = new PIXI.Sprite( model.textures[ opposite_color + " " + piece_type ]);
+		sprite.__hive_color = color;
+		sprite.__hive_piece_type = piece_type;
 		sprite.__default_alpha = default_alpha;
 		sprite.alpha = default_alpha;
 		sprite.scale.set( scale, scale );
@@ -302,12 +303,10 @@ function create_pixi_hand( color, hive_hand ) {
 		sprite.mouseover = pixi_hand_mouseover;
 		sprite.mouseout = pixi_hand_mouseout;
 		sprite.mousedown = pixi_hand_mousedown;
-		sprite.mousemove = pixi_hand_mousemove;
-		sprite.mouseup = pixi_hand_mouseup;
-		sprite.mouseupoutside = pixi_hand_mouseup;
 		var delta_x = bounds.width*scale * 0.9;
-		var count_text_fg = new PIXI.Text( count + "x", { font: font, fill: opposite_color });
-		var count_text_bg = new PIXI.Text( count + "x", { font: font, fill: color });
+		var piece_count = hive_hand[ piece_type ];
+		var count_text_fg = new PIXI.Text( piece_count + "x", { font: font, fill: opposite_color });
+		var count_text_bg = new PIXI.Text( piece_count + "x", { font: font, fill: color });
 		count_text_fg.alpha = default_alpha;
 		count_text_bg.alpha = default_alpha;
 		count_text_fg.position.set( c_x + delta_x/2 - 18, -5 );
@@ -334,8 +333,8 @@ function document_mousewheel( event ) {
 		model.scale_i = model.scale_values.length - 1;
 	var new_scale = model.scale_values[ model.scale_i ];
 	if( model.pixi_board )
-		//model.pixi_board.scale.set( new_scale, new_scale );
-		createjs.Tween.get(model.pixi_board.scale).to({ x: new_scale, y: new_scale }, 150 );
+		model.pixi_board.scale.set( new_scale, new_scale );
+		//createjs.Tween.get( model.pixi_board.scale ).to({ x: new_scale, y: new_scale }, 150 );
 	// TODO: zoom to cursor
 }
 
@@ -533,20 +532,40 @@ function pixi_hand_mouseout( ix ) {
 }
 function pixi_hand_mousedown( ix ) {
 	var self = this;
-	// TODO: create new pixi piece
-	// TODO: start dragging new pixi piece
+	// create new pixi piece
+	var pixi_piece = create_pixi_piece( Piece.create( self.__hive_color, self.__hive_piece_type ));
+	pixi_piece.__creator = self;
+	self.__pixi_piece = pixi_piece;
+	model.stage.addChild( pixi_piece );
+	var ix_pos = ix.getLocalPosition( self.parent );
+	self.position.set( ix_pos.x, ix_pos.y );
+	// start dragging new pixi piece
+	pixi_piece.__hive_drag_start_mouse = _.clone( ix.global );
+	pixi_piece.setInteractive( true );
+	pixi_piece.mousemove = pixi_hand_piece_mousemove;
+	pixi_piece.mouseup = pixi_hand_piece_mouseup;
+	pixi_piece.mouseupoutside = pixi_hand_piece_mouseup;
 	// TODO: show placement position marquees
 	// TODO: create ghost piece
 }
-function pixi_hand_mousemove( ix ) {
+function pixi_hand_piece_mousemove( ix ) {
 	var self = this;
-	// TODO: move pixi piece
-	// TODO: update ghost piece to nearest placement position
+	if( self.__hive_drag_start_mouse ) {
+		// move pixi piece
+		self.position.set( ix.global.x, ix.global.y );
+		// TODO: update ghost piece to nearest placement position
+	}
 }
-function pixi_hand_mouseup( ix ) {
+function pixi_hand_piece_mouseup( ix ) {
 	var self = this;
-	// TODO: if nearest element is a placement position, perform a placement turn
-	// TODO: else if it's the placement bin, toss it
+	if( self.__hive_drag_start_mouse ) {
+		// TODO: if nearest element is a placement position, perform a placement turn
+		// TODO: else if it's the placement bin, just toss it
+		self.removeStageReference(); // remove stage ref
+		self.setInteractive( false );
+		self.__creator.__pixi_piece = null; // remove generator ref
+		self.__hive_drag_start_mouse = null;
+	}
 }
 
 //////////////////////////////////////////////////////////////////
