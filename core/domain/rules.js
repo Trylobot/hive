@@ -46,6 +46,10 @@ function lookup_possible_turns( color, board, hand, turn_number ) {
 	}
 	
 	var valid_placement_piece_types = _.keys( hand );
+	if( !check_allow_queen_placement( turn_number )) {
+		valid_placement_piece_types = _.pull( valid_placement_piece_types, "Queen Bee" );
+	}
+
 	if( !check_any_movement_allowed( color, board )) {
 		possible_turns["Placement"] = {
 			piece_types: valid_placement_piece_types,
@@ -85,6 +89,14 @@ Placing your Queen Bee
 */
 function check_force_queen_placement( color, board, turn_number ) {
 	return ( board.count_pieces( color, "Queen Bee" ) <= 0 && turn_number >= 4 );
+}
+
+/*
+http://boardgamegeek.com/wiki/page/Hive_FAQ
+	You cannot place your queen as your first move.
+*/
+function check_allow_queen_placement( turn_number ) {
+	return turn_number > 1;
 }
 
 /*
@@ -363,6 +375,7 @@ function find_valid_movement_Pillbug( board, position ) {
 
 exports.lookup_possible_turns = lookup_possible_turns;
 exports.check_force_queen_placement = check_force_queen_placement;
+exports.check_allow_queen_placement = check_allow_queen_placement;
 exports.check_any_movement_allowed = check_any_movement_allowed;
 exports.check_if_game_over = check_if_game_over;
 exports.find_valid_placement_positions = find_valid_placement_positions;

@@ -20,11 +20,19 @@ exports["test rules lookup_possible_turns"] = function( assert ) {
 	//   (when a player has legal moves)
 }
 
-exports["test rules check_any_movement_allowed"] = function( assert ) {
+exports["test rules check_force_queen_placement"] = function( assert ) {
 
 }
 
 exports["test rules check_if_game_over"] = function( assert ) {
+
+}
+
+exports["test rules check_allow_queen_placement"] = function( assert ) {
+
+}
+
+exports["test rules check_any_movement_allowed"] = function( assert ) {
 
 }
 

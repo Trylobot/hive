@@ -3,6 +3,7 @@
 var _ = require("lodash");
 _(global).extend(require("./util"));
 var Piece = require("./piece");
+var Position = require("./position");
 var Board = require("./board");
 var Rules = require("./rules");
 var Turn = require("./turn");
@@ -67,14 +68,15 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 			case "Placement": game.perform_placement(
 				game.player_turn, 
 				turn_object.piece_type, 
-				turn_object.destination ); 
+				Position.decode( turn_object.destination )); 
 				break;
 			case "Movement": game.perform_movement( 
-				turn_object.source, 
-				turn_object.destination ); 
+				Position.decode( turn_object.source ), 
+				Position.decode( turn_object.destination )); 
 				break;
+			default:
+				throw "invalid turn type: " + JSON.stringify( turn_object.turn_type );
 		}
-		throw "invalid turn object: " + JSON.stringify( turn_object );
 	}
 	game.perform_placement = function( piece_color, piece_type, position ) {
 		var hand = game.hands[ piece_color ];
