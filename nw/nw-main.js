@@ -161,7 +161,6 @@ function show_hive_game( model ) {
 	//
 	update_status_text( model );
 	position_status_text( model );
-	position_hands( model );
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
@@ -179,6 +178,7 @@ function clear_hive_game( model ) {
 //////////////////////////////////////////////////////////////////
 // second-tier functions
 //////////////////////////////////////////////////////////////////
+// depends on global: model
 function create_pixi_piece( hive_piece ) {
 	var container = create_pixi_tile_sprite_container( hive_piece );
 	var ghost_container = create_pixi_tile_sprite_container( hive_piece );
@@ -193,6 +193,7 @@ function create_pixi_piece( hive_piece ) {
 	container.__hive_pixi_ghost = ghost_container;
 	return container;
 }
+// depends on global: model
 function create_pixi_tile_sprite_container( hive_piece ) {
 	var tile_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " Tile" ]);
 	tile_sprite.anchor.set( 0.5, 0.5 );
@@ -203,12 +204,14 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	container.addChild( symbol_sprite );
 	return container;
 }
+// depends on global: model
 function create_pixi_marquee( piece_color ) {
 	var pixi_marquee = new PIXI.Sprite( model.textures[ piece_color + " Marquee" ]);
 	pixi_marquee.anchor.set( 0.5, 0.5 );
 	pixi_marquee.alpha = 0.666;
 	return pixi_marquee;
 }
+// depends on global: model
 function create_pixi_board( hive_board, hive_possible_turns ) {
 	// for now, only shows pieces on top of each piece-stack
 	// due to top-down orthogonal view
@@ -269,28 +272,55 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	});
 	return container;
 }
+// depends on global: model
 function create_pixi_hand( color, hive_hand ) {
 	var container = new PIXI.DisplayObjectContainer();
+	container.__hive_hand = hive_hand;
 	var opposite_color = Piece.opposite_color( color );
+	var default_alpha = 0.25;
 	var scale = 0.75;
 	var font = "700 36px DINPro";
-	var margin = 0;
-	var c_x = 0;
-	_.forEach( hive_hand, function( count, piece_type ) {
-		var sprite = new PIXI.Sprite( model.textures[ color + " " + piece_type ]);
-		sprite.anchor.set( 0.5, 0.5 );
+	var c_x = 10;
+	var piece_types;
+	// ordering hack
+	if( color == "White" )
+		piece_types = _(hive_hand).keys().reverse().value();
+	else if( color == "Black" )
+		piece_types = _(hive_hand).keys().value();
+	_.forEach( piece_types, function( piece_type ) {
+		var count = hive_hand[ piece_type ];
+		var sprite = new PIXI.Sprite( model.textures[ opposite_color + " " + piece_type ]);
+		sprite.__default_alpha = default_alpha;
+		sprite.alpha = default_alpha;
 		sprite.scale.set( scale, scale );
-		sprite.position.set( c_x, 0 );
+		sprite.position.set( c_x, 20 );
 		container.addChild( sprite );
 		var bounds = sprite.getBounds();
+		sprite.setInteractive( true );
+		sprite.mouseover = pixi_hand_mouseover;
+		sprite.mouseout = pixi_hand_mouseout;
+		sprite.mousedown = pixi_hand_mousedown;
+		sprite.mousemove = pixi_hand_mousemove;
+		sprite.mouseup = pixi_hand_mouseup;
+		sprite.mouseupoutside = pixi_hand_mouseup;
+		var delta_x = bounds.width*scale * 0.9;
 		var count_text_fg = new PIXI.Text( count + "x", { font: font, fill: opposite_color });
 		var count_text_bg = new PIXI.Text( count + "x", { font: font, fill: color });
-		count_text_fg.position.set( c_x - 19, -90 );
-		count_text_bg.position.set( c_x - 19, -88 );
+		count_text_fg.alpha = default_alpha;
+		count_text_bg.alpha = default_alpha;
+		count_text_fg.position.set( c_x + delta_x/2 - 18, -5 );
+		count_text_bg.position.set( c_x + delta_x/2 - 18, -7 );
 		container.addChild( count_text_fg );
 		container.addChild( count_text_bg );
-		c_x += bounds.width*scale + margin;
+		sprite.__count_text_fg = count_text_fg;
+		sprite.__count_text_bg = count_text_bg;
+		c_x += delta_x;
 	});
+	// positioning hack
+	if( color == "White" )
+		container.position.x = 0;
+	else if( color == "Black" )
+		container.position.x = model.renderer_width - c_x;
 	return container;
 }
 
@@ -304,9 +334,10 @@ function document_mousewheel( event ) {
 		model.scale_i = 0;
 	if( model.scale_i > model.scale_values.length - 1 )
 		model.scale_i = model.scale_values.length - 1;
-	var s = model.scale_values[ model.scale_i ];
+	var new_scale = model.scale_values[ model.scale_i ];
 	if( model.pixi_board )
-		model.pixi_board.scale.set( s, s );
+		//model.pixi_board.scale.set( new_scale, new_scale );
+		createjs.Tween.get(model.pixi_board.scale).to({ x: new_scale, y: new_scale }, 150 );
 	// TODO: zoom to cursor
 }
 
@@ -319,17 +350,6 @@ function window_resize() {
 }
 function update_background_hit_rect( model ) {
 	model.background.hitArea = new PIXI.Rectangle( 0, 0, model.renderer_width, model.renderer_height );	
-}
-function position_hands( model ) {
-	// call this function AFTER update_status_text, as it relies upon status_text bounding box for positioning
-	var margin = 80;
-	var common_y = model.renderer_height - (50*0.75);
-	var st_b = model.status_text_fg.getBounds();
-	var x = st_b.x + st_b.width + margin;
-	model.pixi_white_hand.position.set( x, common_y );
-	var wh_b = model.pixi_white_hand.getBounds();
-	x = wh_b.x + wh_b.width + margin;
-	model.pixi_black_hand.position.set( x, common_y );
 }
 function position_status_text( model ) {
 	model.status_text_fg.position.set( 12, model.renderer_height - 62 );
@@ -348,23 +368,23 @@ function clear_status_text( model ) {
 	model.status_text_bg.setText( "" );
 }
 
-function background_mousedown( interactionData ) {
+function background_mousedown( ix ) {
 	// right-click drag: start
-	if( model.pixi_board && interactionData.originalEvent.button == 2 ) {
-		model.pixi_board.__hive_drag_start_mouse = _.clone( interactionData.global );
+	if( model.pixi_board && ix.originalEvent.button == 2 ) {
+		model.pixi_board.__hive_drag_start_mouse = _.clone( ix.global );
 		model.pixi_board.__hive_drag_start_pixi_board = _.clone( model.pixi_board.position );
 		document.body.style.cursor = "move";
 	}
 }
-function background_mousemove( interactionData ) {
+function background_mousemove( ix ) {
 	// right-click drag: move pixi_board around
 	if( model.pixi_board && model.pixi_board.__hive_drag_start_mouse ) {
 		model.pixi_board.position.set(
-			model.pixi_board.__hive_drag_start_pixi_board.x + (interactionData.global.x - model.pixi_board.__hive_drag_start_mouse.x),
-			model.pixi_board.__hive_drag_start_pixi_board.y + (interactionData.global.y - model.pixi_board.__hive_drag_start_mouse.y) );
+			model.pixi_board.__hive_drag_start_pixi_board.x + (ix.global.x - model.pixi_board.__hive_drag_start_mouse.x),
+			model.pixi_board.__hive_drag_start_pixi_board.y + (ix.global.y - model.pixi_board.__hive_drag_start_mouse.y) );
 	}
 }
-function background_mouseup( interactionData ) {
+function background_mouseup( ix ) {
 	// right-click drag: end
 	if( model.pixi_board && model.pixi_board.__hive_drag_start_mouse ) {
 		model.pixi_board.__hive_drag_start_mouse = null;
@@ -374,7 +394,7 @@ function background_mouseup( interactionData ) {
 }
 
 // mouse-in: only applied to pieces that can be interacted with
-function pixi_piece_mouseover( interactionData ) {
+function pixi_piece_mouseover( ix ) {
 	var self = this;
 	// mouseover style
 	document.body.style.cursor = "pointer";
@@ -385,7 +405,7 @@ function pixi_piece_mouseover( interactionData ) {
 		self.__hive_pixi_marquee.visible = true;
 	}
 }
-function pixi_piece_mouseout( interactionData ) {
+function pixi_piece_mouseout( ix ) {
 	var self = this;
 	// mouseover style (if not dragging)
 	if( ! self.__hive_drag_start_mouse ) {
@@ -394,15 +414,15 @@ function pixi_piece_mouseout( interactionData ) {
 		self.__hive_pixi_marquee.visible = false;
 	}
 }
-function pixi_piece_mousedown( interactionData ) {
+function pixi_piece_mousedown( ix ) {
 	var self = this;
 	// left-click drag: start
-	if( interactionData.originalEvent.button == 0 ) {
+	if( ix.originalEvent.button == 0 ) {
 		// move this piece to the highest z-layer so it's overtop everything else
 		model.pixi_board.removeChild( self );
 		model.pixi_board.addChild( self );
 		// create a "ghost" in place of the piece that is being moved, so the player can see where it used to be
-		self.__hive_drag_start_mouse = _.clone( interactionData.global );
+		self.__hive_drag_start_mouse = _.clone( ix.global );
 		self.__hive_drag_start_pixi_piece = _.clone( self.position );
 		// hide piece marquee
 		self.__hive_pixi_marquee.visible = false;
@@ -425,13 +445,13 @@ function pixi_piece_set_move_marquee_visible( visible ) {
 		}
 	});
 }
-function pixi_piece_mousemove( interactionData ) {
+function pixi_piece_mousemove( ix ) {
 	var self = this;
 	// left-click drag: move piece around
 	if( self.__hive_drag_start_mouse ) {
 		self.position.set(
-			self.__hive_drag_start_pixi_piece.x + ((interactionData.global.x - self.__hive_drag_start_mouse.x) / model.pixi_board.scale.x),
-			self.__hive_drag_start_pixi_piece.y + ((interactionData.global.y - self.__hive_drag_start_mouse.y) / model.pixi_board.scale.y) );
+			self.__hive_drag_start_pixi_piece.x + ((ix.global.x - self.__hive_drag_start_mouse.x) / model.pixi_board.scale.x),
+			self.__hive_drag_start_pixi_piece.y + ((ix.global.y - self.__hive_drag_start_mouse.y) / model.pixi_board.scale.y) );
 		// TODO: check distance and if close enough, move ghost piece to the nearby potential move destination
 		var min_squared = Infinity;
 		var closest_position_key = null;
@@ -462,7 +482,7 @@ function pixi_piece_mousemove( interactionData ) {
 		self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
 	}
 }
-function pixi_piece_mouseup( interactionData ) {
+function pixi_piece_mouseup( ix ) {
 	var self = this;
 	// left-click drag: end
 	if( self.__hive_drag_start_mouse ) {
@@ -493,6 +513,38 @@ function pixi_piece_mouseup( interactionData ) {
 		self.__hive_drag_start_mouse = null;
 		self.__hive_drag_start_pixi_piece = null;
 	}
+}
+
+function pixi_hand_mouseover( ix ) {
+	var self = this;
+	// show
+	self.alpha = 1;
+	self.__count_text_fg.alpha = 1;
+	self.__count_text_bg.alpha = 1;
+}
+function pixi_hand_mouseout( ix ) {
+	var self = this;
+	// dim
+	self.alpha = self.__default_alpha;
+	self.__count_text_fg.alpha = self.__default_alpha;
+	self.__count_text_bg.alpha = self.__default_alpha;
+}
+function pixi_hand_mousedown( ix ) {
+	var self = this;
+	// TODO: create new pixi piece
+	// TODO: start dragging new pixi piece
+	// TODO: show placement position marquees
+	// TODO: create ghost piece
+}
+function pixi_hand_mousemove( ix ) {
+	var self = this;
+	// TODO: move pixi piece
+	// TODO: update ghost piece to nearest placement position
+}
+function pixi_hand_mouseup( ix ) {
+	var self = this;
+	// TODO: if nearest element is a placement position, perform a placement turn
+	// TODO: else if it's the placement bin, toss it
 }
 
 //////////////////////////////////////////////////////////////////
