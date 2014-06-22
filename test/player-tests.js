@@ -1,4 +1,4 @@
-var Player = require("../../../core/domain/player");
+var Player = require("../core/domain/player");
 
 exports["test player create"] = function( assert ) {
 	

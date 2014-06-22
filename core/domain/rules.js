@@ -88,7 +88,9 @@ Placing your Queen Bee
 
 */
 function check_force_queen_placement( color, board, turn_number ) {
-	return ( board.count_pieces( color, "Queen Bee" ) <= 0 && turn_number >= 4 );
+	// there is no queen on the board for the given color, and it is the fourth turn of one of the players
+	return ( board.count_pieces( color, "Queen Bee" ) <= 0
+		&& ( turn_number == 6 || turn_number == 7 ));
 }
 
 /*

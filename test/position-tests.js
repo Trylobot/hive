@@ -1,4 +1,4 @@
-var Position = require("../../../core/domain/position");
+var Position = require("../core/domain/position");
 
 exports["test position create, encode, decode, encode_all, decode_all"] = function( assert ) {
 	var position, position_key;

@@ -1,4 +1,4 @@
-var piece = require("../../../core/domain/game");
+var piece = require("../core/domain/game");
 
 exports["test game create"] = function( assert ) {
 

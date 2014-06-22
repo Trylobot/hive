@@ -1,4 +1,4 @@
-var Piece = require("../../../core/domain/piece");
+var Piece = require("../core/domain/piece");
 
 exports["test piece create"] = function( assert ) {
 	var color, type, piece;

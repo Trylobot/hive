@@ -1,9 +1,9 @@
 var _ = require("lodash");
-_(global).extend(require("../../../core/domain/util"));
-var Piece = require("../../../core/domain/piece");
-var Position = require("../../../core/domain/position");
-var Board = require("../../../core/domain/board");
-var Rules = require("../../../core/domain/rules");
+_(global).extend(require("../core/domain/util"));
+var Piece = require("../core/domain/piece");
+var Position = require("../core/domain/position");
+var Board = require("../core/domain/board");
+var Rules = require("../core/domain/rules");
 
 exports["test rules lookup_possible_turns"] = function( assert ) {
 	var board;

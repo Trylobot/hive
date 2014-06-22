@@ -164,6 +164,17 @@ function show_hive_game( model ) {
 	position_status_text( model );
 	position_hands( model );
 }
+function do_turn( model, turn ) {
+	var position = _.clone( model.pixi_board.position );
+	var scale_i = model.scale_i;
+	var scale = model.scale_values[ scale_i ];
+	clear_hive_game( model );
+	model.game_instance.game.perform_turn( turn );
+	show_hive_game( model );
+	model.pixi_board.position.set( position.x, position.y );
+	model.scale_i = scale_i;
+	model.pixi_board.scale.set( scale, scale );
+}
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
 		// TODO: memory leak?
@@ -193,6 +204,7 @@ function create_pixi_piece( hive_piece ) {
 	container.__hive_piece = hive_piece;
 	container.__hive_pixi_marquee = marquee;
 	container.__hive_pixi_ghost = ghost_container;
+	container.rotation = 2 * Math.PI * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
 	return container;
 }
 // depends on global: model
@@ -437,7 +449,7 @@ function pixi_piece_mousedown( ix ) {
 		self.__hive_pixi_ghost.visible = true;
 	}
 }
-function pixi_piece_set_move_marquee_visible( visible ) {
+function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 	var self = this;
 	_.forEach( self.__hive_moves, function( position ) {
 		var position_key = position.encode();
@@ -446,6 +458,8 @@ function pixi_piece_set_move_marquee_visible( visible ) {
 			position_register.pixi_piece.__hive_pixi_marquee.visible = visible;
 		} else {
 			var color = self.__hive_piece.color;
+			if( use_opposite_color )
+				color = Piece.opposite_color( color );
 			position_register[ color + " Marquee" ].visible = visible;
 		}
 	});
@@ -505,11 +519,7 @@ function pixi_piece_mouseup( ix ) {
 			var turn = Turn.create_movement( 
 				Position.decode( self.__hive_position_key ),
 				Position.decode( self.__hive_pixi_ghost.__hive_position_key ));
-			_.defer( function() {
-				clear_hive_game( model );
-				model.game_instance.game.perform_turn( turn );
-				show_hive_game( model );
-			});
+			_.defer( do_turn, model, turn );
 		}
 		// move this actual piece
 		// TODO: tween this
@@ -553,7 +563,7 @@ function pixi_hand_mousedown( ix ) {
 	pixi_piece.mouseupoutside = pixi_hand_piece_mouseup;
 	// show placement position marquees
 	pixi_piece.__hive_moves = model.pixi_board.__hive_possible_turns["Placement"].positions;
-	pixi_piece_set_move_marquee_visible.call( pixi_piece, true );
+	pixi_piece_set_move_marquee_visible.call( pixi_piece, true, true );
 	// create ghost piece
 	pixi_piece.__hive_pixi_ghost = create_pixi_piece( Piece.create( self.__hive_color, self.__hive_piece_type ));
 	pixi_piece.__hive_pixi_ghost.alpha = 0.333;
@@ -607,14 +617,10 @@ function pixi_hand_piece_mouseup( ix ) {
 			var turn = Turn.create_placement( 
 				self.__hive_piece_type,
 				Position.decode( self.__hive_pixi_ghost.__hive_position_key ));
-			_.defer( function() {
-				clear_hive_game( model );
-				model.game_instance.game.perform_turn( turn );
-				show_hive_game( model );
-			});
+			_.defer( do_turn, model, turn );
 		}
 		// cleanup
-		pixi_piece_set_move_marquee_visible.call( self, false );
+		pixi_piece_set_move_marquee_visible.call( self, false, true );
 		self.setInteractive( false );
 		self.parent.removeChild( self.__hive_pixi_ghost ); // remove ghost from stage
 		self.__hive_pixi_ghost = null;

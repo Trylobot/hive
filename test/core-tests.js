@@ -1,4 +1,4 @@
-var Position = require("../../core/core");
+var Position = require("../core/core");
 
 exports["test core"] = function( assert ) {
 	

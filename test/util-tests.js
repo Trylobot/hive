@@ -1,5 +1,5 @@
 var _ = require("lodash");
-_(global).extend(require("../../../core/domain/util"));
+_(global).extend(require("../core/domain/util"));
 
 exports["test util Array insert"] = function( assert ) {
 	assert.deepEqual(

@@ -1,8 +1,8 @@
 var _ = require("lodash");
-_(global).extend(require("../../../core/domain/util"));
-var Piece = require("../../../core/domain/piece");
-var Position = require("../../../core/domain/position");
-var Board = require("../../../core/domain/board");
+_(global).extend(require("../core/domain/util"));
+var Piece = require("../core/domain/piece");
+var Position = require("../core/domain/position");
+var Board = require("../core/domain/board");
 
 exports["test board place_piece"] = function( assert ) {
 	var board;

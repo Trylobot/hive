@@ -1,5 +1,5 @@
-var Position = require("../../../core/domain/position");
-var Turn = require("../../../core/domain/turn");
+var Position = require("../core/domain/position");
+var Turn = require("../core/domain/turn");
 
 exports["test turn create_placement"] = function( assert ) {
 	var turn;
