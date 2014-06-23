@@ -74,7 +74,7 @@ function translation( position, direction ) {
 		case "6 o'clock":  return create( position.row + 2, position.col     ); break;
 		case "8 o'clock":  return create( position.row + 1, position.col - 1 ); break;
 		case "10 o'clock": return create( position.row - 1, position.col - 1 ); break;
-		default:           return create( position.row    , position.col     ); break;
+		default:           throw "unrecognized direction " + direction; break;
 	}
 }
 

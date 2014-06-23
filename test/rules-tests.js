@@ -51,6 +51,18 @@ exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
 exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 	var game, board, valid_movement;
 
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -2, 0 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
+	assert.ok(
+		valid_movement.length == 3 &&
+		_.contains( valid_movement, "-2,0" ) &&
+		_.contains( valid_movement, "-1,1" ) &&
+		_.contains( valid_movement, "-1,-1" ),
+		"Beetle able to perform basic movement and jumps" );
+
+
 	// test that beetle cannot climb up onto a piece through a "gate" (but can otherwise climb up)
 	board = Board.create();
 	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
@@ -58,22 +70,23 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -1, -1 ));
 	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, -1 ));
 	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -2, 0 ));
-	valid_movement = Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
 	assert.deepEqual(
-		_.difference(
-			Position.encode_all( valid_movement ),
-			[ "1,-1", "1,1", "-1,1", "-1,-1", "-2,0" ]
-		),
-		[],
+		valid_movement.length == 5 &&
+		_.contains( valid_movement, "1,-1" ) &&
+		_.contains( valid_movement, "1,1" ) &&
+		_.contains( valid_movement, "-1,1" ) &&
+		_.contains( valid_movement, "-1,-1" ) &&
+		_.contains( valid_movement, "-2,0" ),
 		"Beetle able to jump up" );
 	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, 1 ));
-	valid_movement = Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
 	assert.deepEqual(
-		_.difference(
-			Position.encode_all( valid_movement ),
-			[ "1,-1", "1,1", "-1,1", "-1,-1" ] // notably: NOT "-2,0"
-		),
-		[],
+		valid_movement.length == 5 &&
+		_.contains( valid_movement, "1,-1" ) &&
+		_.contains( valid_movement, "1,1" ) &&
+		_.contains( valid_movement, "-1,1" ) &&
+		_.contains( valid_movement, "-1,-1" ), // notably NOT -2,0
 		"Beetle blocked from jumping up" );
 
 	// TODO: test that beetle can jump down from being up on the hive, even through a "lower-level" gate

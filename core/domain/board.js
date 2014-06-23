@@ -124,7 +124,7 @@ function create() {
 	// return the piece in a specific stack at a specific height, or undefined
 	board.lookup_piece_at_height = function( position, height ) {
 		var stack = board.lookup_piece_stack( position );
-		if( stack && height <= (stack.length - 1) )
+		if( stack && height < stack.length )
 			return stack[ height ];
 		return undefined;
 	}
