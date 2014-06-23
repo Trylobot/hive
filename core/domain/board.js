@@ -103,8 +103,10 @@ function create() {
 	}
 	// return the height of the piece-stack
 	board.lookup_piece_stack_height = function( position ) {
-		var position_key = position.encode();
-		return board.pieces[ position_key ].length;
+		var stack = board.lookup_piece_stack( position );
+		if( stack )
+			return stack.length;
+		return undefined;
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
@@ -122,7 +124,7 @@ function create() {
 	// return the piece in a specific stack at a specific height, or undefined
 	board.lookup_piece_at_height = function( position, height ) {
 		var stack = board.lookup_piece_stack( position );
-		if( height <= (stack.length - 1) )
+		if( stack && height <= (stack.length - 1) )
 			return stack[ height ];
 		return undefined;
 	}
@@ -165,6 +167,31 @@ function create() {
 				var translated_position = position.translation( direction );
 				position_list.push( translated_position );
 			}
+		}
+		return position_list;
+	}
+	board.lookup_adjacent_jump_positions = function( position, assuming_empty_position ) {
+		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+		var position_list = [];
+		for( var i = 0; i < 6; ++i ) {
+			var direction = Position.directions_enum[i];
+			var lookup_key_array = [];
+			var translated_position = position.translation( direction );
+			var height = board.lookup_piece_stack_height( translated_position );
+			_.forEach( Position.directions_enum, function( direction ) { // shadowing is intentional
+				var translated_position = position.translation( direction ); // shadowing is intentional
+				var translated_position_key = translated_position.encode(); // shadowing is intentional
+				var piece_at_height = board.lookup_piece_at_height( translated_position, height + 1 ); // looking for "gates" one level or higher than the target
+				if( translated_position_key != assuming_empty_position_key
+				&&  piece_at_height )
+					lookup_key_array.push( "1" );
+				else
+					lookup_key_array.push( "." );
+			});
+			var lookup_key = lookup_key_array.join( "" );
+			var valid_directions_result_key = can_slide_lookup_table[ lookup_key ];
+			if( valid_directions_result_key[i] === "1" )
+				position_list.push( translated_position ); // refers to first declaration; shadow dropped, intentionally
 		}
 		return position_list;
 	}

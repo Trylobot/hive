@@ -257,14 +257,7 @@ Beetle
 	  A: Yes. (albeit in a different way): Beetles cannot slide through "gates"
 */
 function find_valid_movement_Beetle( board, position ) {
-	var height = board.lookup_piece_stack_height( position );
-	if( height == 0 )
-		return _.union( 
-			_.values( board.lookup_slide_destinations_within_range( position, 1, 1 )),
-			board.lookup_occupied_adjacencies( position )
-		);
-	else
-		return position.adjacencies();
+	return board.lookup_adjacent_jump_positions( position );
 }
 
 /*
@@ -282,7 +275,7 @@ Grasshopper
 function find_valid_movement_Grasshopper( board, position ) {
 	var adjacent_positions = board.lookup_adjacent_positions( position );
 	var valid_movement = [];
-	return _.forEach( adjacent_positions, function( adjacency, direction ) {
+	_.forEach( adjacent_positions, function( adjacency, direction ) {
 		if( typeof adjacency.contents !== "undefined" )
 			valid_movement.push( 
 				board.find_free_space_in_direction( adjacency.position, direction ));
