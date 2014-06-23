@@ -213,7 +213,6 @@ function create_pixi_piece( hive_piece ) {
 	container.__hive_piece = hive_piece;
 	container.__hive_pixi_marquee = marquee;
 	container.__hive_pixi_ghost = ghost_container;
-	container.rotation = 2 * Math.PI * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
 	return container;
 }
 // depends on global: model
@@ -225,6 +224,7 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	var container = new PIXI.DisplayObjectContainer();
 	container.addChild( tile_sprite );
 	container.addChild( symbol_sprite );
+	//symbol_sprite.rotation = 2 * Math.PI * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
 	return container;
 }
 // depends on global: model
@@ -473,7 +473,7 @@ function pixi_piece_mousedown( ix ) {
 		// hide piece marquee
 		self.__hive_pixi_marquee.visible = false;
 		// show marquees for all potential move locations
-		pixi_piece_set_move_marquee_visible.call( self, 1 );
+		pixi_piece_set_move_marquee_visible.call( self, 1, true );
 		// show ghost-piece representing destination
 		self.__hive_pixi_ghost.visible = true;
 	}
