@@ -325,7 +325,8 @@ function create_pixi_hand( color, hive_hand ) {
 		container.addChild( sprite );
 		var bounds = sprite.getBounds();
 		// interactivity hack
-		if( color == model.game_instance.game.player_turn 
+		if( color == model.game_instance.game.player_turn
+		&&  "Placement" in model.pixi_board.__hive_possible_turns
 		&&  _.contains( model.pixi_board.__hive_possible_turns["Placement"].piece_types, piece_type )) {
 			sprite.setInteractive( true );
 			sprite.mouseover = pixi_hand_mouseover;
@@ -385,10 +386,26 @@ function position_status_text( model ) {
 	model.status_text_bg.position.set( model.status_text_fg.position.x, model.status_text_fg.position.y - 3 );
 }
 function update_status_text( model ) {
+	var text = "";
 	var color = model.game_instance.game.player_turn;
-	var player_turn_friendly = Math.floor( model.game_instance.game.turn_number / 2 ) + 1;
-	model.status_text_fg.setText( color + "'s turn " + player_turn_friendly );
-	model.status_text_bg.setText( color + "'s turn " + player_turn_friendly );
+	// end game check
+	var game_over_status = Rules.check_if_game_over( model.game_instance.game.board );
+	if( ! game_over_status.game_over ) {
+		var player_turn_friendly = Math.floor( model.game_instance.game.turn_number / 2 ) + 1;
+		text = color + "'s turn " + player_turn_friendly;
+		text = color + "'s turn " + player_turn_friendly;
+	} else {
+		if( ! game_over_status.is_draw ) {
+			color = game_over_status.winner;
+			text = color + " WINS!";
+			text = color + " WINS!";
+		} else {
+			text = "DRAW!";
+			text = "DRAW!";
+		}
+	}
+	model.status_text_fg.setText( text );
+	model.status_text_bg.setText( text );
 	model.status_text_fg.setStyle({ font: model.status_text_font, fill: color });
 	model.status_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
 }

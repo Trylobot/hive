@@ -67,6 +67,12 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.player_turn = Piece.opposite_color( game.player_turn );
 		game.turn_history.push( _.clone( turn_object ));
 	}
+	game.save = function() {
+		return {
+			creation_parameters: game.creation_parameters,
+			turn_history: game.turn_history
+		};
+	}
 	// -------------------
 	// default hands (no addons)
 	game.hands["White"]["Queen Bee"] = 1;
@@ -110,16 +116,8 @@ function load( creation_parameters, turn_history ) {
 	return game;
 }
 
-function save() {
-	return {
-		creation_parameters: game.creation_parameters,
-		turn_history: game.turn_history
-	};
-}
-
 // exports
 
 exports.create = create;
 exports.load = load;
-exports.save = save;
 

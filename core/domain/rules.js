@@ -146,7 +146,7 @@ function check_if_game_over( board ) {
 		var occupied_adjacencies_count = occupied_adjacencies.length;
 		if( occupied_adjacencies_count >= 6 ) {
 			result.game_over = true;
-			result.winner = "White";
+			result.winner = "Black";
 		}
 	}
 	var search = board.search_pieces( "Black", "Queen Bee" );
@@ -155,9 +155,9 @@ function check_if_game_over( board ) {
 		var occupied_adjacencies = board.lookup_occupied_adjacencies( Black_Queen_Bee.position );
 		var occupied_adjacencies_count = occupied_adjacencies.length;
 		if( occupied_adjacencies_count >= 6 ) {
-			if( typeof result.winner === "undefined" ) {
+			if( ! result.winner ) {
 				result.game_over = true;
-				result.winner = "Black";
+				result.winner = "White";
 			} else {
 				result.is_draw = true;
 				result.winner = undefined;
