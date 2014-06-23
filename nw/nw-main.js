@@ -131,13 +131,17 @@ function initialize_textures() {
 }
 //
 function start_game() { //$scope.start_game = function() {
+	var use_mosquito = false;
+	var use_ladybug = false;
+	var use_pillbug = false;
 	model.game_id = core.create_game(
 		Player.create( "Human" ), // White Player
 		Player.create( "Human" ), // Black Player
-		false, // Game: Use Mosquito?
-		false, // Game: Use Ladybug?
-		false ); // Game: Use Pillbug?
+		use_mosquito,
+		use_ladybug,
+		use_pillbug );
 	model.game_instance = core.lookup_game( model.game_id );
+	console.log( JSON.stringify( model.game_instance ));
 	clear_hive_game( model );
 	show_hive_game( model );
 }
@@ -167,6 +171,8 @@ function show_hive_game( model ) {
 	position_hands( model );
 }
 function do_turn( model, turn ) {
+	console.log( JSON.stringify( turn ));
+	model.stage.setInteractive( false );
 	var position = _.clone( model.pixi_board.position );
 	var scale_i = model.scale_i;
 	var scale = model.scale_values[ scale_i ];
@@ -176,6 +182,7 @@ function do_turn( model, turn ) {
 	model.pixi_board.position.set( position.x, position.y );
 	model.scale_i = scale_i;
 	model.pixi_board.scale.set( scale, scale );
+	model.stage.setInteractive( true );
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
