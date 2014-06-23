@@ -49,9 +49,9 @@ exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Beetle"] = function( assert ) {
-	var board, valid_movement;
+	var game, board, valid_movement;
 
-	// test that beetle cannot climb up onto a piece through a "gate"
+	// test that beetle cannot climb up onto a piece through a "gate" (but can otherwise climb up)
 	board = Board.create();
 	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -1, 1 ));
@@ -76,7 +76,8 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		[],
 		"Beetle blocked from jumping up" );
 
-
+	// TODO: test that beetle can jump down from being up on the hive, even through a "lower-level" gate
+	
 }
 
 exports["test rules find_valid_movement_Grasshopper"] = function( assert ) {

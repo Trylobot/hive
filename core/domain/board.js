@@ -177,6 +177,7 @@ function create() {
 			var direction = Position.directions_enum[i];
 			var lookup_key_array = [];
 			var translated_position = position.translation( direction );
+			// TODO: height = max( this_height, translated_position_height );
 			var height = board.lookup_piece_stack_height( translated_position );
 			_.forEach( Position.directions_enum, function( direction ) { // shadowing is intentional
 				var translated_position = position.translation( direction ); // shadowing is intentional

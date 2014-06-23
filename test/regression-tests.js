@@ -55,5 +55,22 @@ exports["test bug3 can move spider but should NOT be able to"] = function( asser
 
 }
 
+exports["test bug4 can't move beetle but should be able to"] = function( assert ) {
+	var game, possible_turns;
+
+	game = Game.load({ use_mosquito: false, use_ladybug: false, use_pillbug: false }, [
+		{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},
+		{"turn_type":"Placement","piece_type":"Grasshopper","destination":"-2,0"},
+		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},
+		{"turn_type":"Placement","piece_type":"Beetle","destination":"-3,-1"},
+		{"turn_type":"Movement","source":"1,-1","destination":"-1,-1"},
+		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},
+		{"turn_type":"Movement","source":"0,0","destination":"-4,2"}
+	]);
+	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	assert.ok( "-3,-1" in possible_turns["Movement"], "should be able to move the Black Beetle" );
+}
+
+
 if( module == require.main )
 	require("test").run( exports );
