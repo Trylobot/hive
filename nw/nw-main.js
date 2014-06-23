@@ -224,7 +224,6 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	var container = new PIXI.DisplayObjectContainer();
 	container.addChild( tile_sprite );
 	container.addChild( symbol_sprite );
-	//symbol_sprite.rotation = 2 * Math.PI * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
 	return container;
 }
 // depends on global: model
@@ -263,6 +262,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		pixi_piece.position.set( position.col * model.col_delta_x, position.row * model.row_delta_y );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
+		pixi_piece.rotation = 2 * Math.PI * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
 		// movement for this piece ?
 		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
 			pixi_piece.__hive_position_key = position_key;
@@ -487,10 +487,15 @@ function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 		if( position_register.occupied ) {
 			position_register.pixi_piece.__hive_pixi_marquee.visible = visible;
 		} else {
-			var color = self.__hive_piece.color;
-			if( use_opposite_color )
-				color = Piece.opposite_color( color );
-			position_register[ color + " Marquee" ].visible = visible;
+			if( visible ) { // showing
+				var color = self.__hive_piece.color;
+				if( use_opposite_color )
+					color = Piece.opposite_color( color );
+				position_register[ color + " Marquee" ].visible = true;
+			} else { // hiding
+				position_register[ "White Marquee" ].visible = false;
+				position_register[ "Black Marquee" ].visible = false;
+			}
 		}
 	});
 }
