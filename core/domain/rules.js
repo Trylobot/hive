@@ -275,7 +275,8 @@ Grasshopper
 function find_valid_movement_Grasshopper( board, position ) {
 	var adjacent_positions = board.lookup_adjacent_positions( position );
 	var valid_movement = [];
-	_.forEach( adjacent_positions, function( adjacency, direction ) {
+	_.forEach( adjacent_positions, function( adjacency, direction_idx ) {
+		var direction = Position.directions_enum[ direction_idx ];
 		if( typeof adjacency.contents !== "undefined" )
 			valid_movement.push( 
 				board.find_free_space_in_direction( adjacency.position, direction ));

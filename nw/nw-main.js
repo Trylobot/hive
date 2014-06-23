@@ -141,7 +141,7 @@ function start_game() { //$scope.start_game = function() {
 		use_ladybug,
 		use_pillbug );
 	model.game_instance = core.lookup_game( model.game_id );
-	console.log( JSON.stringify( model.game_instance ));
+	console.log( model.game_instance );
 	clear_hive_game( model );
 	show_hive_game( model );
 }
@@ -171,7 +171,7 @@ function show_hive_game( model ) {
 	position_hands( model );
 }
 function do_turn( model, turn ) {
-	console.log( JSON.stringify( turn ));
+	console.log( turn );
 	model.stage.setInteractive( false );
 	var position = _.clone( model.pixi_board.position );
 	var scale_i = model.scale_i;
@@ -245,18 +245,21 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	//
 	var occupied_position_keys = hive_board.lookup_occupied_position_keys();
 	_.forEach( occupied_position_keys, function( position_key ) {
+		var position = Position.decode( position_key );
 		var position_register = {
 			occupied: true,
 			hive_piece: null,
 			pixi_piece: null
 		};
-		// TODO: add all pieces in the stack; only check the top piece for potential interactivity
 		container.__hive_positions[ position_key ] = position_register;
-		var hive_piece = hive_board.lookup_piece_by_key( position_key );
+		var hive_piece_stack = hive_board.lookup_piece_stack( position );
+		// add all the pieces below the potentially interactive piece, so that if there's a stack, the user can see what's down 1 layer at least
+		for( var i = 0; i < hive_piece_stack.length - 2; ++i )
+			container.addChild( create_pixi_piece( hive_piece_stack[i] ));
+		var hive_piece = hive_piece_stack[ hive_piece_stack.length - 1 ];
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
 		position_register.pixi_piece = pixi_piece;
-		var position = Position.decode( position_key );
 		pixi_piece.position.set( position.col * model.col_delta_x, position.row * model.row_delta_y );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );

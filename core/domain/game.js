@@ -110,8 +110,16 @@ function load( creation_parameters, turn_history ) {
 	return game;
 }
 
+function save() {
+	return {
+		creation_parameters: game.creation_parameters,
+		turn_history: game.turn_history
+	};
+}
+
 // exports
 
 exports.create = create;
 exports.load = load;
+exports.save = save;
 

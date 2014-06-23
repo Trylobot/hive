@@ -101,12 +101,12 @@ function create() {
 		var piece_stack = board.pieces[ position_key ];
 		return piece_stack;
 	}
-	// return the height of the piece-stack
+	// return the number of pieces stacked at the given position;
 	board.lookup_piece_stack_height = function( position ) {
 		var stack = board.lookup_piece_stack( position );
 		if( stack )
 			return stack.length;
-		return undefined;
+		return 0;
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
 	board.lookup_piece = function( position ) {
@@ -173,16 +173,19 @@ function create() {
 	board.lookup_adjacent_jump_positions = function( position, assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
 		var position_list = [];
+		// self_height: it is safe to assume the piece in question is the one on top of the stack
+		var self_height = board.lookup_piece_stack_height( position ) - 1;
 		for( var i = 0; i < 6; ++i ) {
 			var direction = Position.directions_enum[i];
 			var lookup_key_array = [];
 			var translated_position = position.translation( direction );
-			// TODO: height = max( this_height, translated_position_height );
-			var height = board.lookup_piece_stack_height( translated_position );
+			// translated_height: this value represents the height this piece will be at if it moves on top of the piece at translated_position
+			var translated_height = board.lookup_piece_stack_height( translated_position ); 
+			var max_height = Math.max( self_height, translated_height );
 			_.forEach( Position.directions_enum, function( direction ) { // shadowing is intentional
 				var translated_position = position.translation( direction ); // shadowing is intentional
 				var translated_position_key = translated_position.encode(); // shadowing is intentional
-				var piece_at_height = board.lookup_piece_at_height( translated_position, height + 1 ); // looking for "gates" one level or higher than the target
+				var piece_at_height = board.lookup_piece_at_height( translated_position, max_height ); // looking for "gates" one level or higher than the target
 				if( translated_position_key != assuming_empty_position_key
 				&&  piece_at_height )
 					lookup_key_array.push( "1" );
@@ -279,7 +282,7 @@ function create() {
 	// note: includes position immediately adjacent
 	board.find_free_space_in_direction = function( position, direction ) {
 		var cursor = position.translation( direction );
-		while( typeof board.pieces[ cursor.encode() ] !== "undefined" )
+		while( cursor.encode() in board.pieces )
 			cursor = cursor.translation( direction );
 		return cursor;
 	}

@@ -77,11 +77,27 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		"Beetle blocked from jumping up" );
 
 	// TODO: test that beetle can jump down from being up on the hive, even through a "lower-level" gate
-	
+	// TODO: test that beetle can jump into a "hole" surrounded on all sides
+	// TODO: test that beetle can jump up and down to and from large stacks of 4x or more pieces
 }
 
 exports["test rules find_valid_movement_Grasshopper"] = function( assert ) {
+	var board, valid_movement;
 
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "White", "Grasshopper" ), Position.create( 2, 0 ));
+	valid_movement = Rules.find_valid_movement_Grasshopper( board, Position.create( 2, 0 ));
+	assert.deepEqual(
+		_.difference(
+			Position.encode_all( valid_movement ),
+			[ "-4,0" ]
+		),
+		[],
+		"Grasshopper should be able to leap over to the far side" );
+	// TODO: test that grasshopper cannot jump in directions that it doesn't have adjacencies for
+	// TODO: test that grasshopper can leap tall buildings in a single bound
 }
 
 exports["test rules find_valid_movement_Spider"] = function( assert ) {
