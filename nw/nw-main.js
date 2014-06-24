@@ -43,6 +43,9 @@ var model = {
 	status_text_font: null,
 	status_text_fg: null,
 	status_text_bg: null,
+	forfeit_text_fg: null,
+	forfeit_text_bg: null,
+	forfeit_text_hit_rect: null,
 	col_delta_x: 138, // based on size of sprite at scale=1
 	row_delta_y: 80,
 	// hive domain
@@ -64,15 +67,7 @@ model.spritemap_loader.load();
 model.background_color = 0x808080;
 var interactive = true;
 model.stage = new PIXI.Stage( model.background_color, interactive );
-// status text (global)
-model.status_text_font = "700 48px DINPro";
-var status_text_fg = new PIXI.Text( "", { font: model.status_text_font, fill: "White" });
-var status_text_bg = new PIXI.Text( "", { font: model.status_text_font, fill: "Black" });
-model.status_text_fg = status_text_fg;
-model.status_text_bg = status_text_bg;
-model.stage.addChild( status_text_bg );
-model.stage.addChild( status_text_fg );
-// 
+// background
 document.addEventListener( "mousewheel", document_mousewheel );
 model.background = new PIXI.DisplayObjectContainer();
 model.background.setInteractive( interactive );
@@ -83,6 +78,28 @@ model.background.mouseup = background_mouseup;
 model.background.mouseupoutside = background_mouseup;
 model.background.mouseout = background_mouseup;
 model.stage.addChild( model.background );
+// status text (global, static)
+model.status_text_font = "700 48px DINPro";
+var status_text_fg = new PIXI.Text( "", { font: model.status_text_font, fill: "White" });
+var status_text_bg = new PIXI.Text( "", { font: model.status_text_font, fill: "Black" });
+model.status_text_fg = status_text_fg;
+model.status_text_bg = status_text_bg;
+model.stage.addChild( status_text_bg );
+model.stage.addChild( status_text_fg );
+// forfeit button (global, static)
+var forfeit_text_fg = new PIXI.Text( "Click here to forfeit", { font: model.status_text_font, fill: "White" });
+var forfeit_text_bg = new PIXI.Text( "Click here to forfeit", { font: model.status_text_font, fill: "Black" });
+forfeit_text_fg.visible = false;
+forfeit_text_bg.visible = false;
+//var forfeit_text_hit_rect = new PIXI.DisplayObjectContainer( ... )
+forfeit_text_fg.setInteractive( false );
+forfeit_text_fg.mouseover = forfeit_mouseover;
+forfeit_text_fg.mouseout = forfeit_mouseout;
+forfeit_text_fg.click = forfeit_click;
+model.forfeit_text_fg = forfeit_text_fg;
+model.forfeit_text_bg = forfeit_text_bg;
+model.stage.addChild( forfeit_text_bg );
+model.stage.addChild( forfeit_text_fg );
 // renderer
 model.renderer = PIXI.autoDetectRenderer( 
 	model.renderer_width, 
@@ -128,6 +145,23 @@ function initialize_textures() {
 			model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
 		});
 	});
+}
+// global
+function save_game() {
+	if( model.game_instance )
+		return JSON.stringify( model.game_instance.game.save() );
+}
+// global
+function load_game( saved_game_json_str ) {
+	clear_hive_game( model );
+	var data = JSON.parse( saved_game_json_str );
+	model.game_id = core.load_game( 
+		Player.create( "Human" ),
+		Player.create( "Human" ),
+		data );
+	model.game_instance = core.lookup_game( model.game_id );
+	console.log( model.game_instance );
+	show_hive_game( model );
 }
 //
 function start_game() { //$scope.start_game = function() {
@@ -256,11 +290,9 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var hive_piece_stack = hive_board.lookup_piece_stack( position );
 		// add all the pieces below the potentially interactive piece, so that if there's a stack, the user can see what's down 1 layer at least
 		// TODO: this has never worked. Why?
-		if( hive_piece_stack.length >= 2 ) {
-			for( var i = 0; i < hive_piece_stack.length - 2; ++i ) {
+		if( hive_piece_stack.length >= 2 )
+			for( var i = 0; i <= hive_piece_stack.length - 2; ++i )
 				container.addChild( create_pixi_piece( hive_piece_stack[i] ));
-			}
-		}
 		var hive_piece = hive_piece_stack[ hive_piece_stack.length - 1 ];
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
@@ -332,13 +364,17 @@ function create_pixi_hand( color, hive_hand ) {
 		container.addChild( sprite );
 		var bounds = sprite.getBounds();
 		// interactivity hack
-		if( color == model.game_instance.game.player_turn
-		&&  "Placement" in model.pixi_board.__hive_possible_turns
-		&&  _.contains( model.pixi_board.__hive_possible_turns["Placement"].piece_types, piece_type )) {
-			sprite.setInteractive( true );
-			sprite.mouseover = pixi_hand_mouseover;
-			sprite.mouseout = pixi_hand_mouseout;
-			sprite.mousedown = pixi_hand_mousedown;
+		if( "Placement" in model.pixi_board.__hive_possible_turns
+		&&  "piece_types" in model.pixi_board.__hive_possible_turns["Placement"]
+		&&  "positions" in model.pixi_board.__hive_possible_turns["Placement"] 
+		&&  model.pixi_board.__hive_possible_turns["Placement"].positions.length > 0 ) {
+			if( color == model.game_instance.game.player_turn
+			&&  _.contains( model.pixi_board.__hive_possible_turns["Placement"].piece_types, piece_type )) {
+				sprite.setInteractive( true );
+				sprite.mouseover = pixi_hand_mouseover;
+				sprite.mouseout = pixi_hand_mouseout;
+				sprite.mousedown = pixi_hand_mousedown;
+			}
 		}
 		var delta_x = bounds.width*scale * 0.9;
 		var piece_count = hive_hand[ piece_type ];
@@ -381,44 +417,17 @@ function window_resize() {
 	position_status_text( model );
 	position_hands( model );
 }
-function update_background_hit_rect( model ) {
-	model.background.hitArea = new PIXI.Rectangle( 0, 0, model.renderer_width, model.renderer_height );	
+
+function forfeit_mouseover( ix ) {
+	document.body.style.cursor = "pointer";
 }
-function position_hands( model ) {
-	model.pixi_white_hand.position.x = 0;
-	model.pixi_black_hand.position.x = model.renderer_width - model.pixi_black_hand.__width;
+function forfeit_mouseout( ix ) {
+	document.body.style.cursor = "inherit";
 }
-function position_status_text( model ) {
-	model.status_text_fg.position.set( 12, model.renderer_height - 62 );
-	model.status_text_bg.position.set( model.status_text_fg.position.x, model.status_text_fg.position.y - 3 );
-}
-function update_status_text( model ) {
-	var text = "";
-	var color = model.game_instance.game.player_turn;
-	// end game check
-	var game_over_status = Rules.check_if_game_over( model.game_instance.game.board );
-	if( ! game_over_status.game_over ) {
-		var player_turn_friendly = Math.floor( model.game_instance.game.turn_number / 2 ) + 1;
-		text = color + "'s turn " + player_turn_friendly;
-		text = color + "'s turn " + player_turn_friendly;
-	} else {
-		if( ! game_over_status.is_draw ) {
-			color = game_over_status.winner;
-			text = color + " WINS!";
-			text = color + " WINS!";
-		} else {
-			text = "DRAW!";
-			text = "DRAW!";
-		}
-	}
-	model.status_text_fg.setText( text );
-	model.status_text_bg.setText( text );
-	model.status_text_fg.setStyle({ font: model.status_text_font, fill: color });
-	model.status_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
-}
-function clear_status_text( model ) {
-	model.status_text_fg.setText( "" );
-	model.status_text_bg.setText( "" );
+function forfeit_click( ix ) {
+	var turn = Turn.create_forfeit();
+	_.defer( do_turn, model, turn );
+	document.body.style.cursor = "inherit";
 }
 
 function background_mousedown( ix ) {
@@ -688,6 +697,76 @@ function pixi_hand_piece_mouseup( ix ) {
 
 //////////////////////////////////////////////////////////////////
 // fourth-tier functions
+//////////////////////////////////////////////////////////////////
+function update_background_hit_rect( model ) {
+	model.background.hitArea = new PIXI.Rectangle( 0, 0, model.renderer_width, model.renderer_height );
+}
+function position_hands( model ) {
+	model.pixi_white_hand.position.x = 0;
+	model.pixi_black_hand.position.x = model.renderer_width - model.pixi_black_hand.__width;
+}
+function position_status_text( model ) {
+	var x = 12, y = model.renderer_height - 62;
+	model.status_text_fg.position.set( x, y );
+	model.status_text_bg.position.set( x, y - 3 );
+	//
+	y -= 62;
+	model.forfeit_text_fg.position.set( x, y );
+	model.forfeit_text_bg.position.set( x, y - 3 );
+}
+function update_status_text( model ) {
+	var text = "";
+	var color = model.game_instance.game.player_turn;
+	// end game check
+	var game_over_status = Rules.check_if_game_over( model.game_instance.game.board );
+	if( ! game_over_status.game_over ) {
+		var player_turn_friendly = Math.floor( model.game_instance.game.turn_number / 2 ) + 1;
+		text = color + "'s turn " + player_turn_friendly;
+		text = color + "'s turn " + player_turn_friendly;
+	} else {
+		if( ! game_over_status.is_draw ) {
+			color = game_over_status.winner;
+			text = color + " WINS!";
+			text = color + " WINS!";
+		} else {
+			text = "DRAW!";
+			text = "DRAW!";
+		}
+	}
+	model.status_text_fg.setText( text );
+	model.status_text_bg.setText( text );
+	model.status_text_fg.setStyle({ font: model.status_text_font, fill: color });
+	model.status_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
+	//
+	model.forfeit_text_fg.setStyle({ font: model.status_text_font, fill: color });
+	model.forfeit_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
+	if( has_moves( model )) {
+		model.forfeit_text_fg.visible = false;
+		model.forfeit_text_bg.visible = false;
+		forfeit_text_fg.setInteractive( false );
+	} else { // no moves, must forfeit
+		model.forfeit_text_fg.visible = true;
+		model.forfeit_text_bg.visible = true;
+		forfeit_text_fg.setInteractive( true );
+	}
+}
+// TODO: this could be simpler to implement if Rules returned a more consistent object structure, or even included a flag like "must_forfeit"
+function has_moves( model ) {
+	var turns = model.pixi_board.__hive_possible_turns;
+	return !!turns
+		&& (("Placement" in turns 
+			&& turns["Placement"].piece_types.length > 0 
+			&& _.keys( turns["Placement"].positions ).length > 0 )
+		|| ("Movement" in turns 
+			&& _.keys( turns["Movement"] ).length > 0 ))
+}
+function clear_status_text( model ) {
+	model.status_text_fg.setText( "" );
+	model.status_text_bg.setText( "" );
+}
+
+//////////////////////////////////////////////////////////////////
+// fifth-tier functions
 //////////////////////////////////////////////////////////////////
 function get_distance_squared( pos0, pos1 ) {
 	var x = pos1.x - pos0.x;

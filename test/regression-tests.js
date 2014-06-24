@@ -89,6 +89,15 @@ exports["test bug6 should not be able to move pieces of the opponent's color, ev
 	assert.ok( !("0,2" in possible_turns["Movement"]), "Black Player should not be able to move White Beetle" );
 }
 
+exports["test bug7 should allow White Player placement given this board configuration"] = function( assert ) {
+	var save, game, turns;
+
+	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	turns = game.lookup_possible_turns();
+	assert.ok( turns["Placement"].positions.length > 0, "White Player should have at least one valid placement position" );
+}
+
 
 if( module == require.main )
 	require("test").run( exports );
