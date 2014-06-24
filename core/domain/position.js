@@ -28,10 +28,8 @@ function create( row, col ) {
 		row: row,
 		col: col
 	}
-	position.adjacencies = function() {
-		return _.map( directions_enum, function( direction ) {
-			return translation( position, direction );
-		});
+	position.copy = function() {
+		return create( position.row, position.col );
 	}
 	position.encode = function() {
 		return encode( position );
@@ -39,10 +37,16 @@ function create( row, col ) {
 	position.translation = function( direction ) {
 		return translation( position, direction );
 	}
-	position.copy = function() {
-		return create( position.row, position.col );
+	position.adjacencies = function() {
+		return _.map( directions_enum, function( direction ) {
+			return translation( position, direction );
+		});
 	}
 	return position;
+}
+
+function copy( position ) {
+	return position.copy();
 }
 
 function encode( position ) {
@@ -78,8 +82,16 @@ function translation( position, direction ) {
 	}
 }
 
-function copy( position ) {
-	return position.copy();
+function rotation( direction, clockwise ) {
+	switch( direction ) {
+		case "12 o'clock": return clockwise ?  "2 o'clock" : "10 o'clock"; break;
+		case "2 o'clock":  return clockwise ?  "4 o'clock" : "12 o'clock"; break;
+		case "4 o'clock":  return clockwise ?  "6 o'clock" :  "2 o'clock"; break;
+		case "6 o'clock":  return clockwise ?  "8 o'clock" :  "4 o'clock"; break;
+		case "8 o'clock":  return clockwise ? "10 o'clock" :  "6 o'clock"; break;
+		case "10 o'clock": return clockwise ? "12 o'clock" :  "8 o'clock"; break;
+		default:           throw "unrecognized direction " + direction; break;
+	}
 }
 
 // exports
@@ -87,10 +99,11 @@ function copy( position ) {
 exports.directions_enum = directions_enum;
 
 exports.create = create;
+exports.copy = copy;
 exports.encode = encode;
 exports.encode_all = encode_all;
 exports.decode = decode;
 exports.decode_all = decode_all;
 exports.translation = translation;
-exports.copy = copy;
+exports.rotation = rotation;
 

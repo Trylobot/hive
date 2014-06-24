@@ -257,7 +257,10 @@ Beetle
 	  A: Yes. (albeit in a different way): Beetles cannot slide through "gates"
 */
 function find_valid_movement_Beetle( board, position ) {
-	return board.lookup_adjacent_jump_positions( position );
+	return _.union(
+		board.lookup_adjacent_slide_positions( position ),
+		board.lookup_adjacent_climb_positions( position )
+	);
 }
 
 /*

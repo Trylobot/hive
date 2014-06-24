@@ -144,7 +144,8 @@ function create() {
 		});
 	}
 	// return a list of positions valid to slide into, using the can_slide_lookup_table
-	// optionally, treat a specific position as empty
+	//   a slide is defined as a movement from one position to another where the stack_height of both positions is zero
+	//   optionally, treat a specific position as empty
 	board.lookup_adjacent_slide_positions = function( position, assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
 		var occupied_adjacencies_lookup_key_array = [], i;
@@ -170,33 +171,30 @@ function create() {
 		}
 		return position_list;
 	}
-	board.lookup_adjacent_jump_positions = function( position, assuming_empty_position ) {
+	// return a list of positions valid to climb onto
+	//   a climb is a movement from one position to another where one or both of the positions are occupied (height > 0)
+	//   optionally, treat a specific position as empty (not used yet)
+	board.lookup_adjacent_climb_positions = function( position, assuming_empty_position ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
 		var position_list = [];
-		// self_height: it is safe to assume the piece in question is the one on top of the stack
 		var self_height = board.lookup_piece_stack_height( position ) - 1;
-		for( var i = 0; i < 6; ++i ) {
-			var direction = Position.directions_enum[i];
-			var lookup_key_array = [];
+		var adjacencies = {};
+		_.forEach( Position.directions_enum, function( direction ) {
 			var translated_position = position.translation( direction );
-			// translated_height: this value represents the height this piece will be at if it moves on top of the piece at translated_position
-			var translated_height = board.lookup_piece_stack_height( translated_position ); 
-			var max_height = Math.max( self_height, translated_height );
-			_.forEach( Position.directions_enum, function( direction ) { // shadowing is intentional
-				var translated_position = position.translation( direction ); // shadowing is intentional
-				var translated_position_key = translated_position.encode(); // shadowing is intentional
-				var piece_at_height = board.lookup_piece_at_height( translated_position, max_height ); // looking for "gates" one level or higher than the target
-				if( translated_position_key != assuming_empty_position_key
-				&&  piece_at_height )
-					lookup_key_array.push( "1" );
-				else
-					lookup_key_array.push( "." );
-			});
-			var lookup_key = lookup_key_array.join( "" );
-			var valid_directions_result_key = can_slide_lookup_table[ lookup_key ];
-			if( valid_directions_result_key[i] === "1" )
-				position_list.push( translated_position ); // refers to first declaration; shadow dropped, intentionally
-		}
+			adjacencies[ direction ] = {
+				position: translated_position,
+				height: board.lookup_piece_stack_height( translated_position )
+			};
+		});
+		_.forEach( Position.directions_enum, function( direction ) {
+			var cursor = adjacencies[ direction ];
+			if( cursor.height == 0 && self_height == 0 )
+				return; // moving from height=0 to height=0 is considered a "slide" and is subjected to different constraints
+			var slide_height = Math.max( self_height, cursor.height );
+			if( adjacencies[ Position.rotation( direction, false )].height <= slide_height
+			||  adjacencies[ Position.rotation( direction, true )].height  <= slide_height )
+				position_list.push( cursor.position );
+		});
 		return position_list;
 	}
 	// return a list of positions occupied by one or more stacked pieces
@@ -341,7 +339,7 @@ function create() {
 // values in this lookup table are specified in precisely the same way as the lookup keys
 //   except that they mean which directions are valid to slide into, instead of which ones are occupied
 var can_slide_lookup_table = {
-	"......": "111111", // island piece can move anywhere (in theory)
+	"......": "......", // island cannot move
 	".....1": "1...1.", // slide around single piece
 	"....1.": "...1.1", // slide around single piece
 	"....11": "1..1..", // slide alongside pair of adjacent pieces

@@ -53,9 +53,9 @@
 			"trimmed": false
 		},
 		"White Spider": {
-			"frame":            { "x": 304,"y":   0, "w": 109,"h": 127 },
-			"spriteSourceSize": { "x":   0,"y":   0, "w": 109,"h": 127 },
-			"sourceSize":       {                    "w": 109,"h": 127 },
+			"frame":            { "x": 309,"y":   0, "w": 104,"h": 127 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 104,"h": 127 },
+			"sourceSize":       {                    "w": 104,"h": 127 },
 			"rotated": false,
 			"trimmed": false
 		},
@@ -110,9 +110,9 @@
 			"trimmed": false
 		},
 		"Black Spider": {
-			"frame":            { "x": 304,"y": 135, "w": 109,"h": 127 },
-			"spriteSourceSize": { "x":   0,"y":   0, "w": 109,"h": 127 },
-			"sourceSize":       {                    "w": 109,"h": 127 },
+			"frame":            { "x": 309,"y": 135, "w": 104,"h": 127 },
+			"spriteSourceSize": { "x":   0,"y":   0, "w": 104,"h": 127 },
+			"sourceSize":       {                    "w": 104,"h": 127 },
 			"rotated": false,
 			"trimmed": false
 		},

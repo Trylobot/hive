@@ -186,7 +186,6 @@ function do_turn( model, turn ) {
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
-		// TODO: memory leak?
 		model.stage.removeChild( model.pixi_board );
 		model.pixi_board = null;
 		model.stage.removeChild( model.pixi_white_hand );
@@ -221,8 +220,8 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	tile_sprite.anchor.set( 0.5, 0.5 );
 	var symbol_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
 	symbol_sprite.anchor.set( 0.5, 0.5 );
-	symbol_sprite.rotation = get_random_rotation();
 	var container = new PIXI.DisplayObjectContainer();
+	container.__symbol_sprite = symbol_sprite;
 	container.addChild( tile_sprite );
 	container.addChild( symbol_sprite );
 	return container;
@@ -259,6 +258,8 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var hive_piece = hive_piece_stack[ hive_piece_stack.length - 1 ];
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
+		var rotation = 0; // get_random_rotation(); // random rotations feature is only half-baked
+		pixi_piece.rotation = rotation;
 		position_register.pixi_piece = pixi_piece;
 		pixi_piece.position.set( position.col * model.col_delta_x, position.row * model.row_delta_y );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
@@ -684,7 +685,7 @@ function get_distance_squared( pos0, pos1 ) {
 	return x*x + y*y;
 }
 function get_random_rotation() {
-	return 2 * Math.PI * (1.0/6.0) * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
+	return 2.0 * Math.PI * (1.0/6.0) * Math.floor( Math.random() * 6.0 ); // random rotation from six possible orientations (multiples of 60 degrees)
 }
 function point_equal( pos0, pos1 ) {
 	return (pos0.x == pos1.x 

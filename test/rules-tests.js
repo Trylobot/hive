@@ -61,7 +61,7 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		_.contains( valid_movement, "-1,1" ) &&
 		_.contains( valid_movement, "-1,-1" ),
 		"Beetle able to perform basic slides and to climb up" );
-	board.move_piece( Position( 0, 0 ), Position.create( -2, 0 ));
+	board.move_piece( Position.create( 0, 0 ), Position.create( -2, 0 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( -2, 0 )));
 	assert.ok(
 		valid_movement.length == 6 &&
@@ -93,14 +93,27 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, 1 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
 	assert.ok(
-		valid_movement.length == 5 &&
+		valid_movement.length == 4 &&
 		_.contains( valid_movement, "1,-1" ) &&
 		_.contains( valid_movement, "1,1" ) &&
 		_.contains( valid_movement, "-1,1" ) &&
 		_.contains( valid_movement, "-1,-1" ), // notably NOT -2,0
 		"Beetle blocked from climbing up by a gate" );
 
-	// TODO: test that beetle can jump down from being up on the hive, even through a "lower-level" gate
+	// test that beetle can jump down from being up on the hive, even through a "lower-level" gate
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 2, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -1, -1 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, 1 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( -1, 1 )));
+	assert.ok(
+		_.contains( valid_movement, "0,0" ),
+		"Beetle can climb down into hole" );
+
 	// TODO: test that beetle can jump into a "hole" surrounded on all sides
 	// TODO: test that beetle can jump up and down to and from large stacks of 4x or more pieces
 }
