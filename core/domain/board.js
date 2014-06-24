@@ -286,12 +286,17 @@ function create() {
 	}
 	// check whether a board is contiguous
 	//   returns true if contiguous
-	// optionally, treat a specific position as empty
-	board.check_contiguity = function( assuming_empty_position ) {
-		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+	// optionally, treat a specific position as if it were missing its topmost piece
+	board.check_contiguity = function( assuming_piece_moved_position ) {
+		var assuming_piece_moved_position_key = (typeof assuming_piece_moved_position !== "undefined") ? assuming_piece_moved_position.encode() : undefined;
 		var occupied_piece_position_keys = _.keys( board.pieces );
-		// do not count the assumed empty position, if it is specified, and occupied (normal case for most lookups)
-		_.pull( occupied_piece_position_keys, assuming_empty_position_key ); // does nothing if assuming_empty_position was not specified, or if the specified position is not actually occupied
+		// do not count the assumed empty position, if it is specified, and occupied with height == 1 (normal case for most lookups); height > 1 has no effect on contiguity
+		if( typeof assuming_piece_moved_position !== "undefined"
+		&&  board.lookup_piece_stack_height( assuming_piece_moved_position ) <= 1 ) {
+			_.pull( occupied_piece_position_keys, assuming_piece_moved_position_key ); // does nothing if assuming_empty_position was not specified, or if the specified position is not actually occupied
+		} else {
+			assuming_piece_moved_position_key = undefined; // position key should no longer be treated as empty, because there would be a piece underneath
+		}
 		// count pieces expected to have been visited at the end
 		var occupied_space_count = occupied_piece_position_keys.length;
 		if( occupied_space_count == 0 )
@@ -312,7 +317,7 @@ function create() {
 					// and the position is not being filtered via function argument
 					if( typeof adjacency.contents !== "undefined" 
 					&& !( adjacency.position_key in visited_pieces )
-					&& adjacency.position_key != assuming_empty_position_key ) {
+					&& adjacency.position_key != assuming_piece_moved_position_key ) {
 						visited_pieces[ adjacency.position_key ] = true;
 						pieces_to_visit_next.push( adjacency.position );
 					}

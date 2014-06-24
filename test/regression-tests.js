@@ -71,6 +71,15 @@ exports["test bug4 can't move beetle but should be able to"] = function( assert 
 	assert.ok( "-3,-1" in possible_turns["Movement"], "should be able to move the Black Beetle" );
 }
 
+exports["test bug5 can't move beetle but should be able to"] = function( assert ) {
+	var save, game, possible_turns;
+
+	save = JSON.parse('{"creation_parameters":{"use_mosquito":false,"use_ladybug":false,"use_pillbug":false},"turn_history":[{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},{"turn_type":"Placement","piece_type":"Spider","destination":"-1,1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-1,-1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-2,2"},{"turn_type":"Movement","source":"-1,-1","destination":"1,-1"},{"turn_type":"Movement","source":"-2,2","destination":"-3,1"},{"turn_type":"Movement","source":"1,-1","destination":"0,0"},{"turn_type":"Movement","source":"-3,1","destination":"-1,1"}]}');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	assert.ok( "0,0" in possible_turns["Movement"], "should be able to move the White Beetle" );
+}
+
 
 if( module == require.main )
 	require("test").run( exports );
