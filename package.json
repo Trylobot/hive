@@ -1,34 +1,35 @@
 {
-	"name": "hive",
-	"version": "0.0.1",
-	"description": "Hive AI Development Tool",
-	"scripts": {
-		"test": "node test/all-tests.js"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/Trylobot/hive.git"
-	},
-	"keywords": [
-		"hive",
-		"ai"
-	],
-	"author": "Trylobot",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/Trylobot/hive/issues"
-	},
-	"homepage": "https://github.com/Trylobot/hive",
-	"engines": {
-		"node": "~0.10.28",
-		"npm": "~1.4.9"
-	},
-	"dependencies": {
-		"mersenne": "~0.0.3",
-		"lodash": "~2.4.1",
-		"async": "~0.9.0"
-	},
-	"devDependencies": {
-		"test": "~0.6.0"
-	}
+  "name": "hive",
+  "version": "0.0.1",
+  "description": "Hive AI Development Tool",
+  "scripts": {
+    "test": "node test/all-tests.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Trylobot/hive.git"
+  },
+  "keywords": [
+    "hive",
+    "ai"
+  ],
+  "author": "Trylobot",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Trylobot/hive/issues"
+  },
+  "homepage": "https://github.com/Trylobot/hive",
+  "engines": {
+    "node": "~0.10.28",
+    "npm": "~1.4.9"
+  },
+  "dependencies": {
+    "mersenne": "~0.0.3",
+    "lodash": "~2.4.1",
+    "async": "~0.9.0"
+  },
+  "devDependencies": {
+    "grunt-node-webkit-builder": "^0.1.21",
+    "test": "~0.6.0"
+  }
 }
