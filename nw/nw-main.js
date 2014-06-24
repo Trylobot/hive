@@ -169,6 +169,8 @@ function show_hive_game( model ) {
 	update_status_text( model );
 	position_status_text( model );
 	position_hands( model );
+	// TODO: handle turn forfeiture case
+	// ...
 }
 function do_turn( model, turn ) {
 	console.log( turn );
@@ -253,6 +255,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		container.__hive_positions[ position_key ] = position_register;
 		var hive_piece_stack = hive_board.lookup_piece_stack( position );
 		// add all the pieces below the potentially interactive piece, so that if there's a stack, the user can see what's down 1 layer at least
+		// TODO: this has never worked. Why?
 		if( hive_piece_stack.length >= 2 ) {
 			for( var i = 0; i < hive_piece_stack.length - 2; ++i ) {
 				container.addChild( create_pixi_piece( hive_piece_stack[i] ));
@@ -468,9 +471,6 @@ function pixi_piece_mousedown( ix ) {
 	var self = this;
 	// left-click drag: start
 	if( ix.originalEvent.button == 0 ) {
-		// move this piece to the highest z-layer so it's overtop everything else
-		model.pixi_board.removeChild( self );
-		model.pixi_board.addChild( self );
 		// create a "ghost" in place of the piece that is being moved, so the player can see where it used to be
 		self.__hive_drag_start_mouse = _.clone( ix.global );
 		self.__hive_drag_start_pixi_piece = _.clone( self.position );
@@ -480,8 +480,13 @@ function pixi_piece_mousedown( ix ) {
 		pixi_piece_set_move_marquee_visible.call( self, 1, true );
 		// show ghost-piece representing destination
 		self.__hive_pixi_ghost.visible = true;
+		// move this piece, and its ghost, to the highest z-layer so it's overtop everything else
+		model.pixi_board.removeChild( self.__hive_pixi_ghost );
+		model.pixi_board.addChild( self.__hive_pixi_ghost );
+		model.pixi_board.removeChild( self );
+		model.pixi_board.addChild( self );
+		pixi_piece_mousemove.call( self, ix );
 	}
-	pixi_piece_mousemove.call( self, ix );
 }
 function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 	var self = this;

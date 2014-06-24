@@ -40,6 +40,13 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		},
 		turn_history: []
 	}
+	game.lookup_possible_turns = function() {
+		return Rules.lookup_possible_turns( 
+			game.player_turn, 
+			game.board, 
+			game.hands[ game.player_turn ], 
+			game.turn_number );
+	}
 	game.perform_turn = function( turn_object ) {
 		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?
 		var turn_type = turn_object.turn_type;
@@ -59,6 +66,8 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 				var position_0 = Position.decode( turn_object.source );
 				var position_1 = Position.decode( turn_object.destination );
 				game.board.move_piece( position_0, position_1 );
+				break;
+			case "Forfeit":
 				break;
 			default:
 				throw "invalid turn type: " + turn_type;
