@@ -341,7 +341,7 @@ function create() {
 // values in this lookup table are specified in precisely the same way as the lookup keys
 //   except that they mean which directions are valid to slide into, instead of which ones are occupied
 var can_slide_lookup_table = {
-	"......": "......", // island cannot move
+	"......": "111111", // island piece can move anywhere (in theory)
 	".....1": "1...1.", // slide around single piece
 	"....1.": "...1.1", // slide around single piece
 	"....11": "1..1..", // slide alongside pair of adjacent pieces

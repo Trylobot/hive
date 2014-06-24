@@ -221,6 +221,7 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	tile_sprite.anchor.set( 0.5, 0.5 );
 	var symbol_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
 	symbol_sprite.anchor.set( 0.5, 0.5 );
+	symbol_sprite.rotation = get_random_rotation();
 	var container = new PIXI.DisplayObjectContainer();
 	container.addChild( tile_sprite );
 	container.addChild( symbol_sprite );
@@ -262,7 +263,6 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		pixi_piece.position.set( position.col * model.col_delta_x, position.row * model.row_delta_y );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
-		pixi_piece.rotation = 2 * Math.PI * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
 		// movement for this piece ?
 		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
 			pixi_piece.__hive_position_key = position_key;
@@ -683,11 +683,13 @@ function get_distance_squared( pos0, pos1 ) {
 	var y = pos1.y - pos0.y;
 	return x*x + y*y;
 }
+function get_random_rotation() {
+	return 2 * Math.PI * (1.0/6.0) * Math.floor( Math.random() * 6 ); // random rotation from six possible orientations (multiples of 60 degrees)
+}
 function point_equal( pos0, pos1 ) {
 	return (pos0.x == pos1.x 
 		&&  pos0.y == pos1.y);
 }
-
 function log_point( pixi_point, msg ) {
 	console.log( "("+pixi_point.x+","+pixi_point.y+") " + msg?msg:"" );
 }

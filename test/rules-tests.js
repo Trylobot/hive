@@ -60,7 +60,18 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		_.contains( valid_movement, "-2,0" ) &&
 		_.contains( valid_movement, "-1,1" ) &&
 		_.contains( valid_movement, "-1,-1" ),
-		"Beetle able to perform basic movement and jumps" );
+		"Beetle able to perform basic slides and to climb up" );
+	board.move_piece( Position( 0, 0 ), Position.create( -2, 0 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( -2, 0 )));
+	assert.ok(
+		valid_movement.length == 6 &&
+		_.contains( valid_movement, "-4,0" ) &&
+		_.contains( valid_movement, "-3,1" ) &&
+		_.contains( valid_movement, "-1,1" ) &&
+		_.contains( valid_movement, "0,0" ) &&
+		_.contains( valid_movement, "-1,-1" ) &&
+		_.contains( valid_movement, "-3,-1" ),
+		"Beetle able to climb back down" );
 
 
 	// test that beetle cannot climb up onto a piece through a "gate" (but can otherwise climb up)
@@ -78,7 +89,7 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		_.contains( valid_movement, "-1,1" ) &&
 		_.contains( valid_movement, "-1,-1" ) &&
 		_.contains( valid_movement, "-2,0" ),
-		"Beetle able to jump up" );
+		"Beetle able to climb up" );
 	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, 1 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
 	assert.ok(
@@ -87,7 +98,7 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		_.contains( valid_movement, "1,1" ) &&
 		_.contains( valid_movement, "-1,1" ) &&
 		_.contains( valid_movement, "-1,-1" ), // notably NOT -2,0
-		"Beetle blocked from jumping up" );
+		"Beetle blocked from climbing up by a gate" );
 
 	// TODO: test that beetle can jump down from being up on the hive, even through a "lower-level" gate
 	// TODO: test that beetle can jump into a "hole" surrounded on all sides
