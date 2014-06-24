@@ -69,7 +69,7 @@ function create() {
 		}, 0 );
 	}
 	// return list of search results
-	// optionally filter by type and/or color
+	//   optionally filter by type and/or color
 	board.search_pieces = function( piece_color, piece_type ) {
 		var results = [];
 		_.forEach( board.pieces, function( piece_stack, position_key ) {
@@ -87,6 +87,24 @@ function create() {
 		});
 		return results;
 	}
+	// return list of search results, scanning only pieces on topmost layers of each piece-stack
+	//   optionally filter by type and/or color
+	board.search_top_pieces = function( piece_color, piece_type ) {
+		var results = [];
+		_.forEach( board.pieces, function( piece_stack, position_key ) {
+			var piece = board.lookup_piece_by_key( position_key );
+			if( (piece.type == piece_type   || typeof piece_type === "undefined")
+			&&  (piece.color == piece_color || typeof piece_color === "undefined") ) {
+				results.push({
+					position_key: position_key,
+					position: Position.decode( position_key ),
+					layer: board.lookup_piece_stack_height_by_key( position_key ) - 1,
+					piece: piece
+				});
+			}
+		});
+		return results;
+	}
 	// 
 	board.lookup_occupied_position_keys = function() {
 		return _.keys( board.pieces );
@@ -97,13 +115,20 @@ function create() {
 	}
 	// return the entire piece-stack at position (or undefined if not found)
 	board.lookup_piece_stack = function( position ) {
-		var position_key = position.encode();
+		return board.lookup_piece_stack_by_key( position.encode() );
+	}
+	// return the entire piece-stack at position (or undefined if not found)
+	board.lookup_piece_stack_by_key = function( position_key ) {
 		var piece_stack = board.pieces[ position_key ];
 		return piece_stack;
 	}
 	// return the number of pieces stacked at the given position;
 	board.lookup_piece_stack_height = function( position ) {
-		var stack = board.lookup_piece_stack( position );
+		return board.lookup_piece_stack_height_by_key( position.encode() );
+	}
+	// return the number of pieces stacked at the given position;
+	board.lookup_piece_stack_height_by_key = function( position_key ) {
+		var stack = board.lookup_piece_stack_by_key( position_key );
 		if( stack )
 			return stack.length;
 		return 0;

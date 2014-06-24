@@ -80,6 +80,15 @@ exports["test bug5 can't move beetle but should be able to"] = function( assert 
 	assert.ok( "0,0" in possible_turns["Movement"], "should be able to move the White Beetle" );
 }
 
+exports["test bug6 should not be able to move pieces of the opponent's color, ever, but can with stacked beetles"] = function( assert ) {
+	var save, game, possible_turns;
+
+	save = JSON.parse('{"creation_parameters":{"use_mosquito":false,"use_ladybug":false,"use_pillbug":false},"turn_history":[{"turn_type":"Placement","piece_type":"Beetle","destination":"0,0"},{"turn_type":"Placement","piece_type":"Beetle","destination":"2,0"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-1,1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"3,1"},{"turn_type":"Movement","source":"-1,1","destination":"1,1"},{"turn_type":"Movement","source":"2,0","destination":"1,1"},{"turn_type":"Movement","source":"0,0","destination":"1,1"},{"turn_type":"Movement","source":"1,1","destination":"2,0"},{"turn_type":"Movement","source":"2,0","destination":"0,0"},{"turn_type":"Movement","source":"1,1","destination":"0,0"},{"turn_type":"Movement","source":"0,0","destination":"-1,1"},{"turn_type":"Movement","source":"3,1","destination":"2,0"},{"turn_type":"Movement","source":"0,0","destination":"1,1"},{"turn_type":"Movement","source":"-1,1","destination":"1,1"},{"turn_type":"Movement","source":"1,1","destination":"0,2"},{"turn_type":"Movement","source":"0,2","destination":"-1,1"},{"turn_type":"Movement","source":"1,1","destination":"2,2"},{"turn_type":"Movement","source":"-1,1","destination":"0,2"},{"turn_type":"Movement","source":"2,2","destination":"1,3"},{"turn_type":"Movement","source":"2,0","destination":"3,1"},{"turn_type":"Movement","source":"1,3","destination":"2,2"},{"turn_type":"Movement","source":"0,2","destination":"-1,1"},{"turn_type":"Movement","source":"2,2","destination":"1,1"},{"turn_type":"Movement","source":"3,1","destination":"2,0"},{"turn_type":"Movement","source":"1,1","destination":"2,2"},{"turn_type":"Movement","source":"-1,1","destination":"0,2"},{"turn_type":"Movement","source":"2,2","destination":"0,2"},{"turn_type":"Movement","source":"0,2","destination":"1,3"},{"turn_type":"Movement","source":"1,3","destination":"0,2"},{"turn_type":"Movement","source":"0,2","destination":"2,2"},{"turn_type":"Movement","source":"2,2","destination":"0,2"}]}');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	possible_turns = game.lookup_possible_turns();
+	assert.ok( !("0,2" in possible_turns["Movement"]), "Black Player should not be able to move White Beetle" );
+}
+
 
 if( module == require.main )
 	require("test").run( exports );

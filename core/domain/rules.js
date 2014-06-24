@@ -63,7 +63,7 @@ function lookup_possible_turns( color, board, hand, turn_number ) {
 		piece_types: valid_placement_piece_types,
 		positions: valid_placement_positions
 	};
-	var positions_of_owned_pieces = board.search_pieces( color );
+	var positions_of_owned_pieces = board.search_top_pieces( color ); // "A piece with a beetle on top of it is unable to move ..."
 	possible_turns["Movement"] = {};
 	_.forEach( positions_of_owned_pieces, function( lookup_result ) {
 		var movement = find_valid_movement( board, lookup_result.position );
