@@ -1,17 +1,19 @@
 "use strict";
 
 // dependencies
-var _ = require("lodash");
-_(global).extend(require("./core/domain/util"));
 var package_json = require("./package.json");
-var Piece = require("./core/domain/piece");
-var Position = require("./core/domain/position");
-var Turn = require("./core/domain/turn");
-var Board = require("./core/domain/board");
-var Rules = require("./core/domain/rules");
-var Game = require("./core/domain/game");
-var Player = require("./core/domain/player");
-var Core = require("./core/core");
+var fs = require("fs");
+var basepath = fs.existsSync("./core/") ? "./core/" : "../core/";
+var _ = require("lodash");
+_(global).extend(require(basepath+"domain/util"));
+var Piece = require(basepath+"domain/piece");
+var Position = require(basepath+"domain/position");
+var Turn = require(basepath+"domain/turn");
+var Board = require(basepath+"domain/board");
+var Rules = require(basepath+"domain/rules");
+var Game = require(basepath+"domain/game");
+var Player = require(basepath+"domain/player");
+var Core = require(basepath+"core");
 
 /*
 nw-main.js
