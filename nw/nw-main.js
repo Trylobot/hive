@@ -367,7 +367,7 @@ function create_pixi_hand( color, hive_hand ) {
 		if( "Placement" in model.pixi_board.__hive_possible_turns
 		&&  "piece_types" in model.pixi_board.__hive_possible_turns["Placement"]
 		&&  "positions" in model.pixi_board.__hive_possible_turns["Placement"] 
-		&&  model.pixi_board.__hive_possible_turns["Placement"].positions.length > 0 ) {
+		&&  _.keys( model.pixi_board.__hive_possible_turns["Placement"].positions ).length > 0 ) {
 			if( color == model.game_instance.game.player_turn
 			&&  _.contains( model.pixi_board.__hive_possible_turns["Placement"].piece_types, piece_type )) {
 				sprite.setInteractive( true );
