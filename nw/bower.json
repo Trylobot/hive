@@ -3,6 +3,6 @@
 	"version": "0.0.1",
 	"dependencies": {
 		"pixi.js": "~1.5.2",
-		"tween.js": "git@github.com:sole/tween.js.git#r14"
+		"tween.js": "https://github.com/sole/tween.js#r14"
 	}
 }
