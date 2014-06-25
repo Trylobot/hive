@@ -2,16 +2,16 @@
 
 // dependencies
 var _ = require("lodash");
-_(global).extend(require("../core/domain/util"));
+_(global).extend(require("./core/domain/util"));
 var package_json = require("./package.json");
-var Piece = require("../core/domain/piece");
-var Position = require("../core/domain/position");
-var Turn = require("../core/domain/turn");
-var Board = require("../core/domain/board");
-var Rules = require("../core/domain/rules");
-var Game = require("../core/domain/game");
-var Player = require("../core/domain/player");
-var Core = require("../core/core");
+var Piece = require("./core/domain/piece");
+var Position = require("./core/domain/position");
+var Turn = require("./core/domain/turn");
+var Board = require("./core/domain/board");
+var Rules = require("./core/domain/rules");
+var Game = require("./core/domain/game");
+var Player = require("./core/domain/player");
+var Core = require("./core/core");
 
 /*
 nw-main.js
