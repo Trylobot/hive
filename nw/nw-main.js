@@ -192,7 +192,7 @@ function show_hive_game( model ) {
 	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns );
 	model.pixi_board = pixi_board;
 	model.scale_i = model.default_scale_i; // default
-	pixi_board.position.set( model.renderer_halfWidth, model.renderer_halfHeight );
+	pixi_board.position.set( model.renderer_halfWidth, model.renderer_halfHeight + Math.floor(model.hand_gutter_size/2) );
 	model.stage.addChild( pixi_board );
 	//
 	var pixi_white_hand = create_pixi_hand( "White", hive_game.hands["White"] );
@@ -221,6 +221,7 @@ function do_turn( model, turn ) {
 	model.scale_i = scale_i;
 	model.pixi_board.scale.set( scale, scale );
 	model.stage.setInteractive( true );
+	verify_board_integrity( model );
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
@@ -232,6 +233,41 @@ function clear_hive_game( model ) {
 		model.pixi_black_hand = null;
 		clear_status_text( model );
 	}
+}
+function verify_board_integrity( model ) {
+	var hive_pieces = model.game_instance.game.board.pieces;
+	//var pixi_pieces = model.pixi_board.children;
+	//var pixi_position_register = model.pixi_board.__hive_positions;
+	// these three things need to agree, always.
+	var errors = [];
+	_.forEach( hive_pieces, function( piece_stack, position_key ) {
+		_.forEach( piece_stack, function( hive_piece ) {
+			var position = Position.decode( position_key );
+			var pixi_point = new PIXI.Point( 
+				position.col * model.col_delta_x, 
+				position.row * model.row_delta_y );
+			var pixi_piece = _.find( model.pixi_board.children, function( pixi_piece ) {
+				return( pixi_piece.position.x == pixi_point.x && pixi_piece.position.y == pixi_point.y 
+					&& pixi_piece.__hive_piece && pixi_piece.__hive_piece.color == hive_piece.color && pixi_piece.__hive_piece.type == hive_piece.type );
+			});
+			if( typeof pixi_piece === "undefined" ) {
+				errors.push({
+					position_key: position_key,
+					expected_hive_piece: hive_piece,
+					expected_UI_position: pixi_point,
+					actual_PIXI_Sprites_at_UI_position: _.filter( model.pixi_board.children, function( pixi_piece ) {
+						return( pixi_piece.position.x == pixi_point.x && pixi_piece.position.y == pixi_point.y );
+					}),
+					actual_PIXI_Sprite_registered_at_position_key: model.pixi_board.__hive_positions[ position_key ]
+				});
+			}
+		});
+	});
+	if( errors.length > 0 )
+		console.error({
+			verify_board_integrity: false,
+			errors: errors 
+		});
 }
 
 //////////////////////////////////////////////////////////////////
