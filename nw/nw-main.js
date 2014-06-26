@@ -37,6 +37,7 @@ var model = {
 	spritemap_loader: null,
 	textures: null,
 	pixi_board: null,
+	pixi_board_piece_rotations: null,
 	pixi_white_hand: null,
 	pixi_black_hand: null,
 	hand_gutter_size: null,
@@ -120,6 +121,7 @@ requestAnimFrame( animate );
 // hive domain
 var core = Core.create();
 model.core = core;
+model.pixi_board_piece_rotations = {};
 // dat.gui
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
@@ -228,6 +230,7 @@ function start_game( args ) { //$scope.start_game = function() {
 	var use_mosquito = args[ "Use Mosquito" ];
 	var use_ladybug = args[ "Use Ladybug" ];
 	var use_pillbug = args[ "Use Pillbug" ];
+	model.pixi_board_piece_rotations = {};
 	model.game_id = core.create_game(
 		Player.create( "Human" ), // White Player
 		Player.create( "Human" ), // Black Player
@@ -263,8 +266,6 @@ function show_hive_game( model ) {
 	update_status_text( model );
 	position_status_text( model );
 	position_hands( model );
-	// TODO: handle turn forfeiture case
-	// ...
 }
 function do_turn( model, turn ) {
 	console.log( turn );
@@ -274,7 +275,9 @@ function do_turn( model, turn ) {
 	var scale = model.scale_values[ scale_i ];
 	clear_hive_game( model );
 	model.game_instance.game.perform_turn( turn );
+	////////////////////////
 	show_hive_game( model );
+	////////////////////////
 	model.pixi_board.position.set( position.x, position.y );
 	model.scale_i = scale_i;
 	model.pixi_board.scale.set( scale, scale );
@@ -326,6 +329,17 @@ function verify_board_integrity( model ) {
 			verify_board_integrity: false,
 			errors: errors 
 		});
+}
+function resolve_pixi_board_piece_rotation( registry, position_key, stack_layer, piece_color, piece_type ) {
+	var key = position_key + "," + stack_layer + "/" + piece_color + "/" + piece_type;
+	var rotation = registry[ key ];
+	if( typeof rotation === "undefined" ) {
+		rotation = get_random_rotation();
+		registry[ key ] = rotation;
+		return rotation;
+	} else {
+		return rotation;
+	}
 }
 
 //////////////////////////////////////////////////////////////////
@@ -381,6 +395,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var position = Position.decode( position_key );
 		var pixi_x = position.col * model.col_delta_x;
 		var pixi_y = position.row * model.row_delta_y;
+		var hive_piece;
 		var position_register = {
 			occupied: true,
 			hive_piece: null,
@@ -392,19 +407,22 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		// add all the pieces below the potentially interactive piece, so that if there's a stack, the user can see what's down 1 layer at least
 		if( hive_piece_stack_height >= 2 ) {
 			for( var i = 0; i <= hive_piece_stack_height - 2; ++i ) {
-				var underneath_pixi_piece = create_pixi_piece( hive_piece_stack[i] );
+				hive_piece = hive_piece_stack[i];
+				var underneath_pixi_piece = create_pixi_piece( hive_piece );
 				underneath_pixi_piece.position.set( pixi_x, pixi_y );
+				underneath_pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
+					model.pixi_board_piece_rotations, position_key, i, hive_piece.color, hive_piece.type );
 				container.addChild( underneath_pixi_piece );
 			}
 		}
 		// add the piece on top; potentially interactive
-		var hive_piece = hive_piece_stack[ hive_piece_stack_height - 1 ];
+		hive_piece = hive_piece_stack[ hive_piece_stack_height - 1 ];
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
-		var rotation = 0; // get_random_rotation(); // random rotations feature is only half-baked
-		pixi_piece.rotation = rotation;
 		position_register.pixi_piece = pixi_piece;
 		pixi_piece.position.set( pixi_x, pixi_y );
+		pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
+			model.pixi_board_piece_rotations, position_key, hive_piece_stack_height - 1, hive_piece.color, hive_piece.type );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
 		// add indicator for stacked pieces
