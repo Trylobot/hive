@@ -42,6 +42,8 @@ var model = {
 	hand_gutter_size: null,
 	scale_values: null,
 	scale_i: null,
+	hand_text_font: null,
+	stack_counter_text_font: null,
 	status_text_font: null,
 	status_text_fg: null,
 	status_text_bg: null,
@@ -81,6 +83,8 @@ model.background.mouseupoutside = background_mouseup;
 model.background.mouseout = background_mouseup;
 model.stage.addChild( model.background );
 // status text (global, static)
+model.hand_text_font = "700 36px DINPro";
+model.stack_counter_text_font = "700 36px DINPro";
 model.status_text_font = "700 48px DINPro";
 var status_text_fg = new PIXI.Text( "", { font: model.status_text_font, fill: "White" });
 var status_text_bg = new PIXI.Text( "", { font: model.status_text_font, fill: "Black" });
@@ -312,6 +316,8 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	// for now, only shows pieces on top of each piece-stack
 	// due to top-down orthogonal view
 	var container = new PIXI.DisplayObjectContainer();
+	var stack_counters = new PIXI.DisplayObjectContainer();
+	container.__stack_counters = stack_counters;
 	container.__hive_board = hive_board;
 	container.__hive_possible_turns = hive_possible_turns;
 	container.__hive_positions = {};
@@ -328,16 +334,17 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		};
 		container.__hive_positions[ position_key ] = position_register;
 		var hive_piece_stack = hive_board.lookup_piece_stack( position );
+		var hive_piece_stack_height = hive_piece_stack.length;
 		// add all the pieces below the potentially interactive piece, so that if there's a stack, the user can see what's down 1 layer at least
-		if( hive_piece_stack.length >= 2 ) {
-			for( var i = 0; i <= hive_piece_stack.length - 2; ++i ) {
+		if( hive_piece_stack_height >= 2 ) {
+			for( var i = 0; i <= hive_piece_stack_height - 2; ++i ) {
 				var underneath_pixi_piece = create_pixi_piece( hive_piece_stack[i] );
 				underneath_pixi_piece.position.set( pixi_x, pixi_y );
 				container.addChild( underneath_pixi_piece );
 			}
 		}
 		// add the piece on top; potentially interactive
-		var hive_piece = hive_piece_stack[ hive_piece_stack.length - 1 ];
+		var hive_piece = hive_piece_stack[ hive_piece_stack_height - 1 ];
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
 		var rotation = 0; // get_random_rotation(); // random rotations feature is only half-baked
@@ -346,6 +353,20 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		pixi_piece.position.set( pixi_x, pixi_y );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
+		// add indicator for stacked pieces
+		if( hive_piece_stack_height >= 2 ) {
+			var font = model.stack_counter_text_font;
+			var color = hive_piece.color;
+			var opposite_color = Piece.opposite_color( color );
+			var indicator_x = pixi_x + 5;
+			var indicator_y = pixi_y + 32;
+			var count_text_fg = new PIXI.Text( hive_piece_stack_height + "x", { font: font, fill: color });
+			var count_text_bg = new PIXI.Text( hive_piece_stack_height + "x", { font: font, fill: opposite_color });
+			count_text_fg.position.set( indicator_x, indicator_y - 2 );
+			count_text_bg.position.set( indicator_x, indicator_y );
+			stack_counters.addChild( count_text_fg );
+			stack_counters.addChild( count_text_bg );
+		}
 		// movement for this piece ?
 		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
 			pixi_piece.__hive_position_key = position_key;
@@ -379,6 +400,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		container.addChildAt( position_register["Black Marquee"], 0 ); // underneath all existing objects
 		container.__hive_positions[ position_key ] = position_register;
 	});
+	container.addChild( stack_counters );
 	return container;
 }
 // depends on global: model
@@ -389,7 +411,7 @@ function create_pixi_hand( color, hive_hand ) {
 	var opposite_color = Piece.opposite_color( color );
 	var default_alpha = 0.25;
 	var scale = 0.75;
-	var font = "700 36px DINPro";
+	var font = model.hand_text_font;
 	var c_x = 10;
 	var piece_types;
 	// ordering hack
@@ -617,6 +639,10 @@ function pixi_piece_mouseup( ix ) {
 				Position.decode( self.__hive_position_key ),
 				Position.decode( self.__hive_pixi_ghost.__hive_position_key ));
 			_.defer( do_turn, model, turn );
+		} else {
+			// re-up the stack counters, one of which will have been hidden by this board-neutral action
+			model.pixi_board.removeChild( model.pixi_board.__stack_counters );
+			model.pixi_board.addChild( model.pixi_board.__stack_counters );
 		}
 		// move this actual piece
 		// TODO: tween this
