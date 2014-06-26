@@ -106,6 +106,11 @@ CHOOSE_TURN request
   source: "0,0",
   destination: "2,0"
 }
+{
+  response_type: "CHOOSE_TURN",
+  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  turn_type: "Forfeit"
+}
 ```
 
 ![Hexagonal Addressing System (Layer = 0)](https://raw.githubusercontent.com/Trylobot/hive/master/doc/grid.png)
