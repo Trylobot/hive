@@ -32,3 +32,39 @@ body {
 .PIXI-Renderer {
 	position: absolute;
 }
+
+.dg .dg.main.a {
+	margin: auto;
+	float: none;
+	width: 400px !important;
+}
+.dg input[type=checkbox] {
+	zoom: 3;
+	position: relative;
+	top: -7px;
+}
+.dg li.cr:not(.folder) {
+	font-family: "DINPro";
+	font-weight: 100;
+	font-size: 36px;
+	white-space: nowrap;
+	height: 50px;
+	line-height: 50px;
+}
+.dg li.cr.function .property-name,
+.dg li.cr.boolean .property-name {
+	width: 80%;
+}
+.dg li.cr.boolean .c {
+	width: 20%;
+}
+.dg.main .close-button {
+	width: 400px !important;
+	font-family: "DINPro";
+	font-weight: 100;
+	font-size: 16px;
+	height: 26px;
+	line-height: 26px;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+}

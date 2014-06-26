@@ -55,7 +55,11 @@ var model = {
 	// hive domain
 	core: null,
 	game_id: null,
-	game_instance: null
+	game_instance: null,
+	// dat.gui
+	dat_gui: null,
+	open_file_dialog: null,
+	save_file_dialog: null
 };
 register_window_size( model );
 model.scale_values = [ 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 1, 1.25, 1.5, 2, 2.5, 3 ];
@@ -65,7 +69,7 @@ model.default_scale_i = model.scale_values.indexOf( 1 );
 model.scale_i = model.default_scale_i;
 // spritemap
 model.spritemap_loader = new PIXI.AssetLoader([ "spritemap.json" ]);
-model.spritemap_loader.onComplete = on_assets_loaded;
+model.spritemap_loader.onComplete = initialize_textures;
 model.spritemap_loader.load();
 // stage
 model.background_color = 0x808080;
@@ -116,6 +120,45 @@ requestAnimFrame( animate );
 // hive domain
 var core = Core.create();
 model.core = core;
+// dat.gui
+model.open_file_dialog = document.getElementById("open_file_dialog");
+model.save_file_dialog = document.getElementById("save_file_dialog");
+model.dat_gui = {
+	"Start New Game": function() {
+		start_game( model.dat_gui );
+		gui.close();
+	},
+	"Use Mosquito": false,
+	"Use Ladybug": false,
+	"Use Pillbug": false,
+	"Load Game": function() {
+		choose_read_file_path( function( path ) {
+			fs.readFile( path, function( error, data ) {
+				load_game( data );
+			});
+		});
+		gui.close();
+	},
+	"Save Game": function() {
+		choose_write_file_path( function( path ) {
+			var data = save_game();
+			fs.writeFile( path, data );
+		});
+		gui.close();
+	},
+	"Open Debugger": function() {
+		require("nw.gui").Window.get().showDevTools();
+		gui.close();
+	}
+};
+var gui = new dat.GUI();
+gui.add( model.dat_gui, "Start New Game" );
+gui.add( model.dat_gui, "Use Mosquito" );
+gui.add( model.dat_gui, "Use Ladybug" );
+gui.add( model.dat_gui, "Use Pillbug" );
+gui.add( model.dat_gui, "Load Game" );
+gui.add( model.dat_gui, "Save Game" );
+gui.add( model.dat_gui, "Open Debugger" );
 
 //////////////////////////////////////////////////////////////////
 // first-tier functions
@@ -130,11 +173,6 @@ function animate( time ) {
 	model.renderer.render( model.stage );
 	requestAnimFrame( animate );
 	TWEEN.update( time );
-}
-function on_assets_loaded() {
-	initialize_textures();
-	// start game after an arbitrary delay to allow fonts to be loaded (ultimately this will be in response to a form submit)
-	start_game();
 }
 function initialize_textures() {
 	model.textures = {};
@@ -151,6 +189,22 @@ function initialize_textures() {
 			model.textures[ frame_key ] = PIXI.Texture.fromFrame( frame_key );
 		});
 	});
+}
+function choose_read_file_path( callback_fn ) {
+	model.open_file_dialog.addEventListener( "change", change_fn );
+	function change_fn( event ) {
+		this.removeEventListener( "change", change_fn );
+		callback_fn( this.value );
+	}
+	model.open_file_dialog.click();
+}
+function choose_write_file_path( callback_fn ) {
+	model.save_file_dialog.addEventListener( "change", change_fn );
+	function change_fn( event ) {
+		this.removeEventListener( "change", change_fn );
+		callback_fn( this.value );
+	}
+	model.save_file_dialog.click();
 }
 // global
 function save_game() {
@@ -170,10 +224,10 @@ function load_game( saved_game_json_str ) {
 	show_hive_game( model );
 }
 //
-function start_game() { //$scope.start_game = function() {
-	var use_mosquito = false;
-	var use_ladybug = false;
-	var use_pillbug = false;
+function start_game( args ) { //$scope.start_game = function() {
+	var use_mosquito = args[ "Use Mosquito" ];
+	var use_ladybug = args[ "Use Ladybug" ];
+	var use_pillbug = args[ "Use Pillbug" ];
 	model.game_id = core.create_game(
 		Player.create( "Human" ), // White Player
 		Player.create( "Human" ), // Black Player
@@ -479,9 +533,11 @@ function document_mousewheel( event ) {
 function window_resize() {
 	register_window_size( model );
 	model.renderer.resize( model.renderer_width, model.renderer_height );
-	update_background_hit_rect( model );
-	position_status_text( model );
-	position_hands( model );
+	if( model.game_instance ) {
+		update_background_hit_rect( model );
+		position_status_text( model );
+		position_hands( model );
+	}
 }
 
 function forfeit_mouseover( ix ) {

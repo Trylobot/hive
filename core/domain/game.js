@@ -99,17 +99,14 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 	if( use_mosquito ) {
 		game.hands["White"]["Mosquito"] = 1;
 		game.hands["Black"]["Mosquito"] = 1;
-		throw "not yet implemented";
 	}
 	if( use_ladybug ) {
 		game.hands["White"]["Ladybug"] = 1;
 		game.hands["Black"]["Ladybug"] = 1;
-		throw "not yet implemented";
 	}
 	if( use_pillbug ) {
 		game.hands["White"]["Pillbug"] = 1;
 		game.hands["Black"]["Pillbug"] = 1;
-		throw "not yet implemented";
 	}
 	return game;
 }

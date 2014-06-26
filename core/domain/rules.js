@@ -327,7 +327,7 @@ Mosquito
 
 */
 function find_valid_movement_Mosquito( board, position ) {
-	throw "not yet implemented";
+	return []; // not yet implemented
 }
 
 /*
@@ -342,7 +342,7 @@ Ladybug
 
 */
 function find_valid_movement_Ladybug( board, position ) {
-	throw "not yet implemented";
+	return []; // not yet implemented
 }
 
 /*
@@ -367,7 +367,7 @@ Pillbug
 
 */
 function find_valid_movement_Pillbug( board, position ) {
-	throw "not yet implemented";
+	return []; // not yet implemented
 }
 
 // exports

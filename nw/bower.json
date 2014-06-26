@@ -3,6 +3,7 @@
 	"version": "0.0.1",
 	"dependencies": {
 		"pixi.js": "~1.5.2",
-		"tweenjs": "#r14"
+		"tweenjs": "#r14",
+		"dat.gui": "#v0.5"
 	}
 }
