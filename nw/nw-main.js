@@ -867,6 +867,18 @@ function update_status_text( model ) {
 		var player_turn_friendly = Math.floor( model.game_instance.game.turn_number / 2 ) + 1;
 		text = color + "'s turn " + player_turn_friendly;
 		text = color + "'s turn " + player_turn_friendly;
+		//
+		model.forfeit_text_fg.setStyle({ font: model.status_text_font, fill: color });
+		model.forfeit_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
+		if( has_moves( model )) {
+			model.forfeit_text_fg.visible = false;
+			model.forfeit_text_bg.visible = false;
+			forfeit_text_fg.setInteractive( false );
+		} else { // no moves, must forfeit
+			model.forfeit_text_fg.visible = true;
+			model.forfeit_text_bg.visible = true;
+			forfeit_text_fg.setInteractive( true );
+		}
 	} else {
 		if( ! game_over_status.is_draw ) {
 			color = game_over_status.winner;
@@ -881,18 +893,6 @@ function update_status_text( model ) {
 	model.status_text_bg.setText( text );
 	model.status_text_fg.setStyle({ font: model.status_text_font, fill: color });
 	model.status_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
-	//
-	model.forfeit_text_fg.setStyle({ font: model.status_text_font, fill: color });
-	model.forfeit_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
-	if( has_moves( model )) {
-		model.forfeit_text_fg.visible = false;
-		model.forfeit_text_bg.visible = false;
-		forfeit_text_fg.setInteractive( false );
-	} else { // no moves, must forfeit
-		model.forfeit_text_fg.visible = true;
-		model.forfeit_text_bg.visible = true;
-		forfeit_text_fg.setInteractive( true );
-	}
 }
 // TODO: this could be simpler to implement if Rules returned a more consistent object structure, or even included a flag like "must_forfeit"
 function has_moves( model ) {
