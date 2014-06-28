@@ -551,8 +551,8 @@ function document_mousewheel( event ) {
 function window_resize() {
 	register_window_size( model );
 	model.renderer.resize( model.renderer_width, model.renderer_height );
+	update_background_hit_rect( model );
 	if( model.game_instance ) {
-		update_background_hit_rect( model );
 		position_status_text( model );
 		position_hands( model );
 	}
