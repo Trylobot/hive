@@ -86,6 +86,10 @@ exports["test rules find_valid_movement"] = function( assert ) {
 
 }
 
+exports["test rules find_valid_special_abilities"] = function( assert ) {
+
+}
+
 exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
 	var game, board, valid_movement;
 
@@ -198,11 +202,19 @@ exports["test rules find_valid_movement_Mosquito"] = function( assert ) {
 
 }
 
+exports["test rules find_valid_special_abilities_Mosquito"] = function( assert ) {
+
+}
+
 exports["test rules find_valid_movement_Ladybug"] = function( assert ) {
 
 }
 
 exports["test rules find_valid_movement_Pillbug"] = function( assert ) {
+
+}
+
+exports["test rules find_valid_special_abilities_Pillbug"] = function( assert ) {
 
 }
 

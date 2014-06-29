@@ -219,6 +219,23 @@ function find_valid_movement( board, position ) {
 		case "Mosquito":    return find_valid_movement_Mosquito(    board, position ); break;
 		case "Ladybug":     return find_valid_movement_Ladybug(     board, position ); break;
 		case "Pillbug":     return find_valid_movement_Pillbug(     board, position ); break;
+		default:            throw "unrecognized piece type: " + piece.type;            break;
+	}
+}
+
+function find_valid_special_abilities( board, position, turn_history ) {
+	var piece = board.lookup_piece( position );
+	switch( piece.type )
+	{   
+		case "Queen Bee":   return [];                                                       break;
+		case "Beetle":      return [];                                                       break;
+		case "Grasshopper": return [];                                                       break;
+		case "Spider":      return [];                                                       break;
+		case "Soldier Ant": return [];                                                       break;
+		case "Mosquito":    return find_valid_special_abilities_Mosquito( board, position ); break;
+		case "Ladybug":     return [];                                                       break;
+		case "Pillbug":     return find_valid_special_abilities_Pillbug(  board, position ); break;
+		default:            throw "unrecognized piece type: " + piece.type;                  break;
 	}
 }
 
@@ -229,7 +246,7 @@ Queen Bee
 
 */
 function find_valid_movement_Queen_Bee( board, position ) {
-	return _.values( board.lookup_slide_destinations_within_range( position, 1, 1 ));
+	return board.lookup_adjacent_slide_positions( position );
 }
 
 /*
@@ -327,7 +344,52 @@ Mosquito
 
 */
 function find_valid_movement_Mosquito( board, position ) {
-	return []; // not yet implemented
+	if( board.lookup_piece_stack_height( position ) > 1 ) // on top of the hive
+		return find_valid_movement_Beetle( board, position );
+	else { // not on top of the hive
+		var adjacent_piece_types = _.unique( _.map( board.lookup_adjacent_positions( position ),
+			function( adjacency ) {
+				var piece_stack = adjacency.contents;
+				if( typeof piece_stack !== "undefined" )
+					return piece_stack[ piece_stack.length - 1 ].type; // type of top piece
+			}
+		));
+		var movement = _.union( _.map( adjacent_piece_types, 
+			function( piece_type ) {
+				switch( piece_type )
+				{   
+					case "Queen Bee":   return find_valid_movement_Queen_Bee(   board, position ); break;
+					case "Beetle":      return find_valid_movement_Beetle(      board, position ); break;
+					case "Grasshopper": return find_valid_movement_Grasshopper( board, position ); break;
+					case "Spider":      return find_valid_movement_Spider(      board, position ); break;
+					case "Soldier Ant": return find_valid_movement_Soldier_Ant( board, position ); break;
+					case "Mosquito":    return [];                                                 break;
+					case "Ladybug":     return find_valid_movement_Ladybug(     board, position ); break;
+					case "Pillbug":     return find_valid_movement_Pillbug(     board, position ); break;
+					default:            throw "unrecognized piece type: " + piece_type;            break;
+				}
+			}
+		));
+		return movement;
+	}
+}
+
+function find_valid_special_abilities_Mosquito( board, position, turn_history ) {
+	if( board.lookup_piece_stack_height( position ) > 1 ) // on top of the hive
+		return [];
+	else { // not on top of the hive
+		var adjacent_piece_types = _.unique( _.map( board.lookup_adjacent_positions( position ),
+			function( adjacency ) {
+				var piece_stack = adjacency.contents;
+				if( typeof piece_stack !== "undefined" )
+					return piece_stack[ piece_stack.length - 1 ].type; // type of top piece
+			}
+		));
+		if( _.contains( adjacent_piece_types, "Pillbug" ))
+			return find_valid_special_abilities_Pillbug( board, position, turn_history );
+		else
+			return [];
+	}
 }
 
 /*
@@ -370,6 +432,10 @@ function find_valid_movement_Pillbug( board, position ) {
 	return []; // not yet implemented
 }
 
+function find_valid_special_abilities_Pillbug( board, position, turn_history ) {
+	return [];
+}
+
 // exports
 
 exports.lookup_possible_turns = lookup_possible_turns;
@@ -379,12 +445,14 @@ exports.check_any_movement_allowed = check_any_movement_allowed;
 exports.check_if_game_over = check_if_game_over;
 exports.find_valid_placement_positions = find_valid_placement_positions;
 exports.find_valid_movement = find_valid_movement;
+exports.find_valid_special_abilities = find_valid_special_abilities;
 exports.find_valid_movement_Queen_Bee = find_valid_movement_Queen_Bee;
 exports.find_valid_movement_Beetle = find_valid_movement_Beetle;
 exports.find_valid_movement_Grasshopper = find_valid_movement_Grasshopper;
 exports.find_valid_movement_Spider = find_valid_movement_Spider;
 exports.find_valid_movement_Soldier_Ant = find_valid_movement_Soldier_Ant;
+exports.find_valid_special_abilities_Mosquito = find_valid_special_abilities_Mosquito;
 exports.find_valid_movement_Mosquito = find_valid_movement_Mosquito;
 exports.find_valid_movement_Ladybug = find_valid_movement_Ladybug;
 exports.find_valid_movement_Pillbug = find_valid_movement_Pillbug;
-
+exports.find_valid_special_abilities_Pillbug = find_valid_special_abilities_Pillbug;
