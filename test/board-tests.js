@@ -28,6 +28,95 @@ exports["test board move_piece"] = function( assert ) {
 		"expected to find moved piece at specified position" );
 }
 
+exports["test board remove_piece"] = function( assert ) {
+	var board;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	assert.ok( _.keys( board.pieces ).length == 1, "one piece on the board" );
+	board.remove_piece( Position.create( 0, 0 ));
+	assert.ok( _.keys( board.pieces ).length == 0, "no pieces on the board" );
+}
+
+exports["test board count_pieces"] = function( assert ) {
+	var board, count;
+
+	board = Board.create();
+	count = board.count_pieces();
+	assert.equal( count, 0, "expected 0 pieces" );
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 1, 1 ));
+	count = board.count_pieces();
+	assert.equal( count, 3, "expected 3 pieces" );
+	count = board.count_pieces( "White", undefined );
+	assert.equal( count, 3, "expected 3 pieces" );
+	count = board.count_pieces( undefined, "Queen Bee" );
+	assert.equal( count, 1, "expected 1 piece" );
+	count = board.count_pieces( undefined, "Spider" );
+	assert.equal( count, 2, "expected 2 pieces" );
+	count = board.count_pieces( "Black", "Spider" );
+	assert.equal( count, 0, "expected 0 pieces" );
+}
+
+exports["test board search_pieces"] = function( assert ) {
+	var board, results;
+
+	board = Board.create();
+	results = board.search_pieces();
+	assert.equal( results.length, 0, "expected 0 pieces" );
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 1, 1 ));
+	results = board.search_pieces();
+	assert.equal( results.length, 3, "expected 3 pieces" );
+	results = board.search_pieces( "White", undefined );
+	assert.equal( results.length, 3, "expected 3 pieces" );
+	results = board.search_pieces( undefined, "Queen Bee" );
+	assert.equal( results.length, 1, "expected 1 piece" );
+	results = board.search_pieces( undefined, "Spider" );
+	assert.equal( results.length, 1, "expected 1 piece" );
+	results = board.search_pieces( undefined, "Beetle" );
+	assert.equal( results.length, 1, "expected 1 piece" );
+	results = board.search_pieces( "Black", "Spider" );
+	assert.equal( results.length, 0, "expected 0 pieces" );
+}
+
+exports["test board search_top_pieces"] = function( assert ) {
+	var board, results;
+
+	board = Board.create();
+	results = board.search_top_pieces();
+	assert.equal( results.length, 0, "expected 0 pieces" );
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 1, 1 ));
+	results = board.search_top_pieces();
+	assert.equal( results.length, 2, "expected 2 pieces" );
+	results = board.search_top_pieces( "White", undefined );
+	assert.equal( results.length, 2, "expected 2 pieces" );
+	results = board.search_top_pieces( undefined, "Queen Bee" );
+	assert.equal( results.length, 1, "expected 1 piece" );
+	results = board.search_top_pieces( undefined, "Spider" );
+	assert.equal( results.length, 0, "expected 0 pieces" );
+	results = board.search_top_pieces( undefined, "Beetle" );
+	assert.equal( results.length, 1, "expected 1 piece" );
+	results = board.search_top_pieces( "Black", "Spider" );
+	assert.equal( results.length, 0, "expected 0 pieces" );
+}
+
+exports["test board lookup_occupied_positions, lookup_occupied_position_keys"] = function( assert ) {
+	
+}
+
+exports["test board lookup_piece_stack, lookup_piece_stack_by_key"] = function( assert ) {
+	
+}
+
+exports["test board lookup_piece_stack_height, lookup_piece_stack_height_by_key"] = function( assert ) {
+	
+}
+
 exports["test board lookup_piece, lookup_piece_by_key"] = function( assert ) {
 	var board, piece;
 
@@ -67,18 +156,6 @@ exports["test board lookup_piece_at_height"] = function( assert ) {
 	
 }
 
-exports["test board lookup_occupied_positions, lookup_occupied_position_keys"] = function( assert ) {
-	
-}
-
-exports["test board count_pieces"] = function( assert ) {
-	
-}
-
-exports["test board search_pieces"] = function( assert ) {
-	
-}
-
 exports["test board lookup_adjacent_positions"] = function( assert ) {
 	var board, adjacent_pieces;
 
@@ -92,55 +169,6 @@ exports["test board lookup_adjacent_positions"] = function( assert ) {
 		_.reduce( adjacent_pieces, function( sum, adjacency ) { return sum + (!!adjacency.contents ? 1 : 0); }, 0 ),
 		2,
 		"number of occupied adjacencies match expected" );
-}
-
-exports["test board lookup_free_spaces"] = function( assert ) {
-	var board, free_spaces;
-
-	board = Board.create();
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
-	free_spaces = board.lookup_free_spaces();
-	assert.deepEqual(
-		_.difference(
-			_.keys( free_spaces ),
-			[ "-2,0", "-1,1", "1,1", "2,0", "1,-1", "-1,-1" ]
-		),
-		[],
-		"free spaces (unfiltered) found exactly match those expected" );
-
-	board = Board.create();
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
-	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
-	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
-	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
-	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
-	
-	free_spaces = board.lookup_free_spaces();
-	assert.deepEqual(
-		_.difference(
-			_.keys( free_spaces ),
-			[ "-3,-1", "-2,0", "-1,1", "0,2", "2,2", "4,2", "5,1", "4,0", "2,0", "1,-1", "0,-2", "-2,-2" ]
-		),
-		[],
-		"free spaces (unfiltered) found exactly match those expected" );
-	
-	free_spaces = board.lookup_free_spaces( "White" );
-	assert.deepEqual(
-		_.difference(
-			_.keys( free_spaces ),
-			[ "4,2", "5,1", "4,0" ]
-		),
-		[],
-		"free spaces (White) found exactly match those expected" );
-	
-	free_spaces = board.lookup_free_spaces( "Black" );
-	assert.deepEqual(
-		_.difference(
-			_.keys( free_spaces ),
-			[ "-3,-1", "0,2", "0,-2", "-2,-2" ]
-		),
-		[],
-		"free spaces (Black) found exactly match those expected" );
 }
 
 exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
@@ -163,6 +191,10 @@ exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
 			{ row: 0, col: -2 }
 		]),
 		"slide positions are correct" );
+}
+
+exports["test board lookup_adjacent_climb_positions"] = function( assert ) {
+
 }
 
 exports["test board lookup_occupied_adjacencies"] = function( assert ) {
@@ -228,6 +260,55 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 
 }
 
+exports["test board lookup_free_spaces"] = function( assert ) {
+	var board, free_spaces;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	free_spaces = board.lookup_free_spaces();
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "-2,0", "-1,1", "1,1", "2,0", "1,-1", "-1,-1" ]
+		),
+		[],
+		"free spaces (unfiltered) found exactly match those expected" );
+
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, -1 ));
+	
+	free_spaces = board.lookup_free_spaces();
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "-3,-1", "-2,0", "-1,1", "0,2", "2,2", "4,2", "5,1", "4,0", "2,0", "1,-1", "0,-2", "-2,-2" ]
+		),
+		[],
+		"free spaces (unfiltered) found exactly match those expected" );
+	
+	free_spaces = board.lookup_free_spaces( "White" );
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "4,2", "5,1", "4,0" ]
+		),
+		[],
+		"free spaces (White) found exactly match those expected" );
+	
+	free_spaces = board.lookup_free_spaces( "Black" );
+	assert.deepEqual(
+		_.difference(
+			_.keys( free_spaces ),
+			[ "-3,-1", "0,2", "0,-2", "-2,-2" ]
+		),
+		[],
+		"free spaces (Black) found exactly match those expected" );
+}
+
 exports["test board find_free_space_in_direction"] = function( assert ) {
 	
 }
@@ -268,7 +349,7 @@ exports["test board check_contiguity"] = function( assert ) {
 
 }
 
-exports["test board check_contiguity bug1"] = function( assert ) {
+exports["test board bug1 check_contiguity"] = function( assert ) {
 	var board;
 
 	// regression-tests, bug1

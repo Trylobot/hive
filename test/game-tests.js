@@ -4,6 +4,10 @@ exports["test game create"] = function( assert ) {
 
 }
 
+exports["test game save"] = function( assert ) {
+
+}
+
 exports["test game load"] = function( assert ) {
 
 }

@@ -38,7 +38,8 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 			use_ladybug: use_ladybug,
 			use_pillbug: use_pillbug,
 		},
-		turn_history: []
+		turn_history: [],
+		possible_turns: null
 	}
 	game.lookup_possible_turns = function() {
 		return Rules.lookup_possible_turns( 
@@ -75,6 +76,7 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.turn_number++;
 		game.player_turn = Piece.opposite_color( game.player_turn );
 		game.turn_history.push( _.clone( turn_object ));
+		game.possible_turns = game.lookup_possible_turns();
 	}
 	game.save = function() {
 		return {
@@ -108,6 +110,8 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.hands["White"]["Pillbug"] = 1;
 		game.hands["Black"]["Pillbug"] = 1;
 	}
+	// ---
+	game.possible_turns = game.lookup_possible_turns();
 	return game;
 }
 

@@ -244,11 +244,7 @@ function start_game( args ) { //$scope.start_game = function() {
 }
 function show_hive_game( model ) {
 	var hive_game = model.game_instance.game;
-	var hive_possible_turns = Rules.lookup_possible_turns( 
-		hive_game.player_turn, 
-		hive_game.board, 
-		hive_game.hands[ hive_game.player_turn ],
-		hive_game.turn_number );
+	var hive_possible_turns = hive_game.possible_turns;
 	//
 	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns );
 	model.pixi_board = pixi_board;

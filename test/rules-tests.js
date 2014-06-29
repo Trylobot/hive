@@ -13,26 +13,68 @@ exports["test rules lookup_possible_turns"] = function( assert ) {
 
 	// TODO: test that Queen Bee cannot be placed on turn# 0 (first turn)
 	
-	// TODO: test that Queen Bee must be placed by turn# 3 (fourth turn)
-
 	// TODO: test that movement turn cannot leave the board in the same state as it was originally
 	//   this turn would be indistinguishable from a "pass" turn and is not allowed
 	//   (when a player has legal moves)
 }
 
 exports["test rules check_force_queen_placement"] = function( assert ) {
+	var game, board, check;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( -3, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	check = Rules.check_force_queen_placement( "White", board, 4 );
+	assert.ok( !check,
+		"Queen Bee placement not yet enforced" );
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( -3, -1 ));
+	check = Rules.check_force_queen_placement( "White", board, 6 );
+	assert.ok( check,
+		"Queen Bee must be placed by either player's fourth turn" );
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -4, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, 0 ));
+	check = Rules.check_force_queen_placement( "White", board, 8 );
+	assert.ok( !check,
+		"Queen Bee confirmed already placed" );
+}
+
+exports["test rules check_allow_queen_placement"] = function( assert ) {
+	var game, board, valid_movement;
+
+	
+}
+
+exports["test rules check_any_movement_allowed"] = function( assert ) {
 
 }
 
 exports["test rules check_if_game_over"] = function( assert ) {
+	var game, board, game_status;
 
-}
-
-exports["test rules check_allow_queen_placement"] = function( assert ) {
-
-}
-
-exports["test rules check_any_movement_allowed"] = function( assert ) {
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -1, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 2, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, -1 ));
+	game_status = Rules.check_if_game_over( board );
+	assert.ok( !game_status.game_over, "Game not yet over" );
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -1, -1 ));
+	game_status = Rules.check_if_game_over( board );
+	assert.ok( game_status.game_over && game_status.winner == "Black", "Game is over, winner Black" );
+	board.remove_piece( Position.create( -1, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -3, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 2 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 2 ));
+	game_status = Rules.check_if_game_over( board );
+	assert.ok( !game_status.game_over, "Game not yet over" );
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( -1, 1 ));
+	game_status = Rules.check_if_game_over( board );
+	assert.ok( game_status.game_over && typeof game_status.winner == "undefined" && game_status.is_draw, "Game is over, draw" );
 
 }
 
@@ -45,6 +87,18 @@ exports["test rules find_valid_movement"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
+	var game, board, valid_movement;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -3, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Queen_Bee( board, Position.create( -3, 1 )));
+	assert.ok( set_equality( valid_movement, 
+		["-4,0","-1,1"] ),
+		"Queen Bee movement matches expected" );
+
 
 }
 
@@ -55,11 +109,8 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -2, 0 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
-	assert.ok(
-		valid_movement.length == 3 &&
-		_.contains( valid_movement, "-2,0" ) &&
-		_.contains( valid_movement, "-1,1" ) &&
-		_.contains( valid_movement, "-1,-1" ),
+	assert.ok( set_equality( valid_movement, 
+		["-2,0","-1,1","-1,-1"] ),
 		"Beetle able to perform basic slides and to climb up" );
 	board.move_piece( Position.create( 0, 0 ), Position.create( -2, 0 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( -2, 0 )));

@@ -1,3 +1,5 @@
+var _ = require("lodash");
+
 /*
 utils.js
 misc utilities
@@ -17,6 +19,15 @@ String.prototype.cycle_chars = function( num ) {
 	if( num < 0 )
 		num = this.length + num; // wrap
 	return this.substr( this.length - num ) + this.substr( 0, this.length - num );
+}
+
+// 
+function set_equality( set0, set1 ) {
+	return( set0.length == set1.length && set0.length == _.intersection( set0, set1 ).length );
+}
+
+function json_equality( value0, value1 ) {
+	return JSON.stringify( value0 ) == JSON.stringify( value1 );
 }
 
 // the following are well-tested externally sourced functions
@@ -47,6 +58,8 @@ function isNumber( n ) {
 	return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
+exports.set_equality = set_equality;
+exports.json_equality = json_equality;
 exports.base62_encode = base62_encode;
 exports.pad = pad;
 exports.isNumber = isNumber;

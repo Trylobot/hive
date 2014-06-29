@@ -1,6 +1,6 @@
 var Position = require("../core/domain/position");
 
-exports["test position create, encode, decode, encode_all, decode_all"] = function( assert ) {
+exports["test position create, encode, decode"] = function( assert ) {
 	var position, position_key;
 
 	position = Position.create( 0, 0 );
@@ -31,11 +31,25 @@ exports["test position create, encode, decode, encode_all, decode_all"] = functi
 		JSON.stringify( position ),
 		JSON.stringify( { row: -3, col: 5 } ),
 		"decoded position has the correct data" );
+}
 
-	// TODO: test encode_all
+exports["test position encode_all, decode_all"] = function( assert ) {
+	var position_array, position_key_array, position_array2;
 
-	// TODO: test decode_all
-	
+	position_array = [
+		Position.create( 0, 0 ),
+		Position.create( -1, -1 ),
+		Position.create( 2, 0 )
+	];
+	position_key_array = Position.encode_all( position_array );
+	assert.ok( json_equality( position_key_array,
+		["0,0","-1,-1","2,0"] ),
+		"positions encoded properly" );
+
+	position_array2 = Position.decode_all( position_key_array );
+	assert.ok( json_equality( position_array, 
+		position_array2 ),
+		"positions decoded properly" );
 }
 
 exports["test position translation"] = function( assert ) {
@@ -81,7 +95,12 @@ exports["test position translation"] = function( assert ) {
 }
 
 exports["test position copy"] = function( assert ) {
-	
+	var position, position2;
+
+	position = Position.create( 0, 0 );
+	position2 = position.copy();
+	assert.ok( json_equality( position, position2 ),
+		"position copied" );
 }
 
 if( module == require.main )

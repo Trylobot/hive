@@ -98,6 +98,17 @@ exports["test bug7 should allow White Player placement given this board configur
 	assert.ok( turns["Placement"].positions.length > 0, "White Player should have at least one valid placement position" );
 }
 
+exports["test bug8 Black Spider should have 4 possible moves"] = function( assert ) {
+	var save, game, turns;
+
+	save = require('./saved_games/black_turn_12__black_spider_should_have_4_moves.json');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	turns = game.lookup_possible_turns();
+	var position_key = game.board.search_pieces( "Black", "Spider" )[0].position_key;
+	assert.ok( turns["Movement"][position_key].length == 4, "Black Spider has 4 possible moves" );
+
+}
+
 
 if( module == require.main )
 	require("test").run( exports );

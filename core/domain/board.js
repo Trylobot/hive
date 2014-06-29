@@ -106,12 +106,12 @@ function create() {
 		return results;
 	}
 	// 
-	board.lookup_occupied_position_keys = function() {
-		return _.keys( board.pieces );
-	}
-	// 
 	board.lookup_occupied_positions = function() {
 		return Position.decode_all( board.lookup_occupied_position_keys );
+	}
+	// 
+	board.lookup_occupied_position_keys = function() {
+		return _.keys( board.pieces );
 	}
 	// return the entire piece-stack at position (or undefined if not found)
 	board.lookup_piece_stack = function( position ) {
