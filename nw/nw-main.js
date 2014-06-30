@@ -38,6 +38,7 @@ var model = {
 	textures: null,
 	pixi_board: null,
 	pixi_board_piece_rotations: null,
+	max_ghost_ui_distance: null,
 	pixi_white_hand: null,
 	pixi_black_hand: null,
 	hand_gutter_size: null,
@@ -66,6 +67,7 @@ register_window_size( model );
 model.scale_values = [ 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 1, 1.25, 1.5, 2, 2.5, 3 ];
 //                       .05   .05  .1   .1   .1   .1   .15  .15  25  .25   .5 .5   .5
 model.hand_gutter_size = 120;
+model.max_ghost_ui_distance = 450;
 model.default_scale_i = model.scale_values.indexOf( 1 );
 model.scale_i = model.default_scale_i;
 // spritemap
@@ -415,6 +417,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		hive_piece = hive_piece_stack[ hive_piece_stack_height - 1 ];
 		position_register.hive_piece = hive_piece;
 		var pixi_piece = create_pixi_piece( hive_piece );
+		pixi_piece.__hive_position_key = position_key;
 		position_register.pixi_piece = pixi_piece;
 		pixi_piece.position.set( pixi_x, pixi_y );
 		pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
@@ -437,7 +440,6 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		}
 		// movement for this piece ?
 		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
-			pixi_piece.__hive_position_key = position_key;
 			pixi_piece.__hive_moves = hive_possible_turns["Movement"][ position_key ]; // list of position keys this piece can move to
 			pixi_piece.interactive = true;
 			pixi_piece.mouseover = pixi_piece_mouseover;
@@ -448,6 +450,25 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			pixi_piece.mouseupoutside = pixi_piece_mouseup;
 		}
 	});
+	//
+	if( hive_possible_turns["Special Ability"] ) {
+		_.forEach( hive_possible_turns["Special Ability"], function( special_abilities, ability_source_position_key ) {
+			// for now there's only one type of special ability; moving a nearby piece
+			_.forEach( special_abilities, function( destination_positions, source_position_key ) {
+				var pixi_piece = container.__hive_positions( source_position_key );
+				pixi_piece.__hive_special_moves = destination_positions; // list of position keys this piece can move to
+				if( !pixi_piece.interactive ) { // piece might already have been made interactive for normal movement
+					pixi_piece.interactive = true;
+					pixi_piece.mouseover = pixi_piece_mouseover;
+					pixi_piece.mouseout = pixi_piece_mouseout;
+					pixi_piece.mousedown = pixi_piece_mousedown;
+					pixi_piece.mousemove = pixi_piece_mousemove;
+					pixi_piece.mouseup = pixi_piece_mouseup;
+					pixi_piece.mouseupoutside = pixi_piece_mouseup;
+				}
+			});
+		});
+	}
 	// 
 	var free_spaces = hive_board.lookup_free_spaces();
 	_.forEach( free_spaces, function( position, position_key ) {
@@ -635,7 +656,8 @@ function pixi_piece_mousedown( ix ) {
 }
 function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 	var self = this;
-	_.forEach( self.__hive_moves, function( position ) {
+	var destinations = _.union( self.__hive_moves, self.__hive_special_moves );
+	_.forEach( destinations, function( position ) {
 		var position_key = position.encode();
 		var position_register = model.pixi_board.__hive_positions[ position_key ];
 		if( position_register.occupied ) {
@@ -661,11 +683,11 @@ function pixi_piece_mousemove( ix ) {
 			self.__hive_drag_start_pixi_piece.x + ((ix.global.x - self.__hive_drag_start_mouse.x) / model.pixi_board.scale.x),
 			self.__hive_drag_start_pixi_piece.y + ((ix.global.y - self.__hive_drag_start_mouse.y) / model.pixi_board.scale.y) );
 		// check distance and if close enough, move ghost piece to the nearby potential move destination
-		var min_squared = Infinity;
+		var min_distance_squared = Infinity;
 		var closest_position_key = null;
 		var closest_pixi_position = null;
 		var self_hive_position = Position.decode( self.__hive_position_key );
-		var hive_moves_and_current_position = _.flatten([ self_hive_position, self.__hive_moves ]);
+		var hive_moves_and_current_position = _.flatten([ self_hive_position, self.__hive_moves, self.__hive_special_moves ]);
 		_.forEach( hive_moves_and_current_position, function( position ) {
 			var position_key = position.encode();
 			var move_position;
@@ -680,14 +702,20 @@ function pixi_piece_mousemove( ix ) {
 				move_position = self.__hive_drag_start_pixi_piece;
 			}
 			var distance_squared = get_distance_squared( move_position, self.position );
-			if( distance_squared < min_squared ) {
-				min_squared = distance_squared;
+			if( distance_squared < min_distance_squared ) {
+				min_distance_squared = distance_squared;
 				closest_position_key = position_key;
 				closest_pixi_position = move_position;
 			}
 		});
-		self.__hive_pixi_ghost.position.set( closest_pixi_position.x, closest_pixi_position.y );
-		self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
+		if( Math.sqrt( min_distance_squared ) <= model.max_ghost_ui_distance ) {
+			self.__hive_pixi_ghost.visible = true;
+			self.__hive_pixi_ghost.position.set( closest_pixi_position.x, closest_pixi_position.y );
+			self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
+		} else {
+			self.__hive_pixi_ghost.visible = false;
+			self.__hive_pixi_ghost.__hive_position_key = null;
+		}
 	}
 }
 function pixi_piece_mouseup( ix ) {
@@ -698,22 +726,34 @@ function pixi_piece_mouseup( ix ) {
 		self.__hive_pixi_marquee.visible = true;
 		// hide all move-marquees
 		pixi_piece_set_move_marquee_visible.call( self, false );
-		// hide ghost
-		self.__hive_pixi_ghost.visible = false;
 		// verify that the new position is not the same as the original position
-		if( ! point_equal( self.__hive_drag_start_pixi_piece, self.__hive_pixi_ghost.position )) {
+		if( self.__hive_pixi_ghost.visible
+		&&  !point_equal( self.__hive_drag_start_pixi_piece, self.__hive_pixi_ghost.position )) {
 			// update hive game state and re-create entire hive board
 			// for piece at    Position.decode( self.__hive_position_key )
 			// to position at  Position.decode( self.__hive_pixi_ghost.__hive_position_key )
-			var turn = Turn.create_movement( 
-				Position.decode( self.__hive_position_key ),
-				Position.decode( self.__hive_pixi_ghost.__hive_position_key ));
+			var turn;
+			var source_position_key = self.__hive_position_key;
+			var destination_position_key = self.__hive_pixi_ghost.__hive_position_key;
+			var source_position = Position.decode( source_position_key );
+			var destination_position = Position.decode( destination_position_key );
+			if( _.contains( self.__hive_moves, destination_position_key )) {
+				turn = Turn.create_movement( 
+					source_position,
+					destination_position );
+			} else if( _.contains( self.__hive_special_moves, destination_position_key )) {
+				turn = Turn.create_special_ability( 
+					source_position,
+					destination_position );
+			}
 			_.defer( do_turn, model, turn );
 		} else {
 			// re-up the stack counters, one of which will have been hidden by this board-neutral action
 			model.pixi_board.removeChild( model.pixi_board.__stack_counters );
 			model.pixi_board.addChild( model.pixi_board.__stack_counters );
 		}
+		// hide ghost
+		self.__hive_pixi_ghost.visible = false;
 		// move this actual piece
 		// TODO: tween this
 		self.position.set( self.__hive_pixi_ghost.position.x, self.__hive_pixi_ghost.position.y );
