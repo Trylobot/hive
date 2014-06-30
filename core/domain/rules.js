@@ -429,11 +429,32 @@ Pillbug
 
 */
 function find_valid_movement_Pillbug( board, position ) {
-	return []; // not yet implemented
+	return board.lookup_adjacent_slide_positions( position );
 }
 
 function find_valid_special_abilities_Pillbug( board, position, turn_history ) {
-	return [];
+	var adjacencies = board.lookup_adjacent_positions( position );
+	var valid_occupied_adjacencies = [];
+	var free_adjacencies = [];
+	_.forEach( adjacencies, function( adjacency, direction ) {
+		var stack_cw = adjacencies[ Position.rotation( direction, true )].contents;
+		var stack_ccw = adjacencies[ Position.rotation( direction, false )].contents;
+		if( stack_cw.height <= 1 || stack_ccw.height <= 1 ) { // piece not sliding through a gate?
+			if( typeof adjacency.contents === "undefined" )
+				free_adjacencies.push( adjacency.position_key );
+			else if( adjacency.contents.length <= 1 // unstacked?
+			&& board.check_contiguity( adjacency.position )) // won't break hive?
+				valid_occupied_adjacencies.push( adjacency.position_key );
+		}
+	});
+	var last_turn = turn_history[ turn_history.length - 1 ];
+	_.pull( valid_occupied_adjacencies, last_turn.destination );
+	// --------------
+	var results = {};
+	_.forEach( valid_occupied_adjacencies, function( occupied_position_key ) {
+		results[ occupied_position_key ] = free_adjacencies;
+	});
+	return results;
 }
 
 // exports
@@ -456,3 +477,4 @@ exports.find_valid_movement_Mosquito = find_valid_movement_Mosquito;
 exports.find_valid_movement_Ladybug = find_valid_movement_Ladybug;
 exports.find_valid_movement_Pillbug = find_valid_movement_Pillbug;
 exports.find_valid_special_abilities_Pillbug = find_valid_special_abilities_Pillbug;
+
