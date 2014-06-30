@@ -17,7 +17,7 @@ exports["test bug1 can't move queen but SHOULD be able to"] = function( assert )
 	game.perform_turn( Turn.create_placement( "Spider", Position.create( -2, 0 )));
 	game.perform_turn( Turn.create_placement( "Queen Bee", Position.create( 1, 1 )));
 	game.perform_turn( Turn.create_placement( "Beetle", Position.create( -3, 1 )));
-	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	possible_turns = game.lookup_possible_turns();
 	assert.ok(
 		"1,1" in possible_turns["Movement"], 
 		"should be able to move the White Queen Bee" );
@@ -33,7 +33,7 @@ exports["test bug2 can't move spider but SHOULD be able to"] = function( assert 
 	game.perform_turn( Turn.create_placement( "Soldier Ant", Position.create( -3, 1 ))); // Place Black Soldier Ant
 	game.perform_turn( Turn.create_movement( Position.create( 2, 0 ), Position.create( 1, 1 ))); // Move White Queen Bee
 	game.perform_turn( Turn.create_placement( "Queen Bee", Position.create( -2, 2 ))); // Place Black Queen Bee
-	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	possible_turns = game.lookup_possible_turns();
 	assert.ok(
 		"0,0" in possible_turns["Movement"],
 		"should be able to move the White Spider" );
@@ -48,7 +48,7 @@ exports["test bug3 can move spider but should NOT be able to"] = function( asser
 	game.perform_turn( Turn.create_placement( "Spider", Position.create( -1, 1 ))); // Place Black Spider
 	game.perform_turn( Turn.create_placement( "Queen Bee", Position.create( 2, 0 ))); // Place White Queen Bee
 	game.perform_turn( Turn.create_placement( "Soldier Ant", Position.create( -3, 1 ))); // Place Black Soldier Ant
-	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	possible_turns = game.lookup_possible_turns();
 	assert.ok(
 		!("0,0" in possible_turns["Movement"]),
 		"should not be able to move the White Spider" );
@@ -67,7 +67,7 @@ exports["test bug4 can't move beetle but should be able to"] = function( assert 
 		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},
 		{"turn_type":"Movement","source":"0,0","destination":"-4,2"}
 	]);
-	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	possible_turns = game.lookup_possible_turns();
 	assert.ok( "-3,-1" in possible_turns["Movement"], "should be able to move the Black Beetle" );
 }
 
@@ -76,7 +76,7 @@ exports["test bug5 can't move beetle but should be able to"] = function( assert 
 
 	save = JSON.parse('{"creation_parameters":{"use_mosquito":false,"use_ladybug":false,"use_pillbug":false},"turn_history":[{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},{"turn_type":"Placement","piece_type":"Spider","destination":"-1,1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-1,-1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-2,2"},{"turn_type":"Movement","source":"-1,-1","destination":"1,-1"},{"turn_type":"Movement","source":"-2,2","destination":"-3,1"},{"turn_type":"Movement","source":"1,-1","destination":"0,0"},{"turn_type":"Movement","source":"-3,1","destination":"-1,1"}]}');
 	game = Game.load( save.creation_parameters, save.turn_history );
-	possible_turns = Rules.lookup_possible_turns( game.player_turn, game.board, game.hands[ game.player_turn ], game.turn_number );
+	possible_turns = game.lookup_possible_turns();
 	assert.ok( "0,0" in possible_turns["Movement"], "should be able to move the White Beetle" );
 }
 

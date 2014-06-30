@@ -265,6 +265,34 @@ function create() {
 		}
 		return result;
 	}
+	// return a map of free spaces that match a highly specific [min,max] height sequential specifier from a start position
+	board.lookup_climb_destinations_matching_height_requirements = function( start_position, height_min_max_array ) {
+		var result = {};
+		var visited = {};
+		var distance = 1;
+		var to_visit = [ start_position ];
+		while( to_visit.length > 0 && distance <= height_min_max_array ) {
+			var to_visit_next = [];
+			_.forEach( to_visit, function( position ) {
+				var position_key = position.encode();
+				visited[ position_key ] = true;
+				var adjacencies = board.lookup_adjacent_climb_positions( position, start_position );
+				_.forEach( adjacencies, function( adjacent_position ) {
+					var adjacent_position_key = adjacent_position.encode();
+					if( !(adjacent_position_key in visited) ) {
+						var height = board.lookup_piece_stack_height_by_key( adjacent_position_key );
+						var height_range = height_min_max_array[ distance - 1 ];
+						if( height >= height_range.min && height <= height_range.max )
+							result[ adjacent_position_key ] = adjacent_position;
+						to_visit_next.push( adjacent_position );
+					}
+				});
+			});
+			to_visit = to_visit_next;
+			distance++;
+		}
+		return result;
+	}
 	// return a map containing the positions of free spaces adjacent to pieces already placed on the board
 	//   key is the position key, value is the position object representing that space
 	// optionally pass a color name to find free spaces that are adjacent to ONLY that color and no other color

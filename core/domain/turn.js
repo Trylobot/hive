@@ -14,6 +14,7 @@ represents a hive turn (movement, placement)
 var turn_types_enum = [
 	"Placement",
 	"Movement",
+	"Special Ability",
 	"Forfeit"
 ];
 
@@ -37,6 +38,14 @@ function create_movement( source, destination ) {
 	return turn;
 }
 
+function create_special_ability( source, destination ) {
+	var turn = {
+		turn_type: "Special Ability",
+		source: source.encode(),
+		destination: destination.encode()
+	}
+}
+
 function create_forfeit() {
 	var turn = {
 		turn_type: "Forfeit"
@@ -48,5 +57,6 @@ function create_forfeit() {
 
 exports.create_placement = create_placement;
 exports.create_movement = create_movement;
+exports.create_special_ability = create_special_ability;
 exports.create_forfeit = create_forfeit;
 

@@ -260,6 +260,10 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 
 }
 
+exports["test board lookup_climb_destinations_matching_height_requirements"] = function( assert ) {
+	
+}
+
 exports["test board lookup_free_spaces"] = function( assert ) {
 	var board, free_spaces;
 

@@ -46,7 +46,8 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 			game.player_turn, 
 			game.board, 
 			game.hands[ game.player_turn ], 
-			game.turn_number );
+			game.turn_number,
+			game.turn_history );
 	}
 	game.perform_turn = function( turn_object ) {
 		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?

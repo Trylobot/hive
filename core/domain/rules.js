@@ -29,7 +29,7 @@ The Hive
 
 // functions
 
-function lookup_possible_turns( color, board, hand, turn_number ) {
+function lookup_possible_turns( color, board, hand, turn_number, turn_history ) {
 	var possible_turns = {};
 	var valid_placement_positions = find_valid_placement_positions( color, board, turn_number );
 
@@ -65,10 +65,14 @@ function lookup_possible_turns( color, board, hand, turn_number ) {
 	};
 	var positions_of_owned_pieces = board.search_top_pieces( color ); // "A piece with a beetle on top of it is unable to move ..."
 	possible_turns["Movement"] = {};
-	_.forEach( positions_of_owned_pieces, function( lookup_result ) {
-		var movement = find_valid_movement( board, lookup_result.position );
+	_.forEach( positions_of_owned_pieces, function( owned_piece ) {
+		var movement = find_valid_movement( board, owned_piece.position );
 		if( typeof movement !== "undefined" && movement != null && movement.length > 0 ) {
-			possible_turns["Movement"][ lookup_result.position_key ] = movement;
+			possible_turns["Movement"][ owned_piece.position_key ] = movement;
+		}
+		var special_abilities = find_valid_special_abilities( board, owned_piece.position, turn_history );
+		if( typeof special_abilities !== "undefined" && special_abilities != null && special_abilities.length > 0 ) {
+			possible_turns["Special Ability"][ owned_piece.position_key ] = special_abilities;
 		}
 	});
 	return possible_turns;
@@ -404,7 +408,12 @@ Ladybug
 
 */
 function find_valid_movement_Ladybug( board, position ) {
-	return []; // not yet implemented
+	var height_min_max_array = [
+		{ min: 1, max: Infinity },
+		{ min: 1, max: Infinity },
+		{ min: 0, max: 0 }
+	];
+	return board.lookup_climb_destinations_matching_height_requirements( position, height_min_max_array );
 }
 
 /*
