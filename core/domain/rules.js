@@ -450,7 +450,7 @@ function find_valid_special_abilities_Pillbug( board, position, turn_history ) {
 		var stack_ccw = adjacencies[ Position.rotation( direction, false )].contents;
 		if( stack_cw.height <= 1 || stack_ccw.height <= 1 ) { // piece not sliding through a gate?
 			if( typeof adjacency.contents === "undefined" )
-				free_adjacencies.push( adjacency.position_key );
+				free_adjacencies.push( adjacency.position );
 			else if( adjacency.contents.length <= 1 // unstacked?
 			&& board.check_contiguity( adjacency.position )) // won't break hive?
 				valid_occupied_adjacencies.push( adjacency.position_key );

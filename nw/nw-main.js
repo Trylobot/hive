@@ -67,7 +67,7 @@ register_window_size( model );
 model.scale_values = [ 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 1, 1.25, 1.5, 2, 2.5, 3 ];
 //                       .05   .05  .1   .1   .1   .1   .15  .15  25  .25   .5 .5   .5
 model.hand_gutter_size = 120;
-model.max_ghost_ui_distance = 450;
+model.max_ghost_ui_distance = 300;
 model.default_scale_i = model.scale_values.indexOf( 1 );
 model.scale_i = model.default_scale_i;
 // spritemap
@@ -656,7 +656,7 @@ function pixi_piece_mousedown( ix ) {
 }
 function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 	var self = this;
-	var destinations = _.union( self.__hive_moves, self.__hive_special_moves );
+	var destinations = _.compact( _.flatten([ self.__hive_moves, self.__hive_special_moves ]));
 	_.forEach( destinations, function( position ) {
 		var position_key = position.encode();
 		var position_register = model.pixi_board.__hive_positions[ position_key ];
@@ -687,7 +687,7 @@ function pixi_piece_mousemove( ix ) {
 		var closest_position_key = null;
 		var closest_pixi_position = null;
 		var self_hive_position = Position.decode( self.__hive_position_key );
-		var hive_moves_and_current_position = _.flatten([ self_hive_position, self.__hive_moves, self.__hive_special_moves ]);
+		var hive_moves_and_current_position = _.compact( _.flatten([ self_hive_position, self.__hive_moves, self.__hive_special_moves ]));
 		_.forEach( hive_moves_and_current_position, function( position ) {
 			var position_key = position.encode();
 			var move_position;
@@ -714,6 +714,7 @@ function pixi_piece_mousemove( ix ) {
 			self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
 		} else {
 			self.__hive_pixi_ghost.visible = false;
+			self.__hive_pixi_ghost.position.set( self.__hive_drag_start_pixi_piece.x, self.__hive_drag_start_pixi_piece.y );
 			self.__hive_pixi_ghost.__hive_position_key = null;
 		}
 	}
@@ -737,11 +738,14 @@ function pixi_piece_mouseup( ix ) {
 			var destination_position_key = self.__hive_pixi_ghost.__hive_position_key;
 			var source_position = Position.decode( source_position_key );
 			var destination_position = Position.decode( destination_position_key );
-			if( _.contains( self.__hive_moves, destination_position_key )) {
+			var match_destination_position = function( potential_destination ) {
+				return destination_position.is_equal( potential_destination );
+			}
+			if( _.find( self.__hive_moves, match_destination_position )) {
 				turn = Turn.create_movement( 
 					source_position,
 					destination_position );
-			} else if( _.contains( self.__hive_special_moves, destination_position_key )) {
+			} else if( _.find( self.__hive_special_moves, match_destination_position )) {
 				turn = Turn.create_special_ability( 
 					source_position,
 					destination_position );
@@ -796,7 +800,7 @@ function pixi_hand_mousedown( ix ) {
 		pixi_piece.mouseup = pixi_hand_piece_mouseup;
 		pixi_piece.mouseupoutside = pixi_hand_piece_mouseup;
 		// show placement position marquees
-		pixi_piece.__hive_moves = model.pixi_board.__hive_possible_turns["Placement"].positions;
+		pixi_piece.__hive_moves = _.values( model.pixi_board.__hive_possible_turns["Placement"].positions );
 		pixi_piece_set_move_marquee_visible.call( pixi_piece, true, true );
 		// create ghost piece
 		pixi_piece.__hive_pixi_ghost = create_pixi_piece( Piece.create( self.__hive_color, self.__hive_piece_type ));
@@ -820,7 +824,7 @@ function pixi_hand_piece_mousemove( ix ) {
 		// move pixi piece
 		self.position.set( ix.global.x, ix.global.y );
 		// check distance and if close enough, move ghost piece to the nearby potential move destination
-		var min_squared = Infinity;
+		var min_distance_squared = Infinity;
 		var closest_position_key = null;
 		var closest_pixi_position = null;
 		// invalidate placement if mouse is in the "hand-gutter" at the top of the screen area.
@@ -832,20 +836,23 @@ function pixi_hand_piece_mousemove( ix ) {
 				var position_register = model.pixi_board.__hive_positions[ position_key ];
 				var move_position = position_register["White Marquee"].position;
 				var distance_squared = get_distance_squared( move_position, boardspace_mouse_position );
-				if( distance_squared < min_squared ) {
-					min_squared = distance_squared;
+				if( distance_squared < min_distance_squared ) {
+					min_distance_squared = distance_squared;
 					closest_position_key = position_key;
 					closest_pixi_position = move_position;
 				}
 			});
 		}
-		if( closest_pixi_position ) {
+		if( closest_pixi_position 
+		&&  Math.sqrt( min_distance_squared ) <= model.max_ghost_ui_distance ) {
 			self.__hive_pixi_ghost.visible = true;
 			self.__hive_pixi_ghost.position.set( closest_pixi_position.x, closest_pixi_position.y );
+			self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
 		} else {
 			self.__hive_pixi_ghost.visible = false;
+			self.__hive_pixi_ghost.position.set( 0, 0 );
+			self.__hive_pixi_ghost.__hive_position_key = null;
 		}
-		self.__hive_pixi_ghost.__hive_position_key = closest_position_key;
 	}
 }
 function pixi_hand_piece_mouseup( ix ) {

@@ -103,5 +103,9 @@ exports["test position copy"] = function( assert ) {
 		"position copied" );
 }
 
+exports["test position is_equal"] = function( assert ) {
+	
+}
+
 if( module == require.main )
 	require("test").run( exports );

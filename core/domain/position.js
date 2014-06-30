@@ -42,6 +42,9 @@ function create( row, col ) {
 			return translation( position, direction );
 		});
 	}
+	position.is_equal = function( other ) {
+		return other && position.row == other.row && position.col == other.col;
+	}
 	return position;
 }
 
@@ -68,6 +71,10 @@ function decode_all( array_of_position_keys ) {
 	return _.map( array_of_position_keys, function( position_key ) {
 		return decode( position_key );
 	});
+}
+
+function is_equal( position0, position1 ) {
+	return position0 && position1 && position0.row == position1.row && position0.col == position1.col;
 }
 
 function translation( position, direction ) {
@@ -104,6 +111,7 @@ exports.encode = encode;
 exports.encode_all = encode_all;
 exports.decode = decode;
 exports.decode_all = decode_all;
+exports.is_equal = is_equal;
 exports.translation = translation;
 exports.rotation = rotation;
 
