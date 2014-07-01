@@ -231,15 +231,15 @@ function find_valid_special_abilities( board, position, turn_history ) {
 	var piece = board.lookup_piece( position );
 	switch( piece.type )
 	{   
-		case "Queen Bee":   return [];                                                       break;
-		case "Beetle":      return [];                                                       break;
-		case "Grasshopper": return [];                                                       break;
-		case "Spider":      return [];                                                       break;
-		case "Soldier Ant": return [];                                                       break;
-		case "Mosquito":    return find_valid_special_abilities_Mosquito( board, position ); break;
-		case "Ladybug":     return [];                                                       break;
-		case "Pillbug":     return find_valid_special_abilities_Pillbug(  board, position ); break;
-		default:            throw "unrecognized piece type: " + piece.type;                  break;
+		case "Queen Bee":   return [];                                                                     break;
+		case "Beetle":      return [];                                                                     break;
+		case "Grasshopper": return [];                                                                     break;
+		case "Spider":      return [];                                                                     break;
+		case "Soldier Ant": return [];                                                                     break;
+		case "Mosquito":    return find_valid_special_abilities_Mosquito( board, position, turn_history ); break;
+		case "Ladybug":     return [];                                                                     break;
+		case "Pillbug":     return find_valid_special_abilities_Pillbug(  board, position, turn_history ); break;
+		default:            throw "unrecognized piece type: " + piece.type;                                break;
 	}
 }
 
@@ -299,8 +299,7 @@ Grasshopper
 function find_valid_movement_Grasshopper( board, position ) {
 	var adjacent_positions = board.lookup_adjacent_positions( position );
 	var valid_movement = [];
-	_.forEach( adjacent_positions, function( adjacency, direction_idx ) {
-		var direction = Position.directions_enum[ direction_idx ];
+	_.forEach( adjacent_positions, function( adjacency, direction ) {
 		if( typeof adjacency.contents !== "undefined" )
 			valid_movement.push( 
 				board.find_free_space_in_direction( adjacency.position, direction ));
@@ -351,8 +350,8 @@ function find_valid_movement_Mosquito( board, position ) {
 	if( board.lookup_piece_stack_height( position ) > 1 ) // on top of the hive
 		return find_valid_movement_Beetle( board, position );
 	else { // not on top of the hive
-		var adjacent_piece_types = _.compact( _.unique( _.map( board.lookup_adjacent_positions( position ),
-			function( adjacency ) {
+		var adjacent_piece_types = _.compact( _.unique( 
+			_.map( board.lookup_adjacent_positions( position ), function( adjacency ) {
 				var piece_stack = adjacency.contents;
 				if( typeof piece_stack !== "undefined" )
 					return piece_stack[ piece_stack.length - 1 ].type; // type of top piece
@@ -382,8 +381,8 @@ function find_valid_special_abilities_Mosquito( board, position, turn_history ) 
 	if( board.lookup_piece_stack_height( position ) > 1 ) // on top of the hive
 		return [];
 	else { // not on top of the hive
-		var adjacent_piece_types = _.unique( _.map( board.lookup_adjacent_positions( position ),
-			function( adjacency ) {
+		var adjacent_piece_types = _.unique( _.map( 
+			board.lookup_adjacent_positions( position ), function( adjacency ) {
 				var piece_stack = adjacency.contents;
 				if( typeof piece_stack !== "undefined" )
 					return piece_stack[ piece_stack.length - 1 ].type; // type of top piece
@@ -449,16 +448,19 @@ function find_valid_special_abilities_Pillbug( board, position, turn_history ) {
 	_.forEach( adjacencies, function( adjacency, direction ) {
 		var stack_cw = adjacencies[ Position.rotation( direction, true )].contents;
 		var stack_ccw = adjacencies[ Position.rotation( direction, false )].contents;
-		if( stack_cw.height <= 1 || stack_ccw.height <= 1 ) { // piece not sliding through a gate?
+		if( typeof stack_cw === "undefined" || typeof stack_ccw === "undefined" 
+		||  stack_cw.length <= 1 || stack_ccw.length <= 1 ) { // piece not sliding through a gate?
 			if( typeof adjacency.contents === "undefined" )
-				free_adjacencies.push( adjacency.position );
+				free_adjacencies.push( adjacency.position_key );
 			else if( adjacency.contents.length <= 1 // unstacked?
 			&& board.check_contiguity( adjacency.position )) // won't break hive?
 				valid_occupied_adjacencies.push( adjacency.position_key );
 		}
 	});
-	var last_turn = turn_history[ turn_history.length - 1 ];
-	_.pull( valid_occupied_adjacencies, last_turn.destination );
+	if( turn_history ) {
+		var last_turn = turn_history[ turn_history.length - 1 ];
+		_.pull( valid_occupied_adjacencies, last_turn.destination );
+	}
 	// --------------
 	var results = {};
 	_.forEach( valid_occupied_adjacencies, function( occupied_position_key ) {

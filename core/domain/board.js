@@ -158,15 +158,18 @@ function create() {
 	// containing the fields: "position", "position_key"; 
 	// the "contents" field will contain the piece at the associated position, or undefined if there is no piece there
 	board.lookup_adjacent_positions = function( position ) {
-		return _.mapValues( Position.directions_enum, function( direction ) {
+		var result = {};
+		_.forEach( Position.directions_enum, function( direction ) {
 			var translated_position = position.translation( direction );
 			var translated_position_key = translated_position.encode();
-			return {
+			result[ direction ] = {
+				direction: direction,
 				position: translated_position,
 				position_key: translated_position_key,
 				contents: board.pieces[ translated_position_key ] // piece_stack
-			}
+			};
 		});
+		return result;
 	}
 	// return a list of positions valid to slide into, using the can_slide_lookup_table
 	//   a slide is defined as a movement from one position to another where the stack_height of both positions is zero
@@ -310,7 +313,7 @@ function create() {
 			// scan the positions adjacent to it
 			var adjacent_positions = board.lookup_adjacent_positions( position );
 			// for each adjacent position ...
-			_.forEach( adjacent_positions, function( adjacency, direction ) {
+			_.forEach( adjacent_positions, function( adjacency ) {
 				if( typeof adjacency.contents === "undefined" ) {
 					// retain each space not occupied by a piece
 					free_spaces[ adjacency.position_key ] = adjacency.position;

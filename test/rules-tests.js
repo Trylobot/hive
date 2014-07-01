@@ -207,7 +207,7 @@ exports["test rules find_valid_special_abilities_Mosquito"] = function( assert )
 }
 
 exports["test rules find_valid_movement_Ladybug"] = function( assert ) {
-
+	// TODO: add a test for when a ladybug given only one potential pathway up on top of the hive, is blocked by a gate and thus has no actual valid moves without backtracking
 }
 
 exports["test rules find_valid_movement_Pillbug"] = function( assert ) {

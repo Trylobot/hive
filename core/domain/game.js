@@ -49,7 +49,7 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 			game.turn_number,
 			game.turn_history );
 	}
-	game.perform_turn = function( turn_object ) {
+	game.perform_turn = function( turn_object, skip_lookup_possible_turns ) {
 		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?
 		var turn_type = turn_object.turn_type;
 		switch( turn_type ) {
@@ -77,7 +77,8 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game.turn_number++;
 		game.player_turn = Piece.opposite_color( game.player_turn );
 		game.turn_history.push( _.clone( turn_object ));
-		game.possible_turns = game.lookup_possible_turns();
+		if( !skip_lookup_possible_turns )
+			game.possible_turns = game.lookup_possible_turns();
 	}
 	game.save = function() {
 		return {
@@ -121,9 +122,11 @@ function load( creation_parameters, turn_history ) {
 		creation_parameters.use_mosquito,
 		creation_parameters.use_ladybug,
 		creation_parameters.use_pillbug );
+	var skip_lookup_possible_turns = true;
 	_.forEach( turn_history, function( turn_object ) {
-		game.perform_turn( turn_object );
+		game.perform_turn( turn_object, skip_lookup_possible_turns );
 	});
+	game.possible_turns = game.lookup_possible_turns();
 	return game;
 }
 
