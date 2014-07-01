@@ -38,9 +38,10 @@ function create_movement( source, destination ) {
 	return turn;
 }
 
-function create_special_ability( source, destination ) {
+function create_special_ability( ability_user, source, destination ) {
 	var turn = {
 		turn_type: "Special Ability",
+		ability_user: ability_user.encode(),
 		source: source.encode(),
 		destination: destination.encode()
 	}

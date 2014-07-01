@@ -456,6 +456,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			// for now there's only one type of special ability; moving a nearby piece
 			_.forEach( special_abilities, function( destination_positions, source_position_key ) {
 				var pixi_piece = container.__hive_positions( source_position_key );
+				pixi_piece.__hive_ability_user_source_position_key = ability_source_position_key;
 				pixi_piece.__hive_special_moves = destination_positions; // list of position keys this piece can move to
 				if( !pixi_piece.interactive ) { // piece might already have been made interactive for normal movement
 					pixi_piece.interactive = true;
@@ -746,11 +747,17 @@ function pixi_piece_mouseup( ix ) {
 					source_position,
 					destination_position );
 			} else if( _.find( self.__hive_special_moves, match_destination_position )) {
+				var ability_user_position_key = self.__hive_ability_user_source_position_key;
+				var ability_user_position = Position.decode( ability_user_position_key );
 				turn = Turn.create_special_ability( 
+					ability_user_position,
 					source_position,
 					destination_position );
 			}
-			_.defer( do_turn, model, turn );
+			if( typeof turn !== "undefined" )
+				_.defer( do_turn, model, turn );
+			else
+				throw destination_position_key + " not found in available moves";
 		} else {
 			// re-up the stack counters, one of which will have been hidden by this board-neutral action
 			model.pixi_board.removeChild( model.pixi_board.__stack_counters );

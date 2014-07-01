@@ -13,7 +13,7 @@
 	"window": {
 		"title": "Hive AI Development Tool",
 		"icon": "favicon.png",
-		"toolbar": false,
+		"toolbar": true,
 		"frame": true,
 		"width": 1280,
 		"height": 720,

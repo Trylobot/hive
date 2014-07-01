@@ -351,14 +351,14 @@ function find_valid_movement_Mosquito( board, position ) {
 	if( board.lookup_piece_stack_height( position ) > 1 ) // on top of the hive
 		return find_valid_movement_Beetle( board, position );
 	else { // not on top of the hive
-		var adjacent_piece_types = _.unique( _.map( board.lookup_adjacent_positions( position ),
+		var adjacent_piece_types = _.compact( _.unique( _.map( board.lookup_adjacent_positions( position ),
 			function( adjacency ) {
 				var piece_stack = adjacency.contents;
 				if( typeof piece_stack !== "undefined" )
 					return piece_stack[ piece_stack.length - 1 ].type; // type of top piece
 			}
-		));
-		var movement = _.union( _.map( adjacent_piece_types, 
+		)));
+		var movement = _.flatten( _.map( adjacent_piece_types, 
 			function( piece_type ) {
 				switch( piece_type )
 				{   
