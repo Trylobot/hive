@@ -271,7 +271,7 @@ function create() {
 		var visited = {};
 		var distance = 1;
 		var to_visit = [ start_position ];
-		while( to_visit.length > 0 && distance <= height_min_max_array ) {
+		while( to_visit.length > 0 && distance <= height_min_max_array.length ) {
 			var to_visit_next = [];
 			_.forEach( to_visit, function( position ) {
 				var position_key = position.encode();

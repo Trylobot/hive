@@ -199,6 +199,7 @@ function choose_read_file_path( callback_fn ) {
 	function change_fn( event ) {
 		this.removeEventListener( "change", change_fn );
 		callback_fn( this.value );
+		this.value = "";
 	}
 	model.open_file_dialog.click();
 }
@@ -207,6 +208,7 @@ function choose_write_file_path( callback_fn ) {
 	function change_fn( event ) {
 		this.removeEventListener( "change", change_fn );
 		callback_fn( this.value );
+		this.value = "";
 	}
 	model.save_file_dialog.click();
 }

@@ -413,7 +413,8 @@ function find_valid_movement_Ladybug( board, position ) {
 		{ min: 1, max: Infinity },
 		{ min: 0, max: 0 }
 	];
-	return board.lookup_climb_destinations_matching_height_requirements( position, height_min_max_array );
+	return _.values( board.lookup_climb_destinations_matching_height_requirements( 
+		position, height_min_max_array ));
 }
 
 /*
