@@ -29,6 +29,7 @@ The Hive
 
 // functions
 
+// TODO: return all positions as position keys, no position objects
 function lookup_possible_turns( color, board, hand, turn_number, turn_history ) {
 	var possible_turns,
 		game_over,
@@ -95,7 +96,7 @@ function lookup_possible_turns( color, board, hand, turn_number, turn_history ) 
 					special_abilities = find_valid_special_abilities( board, owned_piece.position, turn_history );
 					if( typeof special_abilities !== "undefined" 
 					&&  special_abilities != null 
-					&&  special_abilities.length > 0 ) {
+					&&  _.keys( special_abilities ).length > 0 ) {
 						if( !possible_special_abilities )
 							possible_special_abilities = {};
 						possible_special_abilities[ owned_piece.position_key ] = special_abilities;
@@ -509,10 +510,10 @@ function find_valid_special_abilities_Pillbug( board, position, turn_history ) {
 		if( typeof stack_cw === "undefined" || typeof stack_ccw === "undefined" 
 		||  stack_cw.length <= 1 || stack_ccw.length <= 1 ) { // piece not sliding through a gate?
 			if( typeof adjacency.contents === "undefined" )
-				free_adjacencies.push( adjacency.position_key );
+				free_adjacencies.push( adjacency.position ); // position object expected here
 			else if( adjacency.contents.length <= 1 // unstacked?
 			&& board.check_contiguity( adjacency.position )) // won't break hive?
-				valid_occupied_adjacencies.push( adjacency.position_key );
+				valid_occupied_adjacencies.push( adjacency.position_key ); // position_key expected here
 		}
 	});
 	if( turn_history ) {

@@ -69,6 +69,11 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 				var position_1 = Position.decode( turn_object.destination );
 				game.board.move_piece( position_0, position_1 );
 				break;
+			case "Special Ability":
+				// TODO: do something with the ability_user field?
+				var position_0 = Position.decode( turn_object.source );
+				var position_1 = Position.decode( turn_object.destination );
+				game.board.move_piece( position_0, position_1 );
 			case "Forfeit":
 				break;
 			default:

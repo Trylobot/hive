@@ -25,7 +25,7 @@ function create_placement( piece_type, destination ) {
 		turn_type: "Placement",
 		piece_type: piece_type,
 		destination: destination.encode()
-	}
+	};
 	return turn;
 }
 
@@ -34,7 +34,7 @@ function create_movement( source, destination ) {
 		turn_type: "Movement",
 		source: source.encode(),
 		destination: destination.encode()
-	}
+	};
 	return turn;
 }
 
@@ -44,13 +44,14 @@ function create_special_ability( ability_user, source, destination ) {
 		ability_user: ability_user.encode(),
 		source: source.encode(),
 		destination: destination.encode()
-	}
+	};
+	return turn;
 }
 
 function create_forfeit() {
 	var turn = {
 		turn_type: "Forfeit"
-	}
+	};
 	return turn;
 }
 

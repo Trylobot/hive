@@ -286,7 +286,7 @@ function create() {
 						var height = board.lookup_piece_stack_height_by_key( adjacent_position_key );
 						var height_range = height_min_max_array[ distance - 1 ];
 						if( height >= height_range.min && height <= height_range.max 
-						&&  distance == height_min_max_array.length - 1 ) // height_min_max_array also being used as an exact distance specifier
+						&&  distance == height_min_max_array.length ) // height_min_max_array also being used as an exact distance specifier
 							result[ adjacent_position_key ] = adjacent_position;
 						to_visit_next.push( adjacent_position );
 					}
