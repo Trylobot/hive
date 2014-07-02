@@ -92,7 +92,7 @@ exports["test bug6 should not be able to move pieces of the opponent's color, ev
 exports["test bug7 White Player should be forced to forfeit"] = function( assert ) {
 	var save, game, turns;
 
-	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json'); // this was named this way because of another bug
+	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json'); // this was named this way because of another bug, but the test itself has been corrected
 	game = Game.load( save.creation_parameters, save.turn_history );
 	turns = game.lookup_possible_turns();
 	assert.ok( _.keys( turns ).length == 1 && turns["Forfeit"] == true, "White Player should only be able to forfeit" );
