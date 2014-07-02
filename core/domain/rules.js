@@ -30,51 +30,101 @@ The Hive
 // functions
 
 function lookup_possible_turns( color, board, hand, turn_number, turn_history ) {
-	var possible_turns = {};
-	var valid_placement_positions = find_valid_placement_positions( color, board, turn_number );
+	var possible_turns,
+		game_over,
+		possible_placement_piece_types,
+		possible_placement_positions,
+		possible_placement,
+		possible_movement,
+		possible_special_abilities,
+		possible_forfeit,
+		positions_of_owned_pieces,
+		last_turn,
+		last_turn_ability_user_piece,
+		movement,
+		special_abilities;
 
-	if( check_if_game_over( board ).game_over ) {
-		return possible_turns;
+	game_over = check_if_game_over( board ).game_over;
+	if( game_over ) {
+		// there are no possible turns; the game is over
+		possible_turns = null;
 	}
-	
-	if( check_force_queen_placement( color, board, turn_number )) {
-		possible_turns["Placement"] = {
-			piece_types: [ "Queen Bee" ],
-			positions: valid_placement_positions
-		};
-		return possible_turns;
-	}
-	
-	var valid_placement_piece_types = _.keys( hand );
-	if( !check_allow_queen_placement( turn_number )) {
-		valid_placement_piece_types = _.pull( valid_placement_piece_types, "Queen Bee" );
-	}
-
-	if( !check_any_movement_allowed( color, board )) {
-		possible_turns["Placement"] = {
-			piece_types: valid_placement_piece_types,
-			positions: valid_placement_positions
-		};
-		return possible_turns;
-	}
-	
-	// normal turn
-	possible_turns["Placement"] = {
-		piece_types: valid_placement_piece_types,
-		positions: valid_placement_positions
-	};
-	var positions_of_owned_pieces = board.search_top_pieces( color ); // "A piece with a beetle on top of it is unable to move ..."
-	possible_turns["Movement"] = {};
-	_.forEach( positions_of_owned_pieces, function( owned_piece ) {
-		var movement = find_valid_movement( board, owned_piece.position );
-		if( typeof movement !== "undefined" && movement != null && movement.length > 0 ) {
-			possible_turns["Movement"][ owned_piece.position_key ] = movement;
+	else {
+		// at least one turn type will be available; if nothing else, then the ability to forfeit due to no other types being available
+		possible_turns = {};
+		possible_placement_positions = find_valid_placement_positions( color, board, turn_number );
+		//
+		if( check_force_queen_placement( color, board, turn_number )) {
+			// queen must be placed because it is the fourth turn and the player has not yet placed their queen
+			possible_placement_piece_types = [ "Queen Bee" ];
 		}
-		var special_abilities = find_valid_special_abilities( board, owned_piece.position, turn_history );
-		if( typeof special_abilities !== "undefined" && special_abilities != null && special_abilities.length > 0 ) {
-			possible_turns["Special Ability"][ owned_piece.position_key ] = special_abilities;
+		else {
+			// queen placement not forced; placement types derived from pieces available in the hand; 
+			// zero-count pieces are by convention not present in the hand object; this is enforced externally, and assumed here
+			possible_placement_piece_types = _.keys( hand );
+			//
+			if( !check_allow_queen_placement( turn_number )) {
+				// queen placement is not allowed due to it being the first turn
+				_.pull( possible_placement_piece_types, "Queen Bee" );
+			}
+			//
+			if( check_any_movement_allowed( color, board )) {
+				// queen bee has been placed, and movement (and special abilities) are in general allowed now
+				//
+				positions_of_owned_pieces = board.search_top_pieces( color ); // "A piece with a beetle on top of it is unable to move ...", so only check the top pieces
+				//
+				_.forEach( positions_of_owned_pieces, function( owned_piece ) {
+					// check if the owned piece was moved by a pillbug last turn, causing it to be "stunned" for one turn
+					last_turn = _.last( turn_history );
+					if( last_turn.turn_type == "Special Ability" ) {
+						last_turn_ability_user_piece = board.lookup_piece_by_key( last_turn.ability_user );
+						if( last_turn_ability_user_piece && last_turn_ability_user_piece.type == "Pillbug" 
+						&&  owned_piece.position_key == last_turn.destination )
+							return; // piece is not eligible for movement nor special abilities due to being stunned
+					}
+					//
+					movement = find_valid_movement( board, owned_piece.position );
+					if( typeof movement !== "undefined" 
+					&&  movement != null 
+					&&  movement.length > 0 ) {
+						if( !possible_movement )
+							possible_movement = {};
+						possible_movement[ owned_piece.position_key ] = movement;
+					}
+					//
+					special_abilities = find_valid_special_abilities( board, owned_piece.position, turn_history );
+					if( typeof special_abilities !== "undefined" 
+					&&  special_abilities != null 
+					&&  special_abilities.length > 0 ) {
+						if( !possible_special_abilities )
+							possible_special_abilities = {};
+						possible_special_abilities[ owned_piece.position_key ] = special_abilities;
+					}
+				});
+			}
 		}
-	});
+		// check if there is any valid placement
+		if( _.keys( possible_placement_positions ).length > 0 
+		&&  possible_placement_piece_types.length > 0 ) {
+			// number of total possible placement moves is greater than 0
+			possible_placement = {
+				piece_types: possible_placement_piece_types,
+				positions: possible_placement_positions
+			};
+		}
+		//
+		if( !possible_placement && !possible_movement && !possible_special_abilities )
+			possible_forfeit = true;
+		//
+		if( possible_placement )
+			possible_turns["Placement"] = possible_placement;
+		if( possible_movement )
+			possible_turns["Movement"] = possible_movement;
+		if( possible_special_abilities )
+			possible_turns["Special Ability"] = possible_special_abilities;
+		if( possible_forfeit )
+			possible_turns["Forfeit"] = possible_forfeit;
+	}
 	return possible_turns;
 }
 
@@ -435,6 +485,14 @@ Pillbug
 	special ability. The Mosquito can mimic either the movement or special
 	ability of the Pillbug, even when the Pillbug it is touching has been rendered
 	immobile by another Pillbug.
+
+	Clarification from John Yianni: The Pillbug using its special ability does not
+	count as "movement" from the perspective of an opposing player's Pillbug, and
+	thus does not grant it immunity from being moved by the opposing Pillbug. Only
+	physically moved pieces have such protection.
+
+	Further Clarification: A stunned Pillbug (one that was just moved by a Pillbug)
+	cannot use its special ability.
 
 */
 function find_valid_movement_Pillbug( board, position ) {

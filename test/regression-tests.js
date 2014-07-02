@@ -89,13 +89,13 @@ exports["test bug6 should not be able to move pieces of the opponent's color, ev
 	assert.ok( !("0,2" in possible_turns["Movement"]), "Black Player should not be able to move White Beetle" );
 }
 
-exports["test bug7 should allow White Player placement given this board configuration"] = function( assert ) {
+exports["test bug7 White Player should be forced to forfeit"] = function( assert ) {
 	var save, game, turns;
 
-	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json');
+	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json'); // this was named this way because of another bug
 	game = Game.load( save.creation_parameters, save.turn_history );
 	turns = game.lookup_possible_turns();
-	assert.ok( turns["Placement"].positions.length > 0, "White Player should have at least one valid placement position" );
+	assert.ok( _.keys( turns ).length == 1 && turns["Forfeit"] == true, "White Player should only be able to forfeit" );
 }
 
 exports["test bug8 Black Spider should have 4 possible moves"] = function( assert ) {
@@ -105,7 +105,7 @@ exports["test bug8 Black Spider should have 4 possible moves"] = function( asser
 	game = Game.load( save.creation_parameters, save.turn_history );
 	turns = game.lookup_possible_turns();
 	var position_key = game.board.search_pieces( "Black", "Spider" )[0].position_key;
-	assert.ok( turns["Movement"][position_key].length == 4, "Black Spider has 4 possible moves" );
+	assert.ok( turns["Movement"] && turns["Movement"][position_key].length == 4, "Black Spider has 4 possible moves" );
 
 }
 
