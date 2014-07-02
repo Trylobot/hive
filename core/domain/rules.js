@@ -368,7 +368,11 @@ Spider
 
 */
 function find_valid_movement_Spider( board, position ) {
-	return _.values( board.lookup_slide_destinations_within_range( position, 3, 3 ));
+	// return all paths of length 3 that traverse slideable free spaces
+	var distance_range = 3;
+	var height_range_specification = 0;
+	var valid_paths = board.find_unique_paths_matching_conditions( position, distance_range, height_range_specification ) {
+	return valid_paths.destinations;
 }
 
 /*
@@ -458,13 +462,14 @@ Ladybug
 
 */
 function find_valid_movement_Ladybug( board, position ) {
-	var height_min_max_array = [
-		{ min: 1, max: Infinity },
-		{ min: 1, max: Infinity },
-		{ min: 0, max: 0 }
-	];
-	return _.values( board.lookup_climb_destinations_matching_height_requirements( 
-		position, height_min_max_array ));
+	// return all paths of length 3 that traverse slideable free spaces
+	var distance_range = 3;
+	var height_range_specification = {
+		"1-2": { min: 1, max: Infinity },
+		"3": 0 // min: 0, max: 0
+	};
+	var valid_paths = board.find_unique_paths_matching_conditions( position, distance_range, height_range_specification ) {
+	return valid_paths.destinations;
 }
 
 /*

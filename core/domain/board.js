@@ -386,11 +386,155 @@ function create() {
 		var visited_pieces_count = _.keys( visited_pieces ).length;
 		return (visited_pieces_count == occupied_space_count);
 	}
-	// -------------
+	// search the board, given a starting position
+	//   for paths a certain distance away in tiles [distance_range.min, distance_range.max]
+	//   where each tile in the path matches a semantic specification object (further explanation below)
+	//   and each path returned corresponds to a different end position (some paths to that end position may therefore be omitted)
+	//   and that each path contains no backtracking.
+	// the search algorithm used is breadth-first search
+	// ---
+	// range  (object)   applies to "distance_range" and "height_range"
+	//   min: (number)     minimum boundary (inclusive)
+	//   max: (number)     maximum boundary (inclusive)
+	// ---
+	// range  (number)   minimum AND maximum boundary (inclusive)
+	// ---
+	// height_range_specification  (object; dynamic keys)
+	//   <key>: (range)    key is a comma-separated list of distances for which this height range applies. 
+	//   [... more ]       each item in this key-list may be a specific distance, or it may be a range in the form of a hyphen-separated range pair (inclusive).
+	// ---
+	// height_range_specification  (number)     minimum AND maximum height (all distances, inclusive)
+	// 
+	board.find_unique_paths_matching_conditions = function( start_position, distance_range, height_range_specification ) {
+		var result = {
+			paths: {}, // will include one path per destination, where the key is the encoded destination position
+			destinations: [] // each destination will be unique
+		};
+		// argument normalization
+		distance_range = parse_range( distance_range );
+		height_range_specification = parse_height_range_specification( height_range_specification );
+		// prepare breadth-first search, using linked lists, sharing common sub-lists, and a common root node
+		var root_path_node = new Path_Node( start_position );
+		var trunk_nodes = {}; // nodes that used to be branch nodes but are now part of longer paths
+		var branch_nodes = { // nodes that will be searched in next iteration, resulting new branch nodes added here, and original node moved to trunk_nodes
+			root_path_node.position.encode(): root_path_node // if no new nodes result, original node is moved to leaf_nodes (terminal nodes that need not be further explored)
+		};
+		var leaf_nodes = {}; // paths that have been explored fully and terminated, potentially before max distance reached
+		// perform search, using:
+		//   lookup_adjacent_climb_positions (when either source or destination height != 0)
+		for( var distance = 1; distance <= distance_range.max; ++distance ) {
+			var height_range = height_range_specification[ distance ];
+			_.forEach( branch_nodes, function( branch_node, position_key ) {
+				var adjacencies = [];
+				// the following distinction is necessary because restrictions are slightly different for "slide" vs. "climb"
+				if( height_range.min <= 0 )
+					adjacencies.push( lookup_adjacent_slide_positions( branch_node.position ));
+				if( height_range.max >= 1 )
+					adjacencies.push( lookup_adjacent_climb_positions( branch_node.position ));
+				adjacencies = _.filter( _.flatten( adjacencies ), function( adjacent_position ) {
+					var adjacent_position_key = adjacent_position.encode();
+					// previously-visited check (skip if found)
+					if( adjacent_position_key in trunk_nodes
+					||  adjacent_position_key in branch_nodes
+					||  adjacent_position_key in leaf_nodes ) {
+						return false;
+					}
+					// height-range check against height range specification for the current distance (as measured from the start_position)
+					var height = board.lookup_piece_stack_height( adjacent_position );
+					if( height < height_range.min 
+					||  height > height_range.max ) {
+						// this position is outside of the valid height range specified
+						return false;
+					}
+					return true; // all checks pass
+				});
+				// there might not be any further adjacencies to explore for this leaf node.
+				//   in which case it becomes a terminal node, not to be checked again.
+				// if a node becomes terminal without reaching the minimum distance specified by distance_range,
+				//   it will be omitted from the final output
+				if( adjacencies.length > 0 ) {
+					trunk_nodes[ position_key ] = branch_node;
+					_.forEach( adjacencies, function( adjacent_position ) {
+						var adjacent_position_key = adjacent_position.encode();
+						var path_node = new Path_Node( adjacent_position, branch_node );
+						branch_nodes[ adjacent_position_key ] = path_node;
+					});
+				}
+				else { // length == 0
+					leaf_nodes[ position_key ] = branch_node;
+				}
+				// in no case is this node to be scanned again
+				delete branch_nodes[ position_key ];
+			});
+		}
+		// all current branch nodes and leaf nodes are potentially valid path destinations
+		// trace leaf nodes (having path_lengths within the caller's specified range) back to the root node
+		//   result.paths (Object), result.destinations (Array)
+		_.forEach( _.extend( {}, branch_nodes, leaf_nodes ), function( terminal_path_node, destination_key ) {
+			if( terminal_path_node.path_length < distance_range.min
+			||  terminal_path_node.path_length > distance_range.max )
+				return; // path not of sufficient length
+			var path = terminal_path_node.trace_from_root();
+			result.paths[ destination_key ] = path;
+			result.destinations.push( terminal_path_node.position );
+		});
+		return result;
+	}
+	// ------------- private
+	function Path_Node( position, parent ) {
+		this.position = position;
+		this.parent = parent;
+		this.is_root = typeof parent == "undefined";
+		if( !this.is_root ) { // normal
+			parent.children.push( this );
+			this.path_length = parent.path_length + 1;
+		} else { // base case (root)
+			this.path_length = 0;
+		}
+		this.children = [];
+		//
+		this.trace_from_root = function() {
+			var path = [ this.position ];
+			var cursor = this;
+			while( cursor != root_path_node ) {
+				cursor = cursor.parent;
+				if( cursor )
+					path.push( cursor.position );
+			}
+			path.reverse();
+			return path;
+		}
+	}
+	function parse_range( range ) {
+		if( typeof range === "number" )
+			return { min: range, max: range };
+		else if( typeof range === "object" )
+			return { min: range.min, max: range.max };
+	}
+	function parse_height_range_specification( height_range_specification ) {
+		var height_range_for_distance = [ undefined ]; // index 0 is undefined because it means distance 0, which never needs to be specified
+		_.forEach( height_range_specification, function( height_range, distance_specifier_key ) {
+			height_range = parse_range( height_range );
+			var items = distance_specifier_key.split(",");
+			_.forEach( items, function( item ) {
+				var range = item.split("-");
+				if( range.length == 2 ) {
+					for( var min = _.parseInt( range[0] ), max = _.parseInt( range[1] ), i = min; i < max; ++i )
+						height_range_for_distance[ i ] = height_range;
+				}
+				else if( range.length == 1 ) {
+					height_range_for_distance[ _.parseInt( range[0] )] = height_range;
+				}
+			});
+		});
+		return height_range_for_distance;
+	}
+	// ------------- constructor
 	return board;
 }
 
 // data
+
 
 // keys in this lookup table are specified as follows:
 //   keys have one character for each of six directions
@@ -400,6 +544,7 @@ function create() {
 //   the character will be "." if that direction is not occupied
 // values in this lookup table are specified in precisely the same way as the lookup keys
 //   except that they mean which directions are valid to slide into, instead of which ones are occupied
+// TODO: is there a simple pattern here that I can exploit? is this table really necessary?
 var can_slide_lookup_table = {
 	"......": "......", // island cannot move
 	".....1": "1...1.", // slide around single piece
@@ -470,7 +615,7 @@ var can_slide_lookup_table = {
 // exports
 
 exports.origin = origin;
+exports.can_slide_lookup_table = can_slide_lookup_table;
 
 exports.create = create;
-exports.can_slide_lookup_table = can_slide_lookup_table;
 
