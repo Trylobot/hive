@@ -351,12 +351,6 @@ exports["test board check_contiguity"] = function( assert ) {
 		false,
 		"board should report contiguity violation in the case of moving the Black Spider" );
 
-}
-
-exports["test board bug1 check_contiguity"] = function( assert ) {
-	var board;
-
-	// regression-tests, bug1
 	board = Board.create();
 	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
@@ -387,6 +381,51 @@ exports["test board can_slide_lookup_table"] = function( assert ) {
 	if( pass )
 		assert.pass( "all tests passed" );
 }
+
+exports["test board find_unique_paths_matching_conditions"] = function( assert ) {
+
+}
+
+exports["test board Path_Node"] = function( assert ) {
+
+}
+
+exports["test board parse_range"] = function( assert ) {
+	var range;
+
+	range = Board.parse_range( 3 );
+	assert.ok( json_equality( range, { min: 3, max: 3 }), "range specifier should parse correctly" );
+	
+	range = Board.parse_range({ min: 1, max: Infinity });
+	assert.ok( json_equality( range, { min: 1, max: Infinity }), "range specifier should parse correctly" );
+}
+
+exports["test board parse_height_range_specification"] = function( assert ) {
+	var range, height_range_specification;
+
+	range = Board.parse_height_range_specification( 0, 3 );
+	assert.equal( JSON.stringify( range ), JSON.stringify([
+		undefined,
+		{ min: 0, max: 0 }, 
+		{ min: 0, max: 0 }, 
+		{ min: 0, max: 0 }
+	]), "height range array should parse correctly" );
+
+	range = Board.parse_height_range_specification({
+		"*": 5,
+		"2-3": { min: 0, max: 1 },
+		"2,4,5": 2
+	}, 5 );
+	assert.equal( JSON.stringify( range ), JSON.stringify([
+		undefined,
+		{ min: 5, max: 5 },
+		{ min: 2, max: 2 },
+		{ min: 0, max: 1 },
+		{ min: 2, max: 2 },
+		{ min: 2, max: 2 }
+	]), "height range array should parse correctly" );
+}
+
 
 if( module == require.main )
 	require("test").run( exports );

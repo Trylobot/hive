@@ -401,7 +401,10 @@ function create() {
 	// ---
 	// height_range_specification  (object; dynamic keys)
 	//   <key>: (range)    key is a comma-separated list of distances for which this height range applies. 
-	//   [... more ]       each item in this key-list may be a specific distance, or it may be a range in the form of a hyphen-separated range pair (inclusive).
+	//   [... more ]         each item in this key-list may be a specific distance, or it may be a range in the form of a hyphen-separated range pair (inclusive).
+	//                     a key of '*' provides a default height range to fall back upon
+	//                     any distance for which the height range is completely unspecified by any method
+	//                       will result in a range of [0, Infinity]
 	// ---
 	// height_range_specification  (number)     minimum AND maximum height (all distances, inclusive)
 	// 
@@ -412,39 +415,43 @@ function create() {
 		};
 		// argument normalization
 		distance_range = parse_range( distance_range );
-		height_range_specification = parse_height_range_specification( height_range_specification );
+		height_range_specification = parse_height_range_specification( height_range_specification, distance_range.max );
+		if( distance_range.min == Infinity ) // garbage in?
+			return result; // garbage out.
 		// prepare breadth-first search, using linked lists, sharing common sub-lists, and a common root node
-		var root_path_node = new Path_Node( start_position );
-		var trunk_nodes = {}; // nodes that used to be branch nodes but are now part of longer paths
-		var branch_nodes = { // nodes that will be searched in next iteration, resulting new branch nodes added here, and original node moved to trunk_nodes
-			root_path_node.position.encode(): root_path_node // if no new nodes result, original node is moved to leaf_nodes (terminal nodes that need not be further explored)
-		};
-		var leaf_nodes = {}; // paths that have been explored fully and terminated, potentially before max distance reached
+		var root_path_node = new Path_Node( start_position, undefined );
+		var branch_nodes = []; // nodes that will be searched in next iteration, resulting new branch nodes added here, and original node moved to trunk_nodes
+		//                        if no new nodes result, original node is moved to leaf_nodes (terminal nodes that need not be further explored)
+		var leaf_nodes = []; // paths that have been explored fully and terminated, potentially before max distance reached
+		branch_nodes.push( root_path_node );
 		// perform search, using:
 		//   lookup_adjacent_climb_positions (when either source or destination height != 0)
 		for( var distance = 1; distance <= distance_range.max; ++distance ) {
 			var height_range = height_range_specification[ distance ];
-			_.forEach( branch_nodes, function( branch_node, position_key ) {
+			if( branch_nodes.length == 0 )
+				break; // no more branch nodes to explore; all nodes are presumably leaf nodes, but distance max has not been reached; it could be infinity, or there might not be any valid moves
+			_.forEach( _.clone( branch_nodes ), function( branch_node ) {
 				var adjacencies = [];
 				// the following distinction is necessary because restrictions are slightly different for "slide" vs. "climb"
 				if( height_range.min <= 0 )
-					adjacencies.push( lookup_adjacent_slide_positions( branch_node.position ));
+					adjacencies.push( board.lookup_adjacent_slide_positions( branch_node.position, start_position ));
 				if( height_range.max >= 1 )
-					adjacencies.push( lookup_adjacent_climb_positions( branch_node.position ));
+					adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, start_position ));
 				adjacencies = _.filter( _.flatten( adjacencies ), function( adjacent_position ) {
 					var adjacent_position_key = adjacent_position.encode();
-					// previously-visited check (skip if found)
-					if( adjacent_position_key in trunk_nodes
-					||  adjacent_position_key in branch_nodes
-					||  adjacent_position_key in leaf_nodes ) {
-						return false;
-					}
 					// height-range check against height range specification for the current distance (as measured from the start_position)
 					var height = board.lookup_piece_stack_height( adjacent_position );
 					if( height < height_range.min 
 					||  height > height_range.max ) {
 						// this position is outside of the valid height range specified
 						return false;
+					}
+					// anti-backtracking check (potentially expensive)
+					var cursor = branch_node;
+					while( cursor ) { // attempting to scan root's parent should terminate the loop
+						if( adjacent_position.is_equal( cursor.position ))
+							return false; // path already contains this adjacent position, closer to the root; ignore it
+						cursor = cursor.parent;
 					}
 					return true; // all checks pass
 				});
@@ -453,73 +460,93 @@ function create() {
 				// if a node becomes terminal without reaching the minimum distance specified by distance_range,
 				//   it will be omitted from the final output
 				if( adjacencies.length > 0 ) {
-					trunk_nodes[ position_key ] = branch_node;
 					_.forEach( adjacencies, function( adjacent_position ) {
-						var adjacent_position_key = adjacent_position.encode();
-						var path_node = new Path_Node( adjacent_position, branch_node );
-						branch_nodes[ adjacent_position_key ] = path_node;
+						branch_nodes.push( new Path_Node( adjacent_position, branch_node ));
 					});
 				}
 				else { // length == 0
-					leaf_nodes[ position_key ] = branch_node;
+					leaf_nodes.push( branch_node );
 				}
-				// in no case is this node to be scanned again
-				delete branch_nodes[ position_key ];
+				// in no case should branch_node ever be scanned again
+				_.pull( branch_nodes, branch_node );
 			});
 		}
 		// all current branch nodes and leaf nodes are potentially valid path destinations
 		// trace leaf nodes (having path_lengths within the caller's specified range) back to the root node
 		//   result.paths (Object), result.destinations (Array)
-		_.forEach( _.extend( {}, branch_nodes, leaf_nodes ), function( terminal_path_node, destination_key ) {
+		_.forEach( _.extend( {}, branch_nodes, leaf_nodes ), function( terminal_path_node ) {
 			if( terminal_path_node.path_length < distance_range.min
 			||  terminal_path_node.path_length > distance_range.max )
 				return; // path not of sufficient length
-			var path = terminal_path_node.trace_from_root();
+			var path = terminal_path_node.trace_back_to_root( root_path_node );
+			var destination_key = terminal_path_node.position.encode();
 			result.paths[ destination_key ] = path;
-			result.destinations.push( terminal_path_node.position );
 		});
+		_.forEach( result.paths, function( path, destination_key ) {
+			result.destinations.push( Position.decode( destination_key ));
+		})
 		return result;
 	}
-	// ------------- private
-	function Path_Node( position, parent ) {
-		this.position = position;
-		this.parent = parent;
-		this.is_root = typeof parent == "undefined";
-		if( !this.is_root ) { // normal
-			parent.children.push( this );
-			this.path_length = parent.path_length + 1;
-		} else { // base case (root)
-			this.path_length = 0;
+	// -------------
+	return board;
+}
+
+// supporting functions and types
+function Path_Node( position, parent ) {
+	this.position = position;
+	this.position_key = position.encode();
+	this.parent = parent;
+	this.path_length = parent ? (1 + parent.path_length) : 0;
+	//
+	this.trace_back_to_root = function( root_node ) {
+		var path = [ this.position ];
+		var cursor = this;
+		while( cursor != root_node ) {
+			cursor = cursor.parent;
+			if( cursor )
+				path.push( cursor.position );
 		}
-		this.children = [];
-		//
-		this.trace_from_root = function() {
-			var path = [ this.position ];
-			var cursor = this;
-			while( cursor != root_path_node ) {
-				cursor = cursor.parent;
-				if( cursor )
-					path.push( cursor.position );
-			}
-			path.reverse();
-			return path;
-		}
+		path.reverse();
+		return path;
 	}
-	function parse_range( range ) {
-		if( typeof range === "number" )
-			return { min: range, max: range };
-		else if( typeof range === "object" )
-			return { min: range.min, max: range.max };
+}
+function parse_range( range ) {
+	if( typeof range === "number" )
+		return { min: range, max: range };
+	else if( typeof range === "object" )
+		return { min: range.min, max: range.max };
+}
+function parse_height_range_specification( height_range_specification, max_distance ) {
+	var height_range_for_distance = [ undefined ]; // index 0 is undefined because it means distance 0, which never needs to be specified
+	// global defaults (no limits)
+	var default_range = { 
+		min: 0,
+		max: Infinity
+	};
+	for( var i = 1; i <= max_distance; ++i )
+		height_range_for_distance[ i ] = default_range;
+	if( typeof height_range_specification === "number" ) {
+		// single value given, use for all
+		var range = { 
+			min: height_range_specification, 
+			max: height_range_specification
+		};
+		for( var i = 1; i <= max_distance; ++i )
+			height_range_for_distance[ i ] = range;
 	}
-	function parse_height_range_specification( height_range_specification ) {
-		var height_range_for_distance = [ undefined ]; // index 0 is undefined because it means distance 0, which never needs to be specified
+	else if( typeof height_range_specification === "object" ) {
+		// default range
+		if( '*' in height_range_specification )
+			for( var i = 1; i <= max_distance; ++i )
+				height_range_for_distance[ i ] = parse_range( height_range_specification['*'] );
+		// specified ranges
 		_.forEach( height_range_specification, function( height_range, distance_specifier_key ) {
 			height_range = parse_range( height_range );
 			var items = distance_specifier_key.split(",");
 			_.forEach( items, function( item ) {
 				var range = item.split("-");
 				if( range.length == 2 ) {
-					for( var min = _.parseInt( range[0] ), max = _.parseInt( range[1] ), i = min; i < max; ++i )
+					for( var min = _.parseInt( range[0] ), max = _.parseInt( range[1] ), i = min; i <= max; ++i )
 						height_range_for_distance[ i ] = height_range;
 				}
 				else if( range.length == 1 ) {
@@ -527,14 +554,11 @@ function create() {
 				}
 			});
 		});
-		return height_range_for_distance;
 	}
-	// ------------- constructor
-	return board;
+	return height_range_for_distance;
 }
 
-// data
-
+// other data
 
 // keys in this lookup table are specified as follows:
 //   keys have one character for each of six directions
@@ -618,4 +642,7 @@ exports.origin = origin;
 exports.can_slide_lookup_table = can_slide_lookup_table;
 
 exports.create = create;
+exports.Path_Node = Path_Node;
+exports.parse_range = parse_range;
+exports.parse_height_range_specification = parse_height_range_specification;
 

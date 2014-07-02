@@ -139,16 +139,16 @@ model.dat_gui = {
 		choose_read_file_path( function( path ) {
 			fs.readFile( path, function( error, data ) {
 				load_game( data );
+				gui.close();
 			});
 		});
-		gui.close();
 	},
 	"Save Game": function() {
 		choose_write_file_path( function( path ) {
 			var data = save_game();
 			fs.writeFile( path, data );
+			gui.close();
 		});
-		gui.close();
 	},
 	"Open Debugger": function() {
 		require("nw.gui").Window.get().showDevTools();

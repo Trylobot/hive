@@ -105,7 +105,7 @@ exports["test bug8 Black Spider should have 4 possible moves"] = function( asser
 	game = Game.load( save.creation_parameters, save.turn_history );
 	turns = game.lookup_possible_turns();
 	var position_key = game.board.search_pieces( "Black", "Spider" )[0].position_key;
-	assert.ok( turns["Movement"] && turns["Movement"][position_key].length == 4, "Black Spider has 4 possible moves" );
+	assert.equal( turns["Movement"] ? turns["Movement"][position_key].length : undefined, 4, "Black Spider should have 4 possible moves" );
 
 }
 

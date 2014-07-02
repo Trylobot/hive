@@ -371,7 +371,7 @@ function find_valid_movement_Spider( board, position ) {
 	// return all paths of length 3 that traverse slideable free spaces
 	var distance_range = 3;
 	var height_range_specification = 0;
-	var valid_paths = board.find_unique_paths_matching_conditions( position, distance_range, height_range_specification ) {
+	var valid_paths = board.find_unique_paths_matching_conditions( position, distance_range, height_range_specification )
 	return valid_paths.destinations;
 }
 
@@ -466,9 +466,9 @@ function find_valid_movement_Ladybug( board, position ) {
 	var distance_range = 3;
 	var height_range_specification = {
 		"1-2": { min: 1, max: Infinity },
-		"3": 0 // min: 0, max: 0
+		"3": 0 //min: 0, max: 0
 	};
-	var valid_paths = board.find_unique_paths_matching_conditions( position, distance_range, height_range_specification ) {
+	var valid_paths = board.find_unique_paths_matching_conditions( position, distance_range, height_range_specification )
 	return valid_paths.destinations;
 }
 
