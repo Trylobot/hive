@@ -427,6 +427,8 @@ function create() {
 		// perform search, using:
 		//   lookup_adjacent_climb_positions (when either source or destination height != 0)
 		for( var distance = 1; distance <= distance_range.max; ++distance ) {
+			// useful debugging statement:
+			//   _.map( branch_nodes, function( node ){ return Position.encode_all( node.trace_back_to_root( root_path_node )).join(" --> "); });
 			var height_range = height_range_specification[ distance ];
 			if( branch_nodes.length == 0 )
 				break; // no more branch nodes to explore; all nodes are presumably leaf nodes, but distance max has not been reached; it could be infinity, or there might not be any valid moves
