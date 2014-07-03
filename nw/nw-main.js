@@ -90,9 +90,9 @@ model.background.mouseupoutside = background_mouseup;
 model.background.mouseout = background_mouseup;
 model.stage.addChild( model.background );
 // status text (global, static)
-model.hand_text_font = "700 36px DINPro";
-model.stack_counter_text_font = "700 36px DINPro";
-model.status_text_font = "700 48px DINPro";
+model.hand_text_font = "700 36px Roboto";
+model.stack_counter_text_font = "700 36px Roboto";
+model.status_text_font = "700 48px Roboto";
 var status_text_fg = new PIXI.Text( "", { font: model.status_text_font, fill: "White" });
 var status_text_bg = new PIXI.Text( "", { font: model.status_text_font, fill: "Black" });
 model.status_text_fg = status_text_fg;

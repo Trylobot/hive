@@ -1,75 +1,28 @@
-@font-face{ 
-	font-family: 'DINPro';
-	font-weight: 400;
-	src: url('fonts/DINPro-Regular.otf');
-}
-@font-face{ 
-	font-family: 'DINPro';
-	font-weight: 700;
-	src: url('fonts/DINPro-Bold.otf');
-}
-@font-face{ 
-	font-family: 'DINPro';
-	font-weight: 100;
-	src: url('fonts/DINPro-Light.otf');
-}
-@font-face{ 
-	font-family: 'DINPro';
-	font-weight: 200;
-	src: url('fonts/DINPro-Medium.otf');
-}
-@font-face{ 
-	font-family: 'DINPro';
-	font-weight: 900;
-	src: url('fonts/DINPro-Black.otf');
-}
-
+/* html styles */
 body {
 	margin: 0;
 	padding: 0;
 	background-color: #808080;
 }
+/* pixi */
 .PIXI-Renderer {
 	position: absolute;
 }
-
-.dg .dg.main.a {
-	margin: auto;
+/* dat-gui */
+.dg.ac {
+	zoom: 1.5;
+}
+.dg.main.a {
 	float: none;
-	width: 400px !important;
+	margin: auto;
 }
-.dg input[type=checkbox] {
-	zoom: 3;
-	position: relative;
-	top: -7px;
+.dg {
+	color: #eee;
+	font: 11px 'Roboto' !important;
+	font-weight: 400 !important;
+	text-shadow: 0px -2px 1px #111;
 }
-.dg li.cr:not(.folder) {
-	font-family: "DINPro";
-	font-weight: 100;
-	font-size: 36px;
-	white-space: nowrap;
-	height: 50px;
-	line-height: 50px;
+.dg ul.closed + .close-button {
+	opacity: 0.10;
 }
-.dg li.cr.function,
-.dg li.cr.boolean {
-	border-left-width: 7px;
-}
-.dg li.cr.function .property-name,
-.dg li.cr.boolean .property-name {
-	width: 75%;
-	padding-left: 5%;
-}
-.dg li.cr.boolean .c {
-	width: 20%;
-}
-.dg.main .close-button {
-	width: 400px !important;
-	font-family: "DINPro";
-	font-weight: 100;
-	font-size: 16px;
-	height: 26px;
-	line-height: 26px;
-	border-bottom-left-radius: 10px;
-	border-bottom-right-radius: 10px;
-}
+
