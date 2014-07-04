@@ -3,10 +3,16 @@ _(global).extend(require("../core/domain/util"));
 var Piece = require("../core/domain/piece");
 var Position = require("../core/domain/position");
 var Board = require("../core/domain/board");
+var Game = require("../core/domain/game");
 var Rules = require("../core/domain/rules");
 
 exports["test rules lookup_possible_turns"] = function( assert ) {
-	var board;
+	var board, save, game, turns;
+
+	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json'); // this was named this way because of another bug, but the test itself has been corrected
+	game = Game.load( save.creation_parameters, save.turn_history );
+	turns = game.lookup_possible_turns();
+	assert.ok( _.keys( turns ).length == 1 && turns["Forfeit"] == true, "White Player should only be able to forfeit" );
 
 	// TODO: test that (0,0) is the only valid placement position for an empty board
 	// TODO: test that placement can occur next to a piece of the opposite color when the board contains exactly one piece
@@ -107,7 +113,7 @@ exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Beetle"] = function( assert ) {
-	var game, board, valid_movement;
+	var game, board, valid_movement, save, possible_turns;
 
 	board = Board.create();
 	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
@@ -169,6 +175,24 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		_.contains( valid_movement, "0,0" ),
 		"Beetle can climb down into hole" );
 
+	save = JSON.parse('{"creation_parameters":{"use_mosquito":false,"use_ladybug":false,"use_pillbug":false},"turn_history":[{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},{"turn_type":"Placement","piece_type":"Spider","destination":"-1,1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-1,-1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-2,2"},{"turn_type":"Movement","source":"-1,-1","destination":"1,-1"},{"turn_type":"Movement","source":"-2,2","destination":"-3,1"},{"turn_type":"Movement","source":"1,-1","destination":"0,0"},{"turn_type":"Movement","source":"-3,1","destination":"-1,1"}]}');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	possible_turns = game.lookup_possible_turns();
+	assert.ok( "0,0" in possible_turns["Movement"], "should be able to move the White Beetle" );
+
+
+	game = Game.load({ use_mosquito: false, use_ladybug: false, use_pillbug: false }, [
+		{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},
+		{"turn_type":"Placement","piece_type":"Grasshopper","destination":"-2,0"},
+		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},
+		{"turn_type":"Placement","piece_type":"Beetle","destination":"-3,-1"},
+		{"turn_type":"Movement","source":"1,-1","destination":"-1,-1"},
+		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},
+		{"turn_type":"Movement","source":"0,0","destination":"-4,2"}
+	]);
+	possible_turns = game.lookup_possible_turns();
+	assert.ok( "-3,-1" in possible_turns["Movement"], "should be able to move the Black Beetle" );
+
 	// TODO: test that beetle can jump into a "hole" surrounded on all sides
 	// TODO: test that beetle can jump up and down to and from large stacks of 4x or more pieces
 }
@@ -191,7 +215,13 @@ exports["test rules find_valid_movement_Grasshopper"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Spider"] = function( assert ) {
+	var save, game, turns;
 
+	save = require('./saved_games/black_turn_12__black_spider_should_have_4_moves.json');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	turns = game.lookup_possible_turns();
+	var position_key = game.board.search_pieces( "Black", "Spider" )[0].position_key;
+	assert.equal( turns["Movement"] ? turns["Movement"][position_key].length : undefined, 4, "Black Spider should have 4 possible moves" );
 }
 
 exports["test rules find_valid_movement_Soldier_Ant"] = function( assert ) {
@@ -207,6 +237,13 @@ exports["test rules find_valid_special_abilities_Mosquito"] = function( assert )
 }
 
 exports["test rules find_valid_movement_Ladybug"] = function( assert ) {
+	var save, game, turns;
+
+	save = require('./saved_games/white_turn_3__ladybug.hive-game.json');
+	game = Game.load( save.creation_parameters, save.turn_history );
+	turns = game.lookup_possible_turns();
+	assert.equal( turns["Movement"]["1,1"].length, 9, "Ladybug should have 9 possible moves" );
+
 	// TODO: add a test for when a ladybug given only one potential pathway up on top of the hive, is blocked by a gate and thus has no actual valid moves without backtracking
 }
 

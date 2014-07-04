@@ -55,31 +55,6 @@ exports["test bug3 can move spider but should NOT be able to"] = function( asser
 
 }
 
-exports["test bug4 can't move beetle but should be able to"] = function( assert ) {
-	var game, possible_turns;
-
-	game = Game.load({ use_mosquito: false, use_ladybug: false, use_pillbug: false }, [
-		{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},
-		{"turn_type":"Placement","piece_type":"Grasshopper","destination":"-2,0"},
-		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},
-		{"turn_type":"Placement","piece_type":"Beetle","destination":"-3,-1"},
-		{"turn_type":"Movement","source":"1,-1","destination":"-1,-1"},
-		{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},
-		{"turn_type":"Movement","source":"0,0","destination":"-4,2"}
-	]);
-	possible_turns = game.lookup_possible_turns();
-	assert.ok( "-3,-1" in possible_turns["Movement"], "should be able to move the Black Beetle" );
-}
-
-exports["test bug5 can't move beetle but should be able to"] = function( assert ) {
-	var save, game, possible_turns;
-
-	save = JSON.parse('{"creation_parameters":{"use_mosquito":false,"use_ladybug":false,"use_pillbug":false},"turn_history":[{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},{"turn_type":"Placement","piece_type":"Spider","destination":"-1,1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-1,-1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-2,2"},{"turn_type":"Movement","source":"-1,-1","destination":"1,-1"},{"turn_type":"Movement","source":"-2,2","destination":"-3,1"},{"turn_type":"Movement","source":"1,-1","destination":"0,0"},{"turn_type":"Movement","source":"-3,1","destination":"-1,1"}]}');
-	game = Game.load( save.creation_parameters, save.turn_history );
-	possible_turns = game.lookup_possible_turns();
-	assert.ok( "0,0" in possible_turns["Movement"], "should be able to move the White Beetle" );
-}
-
 exports["test bug6 should not be able to move pieces of the opponent's color, ever, but can with stacked beetles"] = function( assert ) {
 	var save, game, possible_turns;
 
@@ -89,25 +64,6 @@ exports["test bug6 should not be able to move pieces of the opponent's color, ev
 	assert.ok( !("0,2" in possible_turns["Movement"]), "Black Player should not be able to move White Beetle" );
 }
 
-exports["test bug7 White Player should be forced to forfeit"] = function( assert ) {
-	var save, game, turns;
-
-	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json'); // this was named this way because of another bug, but the test itself has been corrected
-	game = Game.load( save.creation_parameters, save.turn_history );
-	turns = game.lookup_possible_turns();
-	assert.ok( _.keys( turns ).length == 1 && turns["Forfeit"] == true, "White Player should only be able to forfeit" );
-}
-
-exports["test bug8 Black Spider should have 4 possible moves"] = function( assert ) {
-	var save, game, turns;
-
-	save = require('./saved_games/black_turn_12__black_spider_should_have_4_moves.json');
-	game = Game.load( save.creation_parameters, save.turn_history );
-	turns = game.lookup_possible_turns();
-	var position_key = game.board.search_pieces( "Black", "Spider" )[0].position_key;
-	assert.equal( turns["Movement"] ? turns["Movement"][position_key].length : undefined, 4, "Black Spider should have 4 possible moves" );
-
-}
 
 
 if( module == require.main )
