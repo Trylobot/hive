@@ -433,12 +433,13 @@ function create() {
 			if( branch_nodes.length == 0 )
 				break; // no more branch nodes to explore; all nodes are presumably leaf nodes, but distance max has not been reached; it could be infinity, or there might not be any valid moves
 			_.forEach( _.clone( branch_nodes ), function( branch_node ) {
+				var branch_node_height = board.lookup_piece_stack_height( branch_node.position );
+				if( start_position.is_equal( branch_node.position ))
+					--branch_node_height;
 				var adjacencies = [];
 				// the following distinction is necessary because restrictions are slightly different for "slide" vs. "climb"
-				if( height_range.min <= 0 )
-					adjacencies.push( board.lookup_adjacent_slide_positions( branch_node.position, start_position ));
-				if( height_range.max >= 1 )
-					adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, start_position ));
+				adjacencies.push( board.lookup_adjacent_slide_positions( branch_node.position, start_position ));
+				adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, start_position ));
 				adjacencies = _.filter( _.flatten( adjacencies ), function( adjacent_position ) {
 					var adjacent_position_key = adjacent_position.encode();
 					// height-range check against height range specification for the current distance (as measured from the start_position)
