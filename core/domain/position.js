@@ -101,6 +101,22 @@ function rotation( direction, clockwise ) {
 	}
 }
 
+function force_encoded_string( position_or_position_key ) {
+	if( typeof position_or_position_key === "object" )
+		return encode( position_or_position_key );
+	else if( typeof position_or_position_key === "string" )
+		return position_or_position_key;
+}
+
+function force_decoded_object( position_or_position_key ) {
+	if( typeof position_or_position_key === "object" )
+		return position_or_position_key;
+	else if( typeof position_or_position_key === "string" )
+		return decode( position_or_position_key );
+}
+
+
+
 // exports
 
 exports.directions_enum = directions_enum;
@@ -114,4 +130,5 @@ exports.decode_all = decode_all;
 exports.is_equal = is_equal;
 exports.translation = translation;
 exports.rotation = rotation;
-
+exports.force_encoded_string = force_encoded_string;
+exports.force_decoded_object = force_decoded_object;

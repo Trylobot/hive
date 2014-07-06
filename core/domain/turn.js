@@ -24,7 +24,7 @@ function create_placement( piece_type, destination ) {
 	var turn = {
 		turn_type: "Placement",
 		piece_type: piece_type,
-		destination: destination.encode()
+		destination: Position.force_encoded_string( destination )
 	};
 	return turn;
 }
@@ -32,8 +32,8 @@ function create_placement( piece_type, destination ) {
 function create_movement( source, destination ) {
 	var turn = {
 		turn_type: "Movement",
-		source: source.encode(),
-		destination: destination.encode()
+		source: Position.force_encoded_string( source ),
+		destination: Position.force_encoded_string( destination )
 	};
 	return turn;
 }
@@ -41,9 +41,9 @@ function create_movement( source, destination ) {
 function create_special_ability( ability_user, source, destination ) {
 	var turn = {
 		turn_type: "Special Ability",
-		ability_user: ability_user.encode(),
-		source: source.encode(),
-		destination: destination.encode()
+		ability_user: Position.force_encoded_string( ability_user ),
+		source: Position.force_encoded_string( source ),
+		destination: Position.force_encoded_string( destination )
 	};
 	return turn;
 }

@@ -301,69 +301,88 @@ function do_turn( model, turn ) {
 	// assumes AI is black, and human is white
 	// this code is going to change like VERY SOON (tm), yo
 	if( model.game_instance
+	&& !model.game_instance.game.game_over
+	&&  model.game_instance.game.possible_turns
 	&&  model.game_instance.players[ model.game_instance.game.player_turn ].player_type == "AI" ) {
-		var message = {
-			request_type: "CHOOSE_TURN",
-			game_id: model.game_id,
-			possible_turns: model.game_instance.game.possible_turns,
-			game_state: {
-				board: model.game_instance.game.board,
-				hands: model.game_instance.game.hands,
-				player_turn: model.game_instance.game.player_turn,
-				turn_number: model.game_instance.game.turn_number,
-				game_over: model.game_instance.game.game_over,
-				winner: model.game_instance.game.winner,
-				is_draw: model.game_instance.game.is_draw
-			}
-		};
-		var message_str = JSON.stringify( message );
-		var headers = { 
-			"Content-Type": "application/json", 
-			"Content-Length": message_str.length
-		};
-		var options = {
-			hostname: "localhost",
-			port: 51337,
-			path: "/",
-			method: "POST"
-		};
-		var request = http.request( options, function( response ) {
-			response.setEncoding("utf-8");
-			var response_chunks = [];
-			response.on("data", function( data ) {
-				response_chunks.push( data );
-			});
-			response.on("end", function() {
-				var response_text = response_chunks.join("");
-				var response_message = JSON.parse( response_text );
-				var turn;
-				switch( response_message.turn_type ) {
-					case "Placement":
-						turn = Turn.create_placement( 
-							response_message.piece_type, 
-							response_message.destination );
-						break;
-					case "Movement":
-						turn = Turn.create_movement(
-							response_message.source,
-							response_message.destination );
-						break;
-					case "Special Ability":
-						turn = Turn.create_special_ability(
-							response_message.ability_user,
-							response_message.source,
-							response_message.destination );
-						break;
-					case "Forfeit":
-						turn = Turn.create_forfeit();
-						break;
-				}
-				_.defer( do_turn, model, turn );
+		fetch_and_apply_AI_turn( model );
+	}
+}
+function fetch_and_apply_AI_turn( model ) {
+	// scrub the possible turns list for Position objects and encode them
+	var possible_turns = _.cloneDeep( model.game_instance.game.possible_turns );
+	if( possible_turns["Placement"] )
+		possible_turns["Placement"].positions = Position.encode_all( possible_turns["Placement"].positions );
+	if( possible_turns["Movement"] )
+		possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
+			return Position.encode_all( destination_position_array );
+		});
+	if( possible_turns["Special Ability"] )
+		possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
+			return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
+				return Position.encode_all( destination_position_array );
 			});
 		});
-		request.write( message_str );
-		request.end();
-	}
+	var message = {
+		request_type: "CHOOSE_TURN",
+		game_id: model.game_id,
+		possible_turns: possible_turns,
+		game_state: {
+			board: model.game_instance.game.board,
+			hands: model.game_instance.game.hands,
+			player_turn: model.game_instance.game.player_turn,
+			turn_number: model.game_instance.game.turn_number,
+			game_over: model.game_instance.game.game_over,
+			winner: model.game_instance.game.winner,
+			is_draw: model.game_instance.game.is_draw
+		}
+	};
+	var message_str = JSON.stringify( message );
+	var headers = { 
+		"Content-Type": "application/json", 
+		"Content-Length": message_str.length
+	};
+	var options = {
+		hostname: "localhost",
+		port: 51337,
+		path: "/",
+		method: "POST"
+	};
+	var request = http.request( options, function( response ) {
+		response.setEncoding("utf-8");
+		var response_chunks = [];
+		response.on("data", function( data ) {
+			response_chunks.push( data );
+		});
+		response.on("end", function() {
+			var response_text = response_chunks.join("");
+			var response_message = JSON.parse( response_text );
+			var turn;
+			switch( response_message.turn_type ) {
+				case "Placement":
+					turn = Turn.create_placement( 
+						response_message.piece_type, 
+						response_message.destination );
+					break;
+				case "Movement":
+					turn = Turn.create_movement(
+						response_message.source,
+						response_message.destination );
+					break;
+				case "Special Ability":
+					turn = Turn.create_special_ability(
+						response_message.ability_user,
+						response_message.source,
+						response_message.destination );
+					break;
+				case "Forfeit":
+					turn = Turn.create_forfeit();
+					break;
+			}
+			_.defer( do_turn, model, turn );
+		});
+	});
+	request.write( message_str );
+	request.end();
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
@@ -522,7 +541,8 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			stack_counters.addChild( count_text_bg );
 		}
 		// movement for this piece ?
-		if( hive_possible_turns["Movement"] && position_key in hive_possible_turns["Movement"] ) {
+		if( hive_possible_turns && hive_possible_turns["Movement"]
+		&&  position_key in hive_possible_turns["Movement"] ) {
 			pixi_piece.__hive_moves = hive_possible_turns["Movement"][ position_key ]; // list of position keys this piece can move to
 			pixi_piece.interactive = true;
 			pixi_piece.mouseover = pixi_piece_mouseover;
@@ -534,7 +554,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		}
 	});
 	//
-	if( hive_possible_turns["Special Ability"] ) {
+	if( hive_possible_turns && hive_possible_turns["Special Ability"] ) {
 		_.forEach( hive_possible_turns["Special Ability"], function( special_abilities, ability_source_position_key ) {
 			// for now there's only one type of special ability; moving a nearby piece
 			_.forEach( special_abilities, function( destination_positions, source_position_key ) {
@@ -604,7 +624,8 @@ function create_pixi_hand( color, hive_hand ) {
 		container.addChild( sprite );
 		var bounds = sprite.getBounds();
 		// interactivity hack
-		if( "Placement" in model.pixi_board.__hive_possible_turns
+		if( model.pixi_board.__hive_possible_turns != null
+		&&  "Placement" in model.pixi_board.__hive_possible_turns
 		&&  "piece_types" in model.pixi_board.__hive_possible_turns["Placement"]
 		&&  "positions" in model.pixi_board.__hive_possible_turns["Placement"] 
 		&&  _.keys( model.pixi_board.__hive_possible_turns["Placement"].positions ).length > 0 ) {
@@ -1031,14 +1052,9 @@ function update_status_text( model ) {
 	model.status_text_fg.setStyle({ font: model.status_text_font, fill: color });
 	model.status_text_bg.setStyle({ font: model.status_text_font, fill: Piece.opposite_color( color )});
 }
-// TODO: this could be simpler to implement if Rules returned a more consistent object structure, or even included a flag like "must_forfeit"
 function has_moves( model ) {
 	var turns = model.pixi_board.__hive_possible_turns;
-	return ( turns 
-	&& ( "Placement" in turns 
-	  || "Movement" in turns 
-	  || "Special Ability" in turns)
-	&& !("Forfeit" in turns ));
+	return turns != null && !("Forfeit" in turns );
 }
 function clear_status_text( model ) {
 	model.status_text_fg.setText( "" );
