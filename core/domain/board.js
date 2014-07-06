@@ -202,10 +202,13 @@ function create() {
 	// return a list of positions valid to climb onto
 	//   a climb is a movement from one position to another where one or both of the positions are occupied (height > 0)
 	//   optionally, treat a specific position as empty (not used yet)
-	board.lookup_adjacent_climb_positions = function( position, assuming_empty_position ) {
+	board.lookup_adjacent_climb_positions = function( position, assuming_empty_position, position_is_self ) {
 		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+		position_is_self = (typeof position_is_self === "undefined") ? true : false; // assumed true if not explicitly overridden
 		var position_list = [];
-		var self_height = board.lookup_piece_stack_height( position ) - 1;
+		var self_height = board.lookup_piece_stack_height( position );
+		if( position_is_self )
+			self_height--;
 		var adjacencies = {};
 		_.forEach( Position.directions_enum, function( direction ) {
 			var translated_position = position.translation( direction );
@@ -434,12 +437,17 @@ function create() {
 				break; // no more branch nodes to explore; all nodes are presumably leaf nodes, but distance max has not been reached; it could be infinity, or there might not be any valid moves
 			_.forEach( _.clone( branch_nodes ), function( branch_node ) {
 				var branch_node_height = board.lookup_piece_stack_height( branch_node.position );
-				if( start_position.is_equal( branch_node.position ))
+				var branch_node_position_is_self = false;
+				if( start_position.is_equal( branch_node.position )) {
 					--branch_node_height;
+					branch_node_position_is_self = true;
+				}
 				var adjacencies = [];
 				// the following distinction is necessary because restrictions are slightly different for "slide" vs. "climb"
-				adjacencies.push( board.lookup_adjacent_slide_positions( branch_node.position, start_position ));
-				adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, start_position ));
+				if( branch_node_height == 0 && height_range.min == 0 )
+					adjacencies.push( board.lookup_adjacent_slide_positions( branch_node.position, start_position ));
+				if( branch_node_height > 0 || height_range.max >= 1 )
+					adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, start_position, branch_node_position_is_self ));
 				adjacencies = _.filter( _.flatten( adjacencies ), function( adjacent_position ) {
 					var adjacent_position_key = adjacent_position.encode();
 					// height-range check against height range specification for the current distance (as measured from the start_position)
