@@ -80,21 +80,8 @@ function create() {
 						game_id, 
 						game_state, 
 						possible_turns, 
-						function( turn_choice ) { 
-							// receive response (from somewhere)
-							switch( turn_choice.turn_type ) {
-								case "Placement":
-									game.perform_placement(
-										game.player_turn,
-										turn_choice.piece_type,
-										turn_choice.destination );
-									break;
-								case "Movement":
-									game.perform_movement(
-										turn_choice.source,
-										turn_choice.destination );
-									break;
-							}
+						function( turn ) { 
+							game.perform_turn( turn );
 							iteration_complete();
 						});
 			},

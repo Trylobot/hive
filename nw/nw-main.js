@@ -2,6 +2,7 @@
 
 // dependencies
 var package_json = require("./package.json");
+var http = require("http");
 var fs = require("fs");
 var basepath = fs.existsSync("./core/") ? "./core/" : "../core/";
 var _ = require("lodash");
@@ -128,8 +129,22 @@ model.pixi_board_piece_rotations = {};
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
-	"Start New Game": function() {
-		start_game( model.dat_gui );
+	"New (vs Human)": function() {
+		start_game( 
+			"Human",
+			"Human",
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
+		gui.close();
+	},
+	"New (vs AI)": function() {
+		start_game( 
+			"Human",
+			"AI",
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
 	"Use Mosquito": false,
@@ -156,7 +171,8 @@ model.dat_gui = {
 	}
 };
 var gui = new dat.GUI();
-gui.add( model.dat_gui, "Start New Game" );
+gui.add( model.dat_gui, "New (vs Human)" );
+gui.add( model.dat_gui, "New (vs AI)" );
 gui.add( model.dat_gui, "Use Mosquito" );
 gui.add( model.dat_gui, "Use Ladybug" );
 gui.add( model.dat_gui, "Use Pillbug" );
@@ -230,14 +246,11 @@ function load_game( saved_game_json_str ) {
 	show_hive_game( model );
 }
 //
-function start_game( args ) { //$scope.start_game = function() {
-	var use_mosquito = args[ "Use Mosquito" ];
-	var use_ladybug = args[ "Use Ladybug" ];
-	var use_pillbug = args[ "Use Pillbug" ];
+function start_game( white_player_type, black_player_type, use_mosquito, use_ladybug, use_pillbug ) {
 	model.pixi_board_piece_rotations = {};
 	model.game_id = core.create_game(
-		Player.create( "Human" ), // White Player
-		Player.create( "Human" ), // Black Player
+		Player.create( white_player_type ),
+		Player.create( black_player_type ),
 		use_mosquito,
 		use_ladybug,
 		use_pillbug );
@@ -283,6 +296,74 @@ function do_turn( model, turn ) {
 	model.pixi_board.scale.set( scale, scale );
 	model.stage.setInteractive( true );
 	verify_board_integrity( model );
+
+	// handle AI in the hackiest possible way
+	// assumes AI is black, and human is white
+	// this code is going to change like VERY SOON (tm), yo
+	if( model.game_instance
+	&&  model.game_instance.players[ model.game_instance.game.player_turn ].player_type == "AI" ) {
+		var message = {
+			request_type: "CHOOSE_TURN",
+			game_id: model.game_id,
+			possible_turns: model.game_instance.game.possible_turns,
+			game_state: {
+				board: model.game_instance.game.board,
+				hands: model.game_instance.game.hands,
+				player_turn: model.game_instance.game.player_turn,
+				turn_number: model.game_instance.game.turn_number,
+				game_over: model.game_instance.game.game_over,
+				winner: model.game_instance.game.winner,
+				is_draw: model.game_instance.game.is_draw
+			}
+		};
+		var message_str = JSON.stringify( message );
+		var headers = { 
+			"Content-Type": "application/json", 
+			"Content-Length": message_str.length
+		};
+		var options = {
+			hostname: "localhost",
+			port: 51337,
+			path: "/",
+			method: "POST"
+		};
+		var request = http.request( options, function( response ) {
+			response.setEncoding("utf-8");
+			var response_chunks = [];
+			response.on("data", function( data ) {
+				response_chunks.push( data );
+			});
+			response.on("end", function() {
+				var response_text = response_chunks.join("");
+				var response_message = JSON.parse( response_text );
+				var turn;
+				switch( response_message.turn_type ) {
+					case "Placement":
+						turn = Turn.create_placement( 
+							response_message.piece_type, 
+							response_message.destination );
+						break;
+					case "Movement":
+						turn = Turn.create_movement(
+							response_message.source,
+							response_message.destination );
+						break;
+					case "Special Ability":
+						turn = Turn.create_special_ability(
+							response_message.ability_user,
+							response_message.source,
+							response_message.destination );
+						break;
+					case "Forfeit":
+						turn = Turn.create_forfeit();
+						break;
+				}
+				_.defer( do_turn, model, turn );
+			});
+		});
+		request.write( message_str );
+		request.end();
+	}
 }
 function clear_hive_game( model ) {
 	if( model.pixi_board ) {
