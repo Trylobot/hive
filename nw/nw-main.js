@@ -53,28 +53,44 @@ var model = {
 	forfeit_text_fg: null,
 	forfeit_text_bg: null,
 	forfeit_text_hit_rect: null,
-	col_delta_x: 138, // based on size of sprite at scale=1
-	row_delta_y: 80,
+	possible_theme_dirs: null,
+	theme_dir: null,
+	theme: null,
+	col_delta_x: null,
+	row_delta_y: null,
+	height_delta_y: null,
 	// hive domain
 	core: null,
 	game_id: null,
 	game_instance: null,
 	// dat.gui
 	dat_gui: null,
+	dat_gui_themes: null,
 	open_file_dialog: null,
 	save_file_dialog: null
 };
+// scale & zoom
 register_window_size( model );
 model.scale_values = [ 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 1, 1.25, 1.5, 2, 2.5, 3 ];
 //                       .05   .05  .1   .1   .1   .1   .15  .15  25  .25   .5 .5   .5
-model.hand_gutter_size = 120;
-model.max_ghost_ui_distance = 300;
-model.default_scale_i = model.scale_values.indexOf( 1 );
+model.default_scale_i = model.scale_values.indexOf( 1 ); // 100% zoom
 model.scale_i = model.default_scale_i;
+// hand gutter
+model.hand_gutter_size = 120;
+// ghost distance
+model.max_ghost_ui_distance = 300;
+// theme
+model.theme_dir = "./themes/Hive Carbon Flat/"; // default
+model.theme = require( model.theme_dir + "theme-package.json");
+model.col_delta_x = model.theme.col_delta_x;
+model.row_delta_y = model.theme.row_delta_y;
+model.height_delta_y = model.theme.height_delta_y;
 // spritemap
-model.spritemap_loader = new PIXI.AssetLoader([ "spritemap.json" ]);
+model.spritemap_loader = new PIXI.AssetLoader([ model.theme_dir + model.theme.spritemap ]);
 model.spritemap_loader.onComplete = initialize_textures;
 model.spritemap_loader.load();
+// other themes
+model.possible_theme_dirs = fs.readdirSync("./themes/");
 // stage
 model.background_color = 0x808080;
 var interactive = true;
@@ -126,6 +142,7 @@ var core = Core.create();
 model.core = core;
 model.pixi_board_piece_rotations = {};
 // dat.gui
+var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
@@ -165,12 +182,35 @@ model.dat_gui = {
 			gui.close();
 		});
 	},
+	"Themes": null, // (Folder)   "./themes/" + <model.possible_theme_dirs>
 	"Open Debugger": function() {
 		require("nw.gui").Window.get().showDevTools();
 		gui.close();
 	}
 };
-var gui = new dat.GUI();
+model.dat_gui_themes = _.zipObject( 
+	model.possible_theme_dirs, 
+	_.map( model.possible_theme_dirs, function( theme_folder ) {
+		return function() {
+			// theme
+			model.theme_dir = "./themes/" + theme_folder + "/";
+			model.theme = require( model.theme_dir + "theme-package.json");
+			model.col_delta_x = model.theme.col_delta_x;
+			model.row_delta_y = model.theme.row_delta_y;
+			model.height_delta_y = model.theme.height_delta_y;
+			// spritemap
+			_.forEach( model.textures, function( texture ) {
+				texture.destroy( true ); // destroy texture and base texture
+			});
+			model.spritemap_loader = new PIXI.AssetLoader([ model.theme_dir + model.theme.spritemap ]);
+			model.spritemap_loader.onComplete = initialize_textures;
+			model.spritemap_loader.load();
+			// TODO: this function needs a bunch of work
+			//   after this runs, if a game is in progress, a bunch of old variables are causing issues
+			//   we need to re-initialize the stage, or something, I guess
+		}
+	})
+);
 gui.add( model.dat_gui, "New (vs Human)" );
 gui.add( model.dat_gui, "New (vs AI)" );
 gui.add( model.dat_gui, "Use Mosquito" );
@@ -178,6 +218,12 @@ gui.add( model.dat_gui, "Use Ladybug" );
 gui.add( model.dat_gui, "Use Pillbug" );
 gui.add( model.dat_gui, "Load Game" );
 gui.add( model.dat_gui, "Save Game" );
+/*
+var gui_themes = gui.addFolder( "Themes" );
+_.forEach( model.dat_gui_themes, function( set_theme_fn, theme_name ) {
+	gui_themes.add( model.dat_gui_themes, theme_name );
+});
+*/
 gui.add( model.dat_gui, "Open Debugger" );
 
 //////////////////////////////////////////////////////////////////
@@ -509,7 +555,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			for( var i = 0; i <= hive_piece_stack_height - 2; ++i ) {
 				hive_piece = hive_piece_stack[i];
 				var underneath_pixi_piece = create_pixi_piece( hive_piece );
-				underneath_pixi_piece.position.set( pixi_x, pixi_y );
+				underneath_pixi_piece.position.set( pixi_x, pixi_y + (model.height_delta_y * i) );
 				underneath_pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
 					model.pixi_board_piece_rotations, position_key, i, hive_piece.color, hive_piece.type );
 				container.addChild( underneath_pixi_piece );
@@ -521,7 +567,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var pixi_piece = create_pixi_piece( hive_piece );
 		pixi_piece.__hive_position_key = position_key;
 		position_register.pixi_piece = pixi_piece;
-		pixi_piece.position.set( pixi_x, pixi_y );
+		pixi_piece.position.set( pixi_x, pixi_y + (model.height_delta_y * (hive_piece_stack_height - 1)) );
 		pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
 			model.pixi_board_piece_rotations, position_key, hive_piece_stack_height - 1, hive_piece.color, hive_piece.type );
 		container.addChild( pixi_piece.__hive_pixi_ghost );

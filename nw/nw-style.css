@@ -26,3 +26,17 @@ body {
 	opacity: 0.10;
 }
 
+.dg .cr.function .property-name  {
+	width: 100%;
+}
+.dg .cr.boolean .property-name  {
+	width: 80%;
+}
+.dg .cr.boolean .c  {
+	width: 20%;
+}
+.dg .cr.boolean .c > input[type=checkbox] {
+	zoom: 1.6;
+	margin-top: 3px;
+}
+
