@@ -17,7 +17,7 @@ of *LICENSE*
 6. **INTELLECTUAL PROPERTY LICENSED** — The rights to use and copy *SOFTWARE*,
 subject to the restrictions described herein
 
-7. **SCOPE OF THE LICENSE** — Non-commercial license for academic research
+7. **SCOPE OF THE LICENSE** — Allows *SOFTWARE* to be used for academic research
 and/or educational purposes only. No right to commercialize *SOFTWARE* or create
 a derivative work from *SOFTWARE* without explicit written permission from
 *AUTHOR*
@@ -36,4 +36,4 @@ any kind, express or implied, including but not limited to the warranties of
 merchantability, fitness for a particular purpose and noninfringement. In no
 event shall *AUTHOR* be liable for any claim, damages or other liability,
 whether in an action of contract, tort or otherwise, arising from, out of or in
-connection with the software or the use or other dealings in the software.
+connection with *SOFTWARE* or the use or other dealings in *SOFTWARE*
