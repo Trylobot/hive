@@ -107,7 +107,7 @@ function create() {
 	}
 	// 
 	board.lookup_occupied_positions = function() {
-		return Position.decode_all( board.lookup_occupied_position_keys );
+		return Position.decode_all( board.lookup_occupied_position_keys() );
 	}
 	// 
 	board.lookup_occupied_position_keys = function() {
@@ -202,8 +202,7 @@ function create() {
 	// return a list of positions valid to climb onto
 	//   a climb is a movement from one position to another where one or both of the positions are occupied (height > 0)
 	//   optionally, treat a specific position as empty (not used yet)
-	board.lookup_adjacent_climb_positions = function( position, assuming_empty_position, position_is_self ) {
-		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+	board.lookup_adjacent_climb_positions = function( position, position_is_self ) {
 		position_is_self = (typeof position_is_self === "undefined") ? true : false; // assumed true if not explicitly overridden
 		var position_list = [];
 		var self_height = board.lookup_piece_stack_height( position );
@@ -261,35 +260,6 @@ function create() {
 					var adjacent_position_key = adjacent_position.encode();
 					if( !(adjacent_position_key in visited) ) {
 						if( distance >= min_distance )
-							result[ adjacent_position_key ] = adjacent_position;
-						to_visit_next.push( adjacent_position );
-					}
-				});
-			});
-			to_visit = to_visit_next;
-			distance++;
-		}
-		return result;
-	}
-	// return a map of free spaces that match a highly specific [min,max] height sequential specifier from a start position
-	board.lookup_climb_destinations_matching_height_requirements = function( start_position, height_min_max_array ) {
-		var result = {};
-		var visited = {};
-		var distance = 1;
-		var to_visit = [ start_position ];
-		while( to_visit.length > 0 && distance <= height_min_max_array.length ) {
-			var to_visit_next = [];
-			_.forEach( to_visit, function( position ) {
-				var position_key = position.encode();
-				visited[ position_key ] = true;
-				var adjacencies = board.lookup_adjacent_climb_positions( position, start_position );
-				_.forEach( adjacencies, function( adjacent_position ) {
-					var adjacent_position_key = adjacent_position.encode();
-					if( !(adjacent_position_key in visited) ) {
-						var height = board.lookup_piece_stack_height_by_key( adjacent_position_key );
-						var height_range = height_min_max_array[ distance - 1 ];
-						if( height >= height_range.min && height <= height_range.max 
-						&&  distance == height_min_max_array.length ) // height_min_max_array also being used as an exact distance specifier
 							result[ adjacent_position_key ] = adjacent_position;
 						to_visit_next.push( adjacent_position );
 					}
@@ -427,8 +397,7 @@ function create() {
 		//                        if no new nodes result, original node is moved to leaf_nodes (terminal nodes that need not be further explored)
 		var leaf_nodes = []; // paths that have been explored fully and terminated, potentially before max distance reached
 		branch_nodes.push( root_path_node );
-		// perform search, using:
-		//   lookup_adjacent_climb_positions (when either source or destination height != 0)
+		// perform search
 		for( var distance = 1; distance <= distance_range.max; ++distance ) {
 			// useful debugging statement:
 			//   _.map( branch_nodes, function( node ){ return Position.encode_all( node.trace_back_to_root( root_path_node )).join(" --> "); });
@@ -447,7 +416,7 @@ function create() {
 				if( branch_node_height == 0 && height_range.min == 0 )
 					adjacencies.push( board.lookup_adjacent_slide_positions( branch_node.position, start_position ));
 				if( branch_node_height > 0 || height_range.max >= 1 )
-					adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, start_position, branch_node_position_is_self ));
+					adjacencies.push( board.lookup_adjacent_climb_positions( branch_node.position, branch_node_position_is_self ));
 				adjacencies = _.filter( _.flatten( adjacencies ), function( adjacent_position ) {
 					var adjacent_position_key = adjacent_position.encode();
 					// height-range check against height range specification for the current distance (as measured from the start_position)
@@ -553,17 +522,22 @@ function parse_height_range_specification( height_range_specification, max_dista
 		// specified ranges
 		_.forEach( height_range_specification, function( height_range, distance_specifier_key ) {
 			height_range = parse_range( height_range );
-			var items = distance_specifier_key.split(",");
-			_.forEach( items, function( item ) {
-				var range = item.split("-");
-				if( range.length == 2 ) {
-					for( var min = _.parseInt( range[0] ), max = _.parseInt( range[1] ), i = min; i <= max; ++i )
-						height_range_for_distance[ i ] = height_range;
-				}
-				else if( range.length == 1 ) {
-					height_range_for_distance[ _.parseInt( range[0] )] = height_range;
-				}
-			});
+			if( typeof distance_specifier_key === "number" ) {
+				height_range_for_distance[ distance_specifier_key + 1 ] = height_range;
+			}
+			else if( typeof distance_specifier_key === "string" ) {
+				var items = distance_specifier_key.split(",");
+				_.forEach( items, function( item ) {
+					var range = item.split("-");
+					if( range.length == 2 ) {
+						for( var min = _.parseInt( range[0] ), max = _.parseInt( range[1] ), i = min; i <= max; ++i )
+							height_range_for_distance[ i ] = height_range;
+					}
+					else if( range.length == 1 ) {
+						height_range_for_distance[ _.parseInt( range[0] )] = height_range;
+					}
+				});
+			}
 		});
 	}
 	return height_range_for_distance;

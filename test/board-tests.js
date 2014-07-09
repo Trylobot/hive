@@ -106,15 +106,39 @@ exports["test board search_top_pieces"] = function( assert ) {
 }
 
 exports["test board lookup_occupied_positions, lookup_occupied_position_keys"] = function( assert ) {
-	
+	var board, occupied_positions;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	occupied_positions = board.lookup_occupied_positions();
+	assert.ok( occupied_positions[0].is_equal( Position.create( 0, 0 )), "origin is occupied" );
 }
 
 exports["test board lookup_piece_stack, lookup_piece_stack_by_key"] = function( assert ) {
-	
+	var board, stack;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	stack = board.lookup_piece_stack( Position.create( 0, 0 ));
+	assert.ok( stack.length === 5 && stack[4].color === "White" && stack[4].type === "Beetle", "stack contents are correct" );
+
 }
 
 exports["test board lookup_piece_stack_height, lookup_piece_stack_height_by_key"] = function( assert ) {
-	
+	var board, stack_height;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	stack_height = board.lookup_piece_stack_height( Position.create( 0, 0 ));
+	assert.ok( stack_height === 5, "stack height is correct" );
 }
 
 exports["test board lookup_piece, lookup_piece_by_key"] = function( assert ) {
@@ -153,7 +177,16 @@ exports["test board lookup_piece, lookup_piece_by_key"] = function( assert ) {
 }
 
 exports["test board lookup_piece_at_height"] = function( assert ) {
-	
+	var board, piece;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
+	piece = board.lookup_piece_at_height( Position.create( 0, 0 ), 4 );
+	assert.ok( piece.color == "White" && piece.type == "Beetle", "piece is correct" );
 }
 
 exports["test board lookup_adjacent_positions"] = function( assert ) {
@@ -194,11 +227,39 @@ exports["test board lookup_adjacent_slide_positions"] = function( assert ) {
 }
 
 exports["test board lookup_adjacent_climb_positions"] = function( assert ) {
+	var board, positions;
 
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, -1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, -2 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1 ));
+	positions = Position.encode_all( board.lookup_adjacent_climb_positions( Position.create( -1, -1 )));
+	assert.ok( positions.length == 2
+		&& _.contains( positions, "0,0" )
+		&& _.contains( positions, "1,-1" ),
+		"climb positions are correct" );
 }
 
 exports["test board lookup_occupied_adjacencies"] = function( assert ) {
-	
+	var board, adjacencies;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -1, -1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, -2 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1 ));
+	adjacencies = Position.encode_all( board.lookup_occupied_adjacencies( Position.create( -1, -1 )));
+	assert.ok( adjacencies.length == 2
+		&& _.contains( adjacencies, "0,0" )
+		&& _.contains( adjacencies, "1,-1" ),
+		"adjacencies are correct" );
 }
 
 exports["test board lookup_slide_destinations_within_range"] = function( assert ) {
@@ -260,10 +321,6 @@ exports["test board lookup_slide_destinations_within_range"] = function( assert 
 
 }
 
-exports["test board lookup_climb_destinations_matching_height_requirements"] = function( assert ) {
-	
-}
-
 exports["test board lookup_free_spaces"] = function( assert ) {
 	var board, free_spaces;
 
@@ -314,7 +371,18 @@ exports["test board lookup_free_spaces"] = function( assert ) {
 }
 
 exports["test board find_free_space_in_direction"] = function( assert ) {
-	
+	var board, free_space;
+
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 3, 1 ));
+	board.place_piece( Piece.create( "Black", "Grasshopper" ), Position.create( -1, -1 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, -2 ));
+	board.place_piece( Piece.create( "White", "Soldier Ant" ), Position.create( 1, -1 ));
+	board.place_piece( Piece.create( "Black", "Soldier Ant" ), Position.create( 3, -1 ));
+	free_space = board.find_free_space_in_direction( Position.create( -1, -1 ), "4 o'clock" );
+	assert.ok( Position.create( 2, 2 ).is_equal( free_space ), "free space found correctly" );
 }
 
 exports["test board check_contiguity"] = function( assert ) {
@@ -383,11 +451,25 @@ exports["test board can_slide_lookup_table"] = function( assert ) {
 }
 
 exports["test board find_unique_paths_matching_conditions"] = function( assert ) {
+	var board, paths, destinations;
 
-}
+	board = Board.create();
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 1, 1 ));
 
-exports["test board Path_Node"] = function( assert ) {
+	paths = board.find_unique_paths_matching_conditions( Position.create( 0, 0 ), 3, 0 ); // move like a spider
+	destinations = Position.encode_all( paths.destinations );
+	assert.ok( destinations.length == 1 && _.contains( destinations, "2,2" ), "destinations correct" );
 
+	paths = board.find_unique_paths_matching_conditions( Position.create( 0, 0 ), 2, [ 1, 0 ] ); // move like a non-existent ladybug-like piece, distance == 2
+	destinations = Position.encode_all( paths.destinations );
+	assert.ok( destinations.length == 5 
+		&& _.contains( destinations, "-1,1" )
+		&& _.contains( destinations, "0,2" )
+		&& _.contains( destinations, "2,2" )
+		&& _.contains( destinations, "3,1" )
+		&& _.contains( destinations, "2,0" ),
+		"destinations correct" );
 }
 
 exports["test board parse_range"] = function( assert ) {
