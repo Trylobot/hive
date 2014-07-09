@@ -1,8 +1,8 @@
 Hive AI Development Tool
 ====
-<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a> strictly for educational and academic purposes *only*.
+This work is licensed under the [Research License 1.0](LICENSE.md) strictly for academic research and/or educational purposes *only*.
 
-Hive images used with permission. Please visit http://gen42.com/hive if you wish to purchase the actual board game upon which this educational programming tool is based upon.
+Copyrighted Hive images are used with permission; please visit http://gen42.com/hive to purchase the board game upon which this tool is based, and support the author John Yianni.
 
 ```javascript
 /*
