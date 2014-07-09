@@ -300,6 +300,7 @@ function load_game( saved_game_json_str ) {
 }
 //
 function start_game( white_player_type, black_player_type, use_mosquito, use_ladybug, use_pillbug ) {
+	model.stage.setBackgroundColor( model.background_color );
 	model.pixi_board_piece_rotations = {};
 	model.game_id = core.create_game(
 		Player.create( white_player_type ),
@@ -1112,6 +1113,10 @@ function update_status_text( model ) {
 			color = game_over_status.winner;
 			text = color + " WINS!";
 			text = color + " WINS!";
+			if( color == "White" )
+				model.stage.setBackgroundColor( 0x000000 ); // black, for contrast
+			else if( color == "Black" )
+				model.stage.setBackgroundColor( 0xFFFFFF ); // white, for contrast
 		} else {
 			text = "DRAW!";
 			text = "DRAW!";
