@@ -3,5 +3,6 @@
 	"spritemap": "spritemap.json",
 	"col_delta_x": 138,
 	"row_delta_y": 80,
-	"height_delta_y": 0
+	"height_delta_y": 0,
+	"symbol_scale_y": 1.0
 }

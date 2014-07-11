@@ -64,6 +64,7 @@ var model = {
 	col_delta_x: null,
 	row_delta_y: null,
 	height_delta_y: null,
+	symbol_scale_y: null,
 	// hive domain
 	core: null,
 	game_id: null,
@@ -86,11 +87,12 @@ model.hand_gutter_size = 120;
 // ghost distance
 model.max_ghost_ui_distance = 300;
 // theme
-model.theme_dir = "./themes/Hive Carbon Flat/"; // default
+model.theme_dir = "./themes/Hive Carbon Isometric/"; // default
 model.theme = require( model.theme_dir + "theme-package.json");
 model.col_delta_x = model.theme.col_delta_x;
 model.row_delta_y = model.theme.row_delta_y;
 model.height_delta_y = model.theme.height_delta_y;
+model.symbol_scale_y = model.theme.symbol_scale_y;
 // spritemap
 model.spritemap_loader = new PIXI.AssetLoader([ model.theme_dir + model.theme.spritemap ]);
 model.spritemap_loader.onComplete = initialize_textures;
@@ -205,6 +207,7 @@ model.dat_gui_themes = _.zipObject(
 			model.col_delta_x = model.theme.col_delta_x;
 			model.row_delta_y = model.theme.row_delta_y;
 			model.height_delta_y = model.theme.height_delta_y;
+			model.symbol_scale_y = model.theme.symbol_scale_y;
 			// spritemap
 			_.forEach( model.textures, function( texture ) {
 				texture.destroy( true ); // destroy texture and base texture
@@ -225,12 +228,10 @@ gui.add( model.dat_gui, "Use Ladybug" );
 gui.add( model.dat_gui, "Use Pillbug" );
 gui.add( model.dat_gui, "Load Game" );
 gui.add( model.dat_gui, "Save Game" );
-/*
 var gui_themes = gui.addFolder( "Themes" );
 _.forEach( model.dat_gui_themes, function( set_theme_fn, theme_name ) {
 	gui_themes.add( model.dat_gui_themes, theme_name );
 });
-*/
 gui.add( model.dat_gui, "Open Debugger" );
 
 //////////////////////////////////////////////////////////////////
@@ -540,7 +541,12 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	var container = new PIXI.DisplayObjectContainer();
 	container.__symbol_sprite = symbol_sprite;
 	container.addChild( tile_sprite );
-	container.addChild( symbol_sprite );
+	var symbol_squish_container = new PIXI.DisplayObjectContainer();
+	symbol_squish_container.scale.set( 1.0, model.symbol_scale_y );
+	symbol_sprite.anchor.set( 0.5, 0.5 / model.symbol_scale_y );
+	symbol_squish_container.addChild( symbol_sprite );
+	symbol_squish_container.position.set( 0, 0.5 * model.height_delta_y );
+	container.addChild( symbol_squish_container );
 	return container;
 }
 // depends on global: model
@@ -581,7 +587,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 				hive_piece = hive_piece_stack[i];
 				var underneath_pixi_piece = create_pixi_piece( hive_piece );
 				underneath_pixi_piece.position.set( pixi_x, pixi_y + (model.height_delta_y * i) );
-				underneath_pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
+				underneath_pixi_piece.__symbol_sprite.rotation = resolve_pixi_board_piece_rotation( 
 					model.pixi_board_piece_rotations, position_key, i, hive_piece.color, hive_piece.type );
 				container.addChild( underneath_pixi_piece );
 			}
@@ -593,7 +599,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		pixi_piece.__hive_position_key = position_key;
 		position_register.pixi_piece = pixi_piece;
 		pixi_piece.position.set( pixi_x, pixi_y + (model.height_delta_y * (hive_piece_stack_height - 1)) );
-		pixi_piece.rotation = resolve_pixi_board_piece_rotation( 
+		pixi_piece.__symbol_sprite.rotation = resolve_pixi_board_piece_rotation( 
 			model.pixi_board_piece_rotations, position_key, hive_piece_stack_height - 1, hive_piece.color, hive_piece.type );
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
