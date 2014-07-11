@@ -4,5 +4,6 @@
 	"col_delta_x": 138,
 	"row_delta_y": 70,
 	"height_delta_y": -23,
-	"symbol_scale_y": 0.875
+	"symbol_scale_y": 0.875,
+	"show_stack_counter": false
 }

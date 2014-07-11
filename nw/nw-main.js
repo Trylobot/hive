@@ -88,11 +88,8 @@ model.hand_gutter_size = 120;
 model.max_ghost_ui_distance = 300;
 // theme
 model.theme_dir = "./themes/Hive Carbon Isometric/"; // default
-model.theme = require( model.theme_dir + "theme-package.json");
-model.col_delta_x = model.theme.col_delta_x;
-model.row_delta_y = model.theme.row_delta_y;
-model.height_delta_y = model.theme.height_delta_y;
-model.symbol_scale_y = model.theme.symbol_scale_y;
+var theme = require( model.theme_dir + "theme-package.json");
+set_theme( model, theme );
 // spritemap
 model.spritemap_loader = new PIXI.AssetLoader([ model.theme_dir + model.theme.spritemap ]);
 model.spritemap_loader.onComplete = initialize_textures;
@@ -202,17 +199,15 @@ model.dat_gui_themes = _.zipObject(
 	_.map( model.possible_theme_dirs, function( theme_folder ) {
 		return function() {
 			// theme
-			model.theme_dir = "./themes/" + theme_folder + "/";
-			model.theme = require( model.theme_dir + "theme-package.json");
-			model.col_delta_x = model.theme.col_delta_x;
-			model.row_delta_y = model.theme.row_delta_y;
-			model.height_delta_y = model.theme.height_delta_y;
-			model.symbol_scale_y = model.theme.symbol_scale_y;
+			var theme_dir = "./themes/" + theme_folder + "/";
+			model.theme_dir = theme_dir;
+			var theme = require( model.theme_dir + "theme-package.json");
+			set_theme( model, theme );
 			// spritemap
 			_.forEach( model.textures, function( texture ) {
 				texture.destroy( true ); // destroy texture and base texture
 			});
-			model.spritemap_loader = new PIXI.AssetLoader([ model.theme_dir + model.theme.spritemap ]);
+			model.spritemap_loader = new PIXI.AssetLoader([ theme_dir + theme.spritemap ]);
 			model.spritemap_loader.onComplete = initialize_textures;
 			model.spritemap_loader.load();
 			// TODO: this function needs a bunch of work
@@ -242,6 +237,14 @@ function register_window_size( model ) {
 	model.renderer_height = window.innerHeight;
 	model.renderer_halfWidth = Math.floor( window.innerWidth / 2 );
 	model.renderer_halfHeight = Math.floor( window.innerHeight / 2 );
+}
+function set_theme( model, theme ) {
+	model.theme = theme;
+	model.col_delta_x = theme.col_delta_x;
+	model.row_delta_y = theme.row_delta_y;
+	model.height_delta_y = theme.height_delta_y;
+	model.symbol_scale_y = theme.symbol_scale_y;
+	model.show_stack_counter = theme.show_stack_counter;
 }
 function animate( time ) {
 	model.renderer.render( model.stage );
@@ -567,7 +570,9 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	container.__hive_possible_turns = hive_possible_turns;
 	container.__hive_positions = {};
 	//
-	var occupied_position_keys = hive_board.lookup_occupied_position_keys();
+	var occupied_positions = hive_board.lookup_occupied_positions();
+	occupied_positions.sort( compare_positions_for_isometric_rendering );
+	var occupied_position_keys = Position.encode_all( occupied_positions );
 	_.forEach( occupied_position_keys, function( position_key ) {
 		var position = Position.decode( position_key );
 		var pixi_x = position.col * model.col_delta_x;
@@ -576,7 +581,9 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var position_register = {
 			occupied: true,
 			hive_piece: null,
-			pixi_piece: null
+			hive_pieces_under: [],
+			pixi_piece: null,
+			pixi_pieces_under: []
 		};
 		container.__hive_positions[ position_key ] = position_register;
 		var hive_piece_stack = hive_board.lookup_piece_stack( position );
@@ -585,11 +592,13 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		if( hive_piece_stack_height >= 2 ) {
 			for( var i = 0; i <= hive_piece_stack_height - 2; ++i ) {
 				hive_piece = hive_piece_stack[i];
+				position_register.hive_pieces_under.push( hive_piece );
 				var underneath_pixi_piece = create_pixi_piece( hive_piece );
 				underneath_pixi_piece.position.set( pixi_x, pixi_y + (model.height_delta_y * i) );
 				underneath_pixi_piece.__symbol_sprite.rotation = resolve_pixi_board_piece_rotation( 
 					model.pixi_board_piece_rotations, position_key, i, hive_piece.color, hive_piece.type );
 				container.addChild( underneath_pixi_piece );
+				position_register.pixi_pieces_under.push( underneath_pixi_piece );
 			}
 		}
 		// add the piece on top; potentially interactive
@@ -604,7 +613,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		container.addChild( pixi_piece.__hive_pixi_ghost );
 		container.addChild( pixi_piece );
 		// add indicator for stacked pieces
-		if( hive_piece_stack_height >= 2 ) {
+		if( hive_piece_stack_height >= 2 && model.show_stack_counter ) {
 			var font = model.stack_counter_text_font;
 			var color = hive_piece.color;
 			var opposite_color = Piece.opposite_color( color );
@@ -673,6 +682,25 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	});
 	container.addChild( stack_counters );
 	return container;
+}
+function sort_pixi_board_pieces_for_isometric_rendering( pixi_board ) {
+	var occupied_position_keys = pixi_board.__hive_board.lookup_occupied_position_keys();
+	// remove all pixi pieces from the renderer
+	_.forEach( occupied_position_keys, function( position_key ) {
+		var position_register = pixi_board.__hive_positions[ position_key ];
+		pixi_board.removeChild( position_register.pixi_piece );
+		_.forEach( position_register.pixi_pieces_under, pixi_board.removeChild, pixi_board );
+	});
+	var occupied_positions = Position.decode_all( occupied_position_keys );
+	occupied_positions.sort( compare_positions_for_isometric_rendering );
+	// sort
+	occupied_position_keys = Position.encode_all( occupied_positions );
+	// re-add by key
+	_.forEach( occupied_position_keys, function( position_key ) {
+		var position_register = pixi_board.__hive_positions[ position_key ];
+		pixi_board.addChild( position_register.pixi_piece );
+		_.forEach( position_register.pixi_pieces_under, pixi_board.addChild, pixi_board );
+	});
 }
 // depends on global: model
 function create_pixi_hand( color, hive_hand ) {
@@ -953,6 +981,8 @@ function pixi_piece_mouseup( ix ) {
 		// move this actual piece
 		// TODO: tween this
 		self.position.set( self.__hive_pixi_ghost.position.x, self.__hive_pixi_ghost.position.y );
+		// re-sort the pixi piece objects to repair the isometric rendering order
+		sort_pixi_board_pieces_for_isometric_rendering( model.pixi_board );
 		// revert drag state and possible mouseover style
 		document.body.style.cursor = "inherit";
 		self.__hive_drag_start_mouse = null;
@@ -1156,6 +1186,13 @@ function get_random_rotation() {
 function point_equal( pos0, pos1 ) {
 	return (pos0.x == pos1.x 
 		&&  pos0.y == pos1.y);
+}
+function compare_positions_for_isometric_rendering( pos_a, pos_b ) {
+	// sort in ascending order, with row being of higher importance than column
+	if( pos_a.row != pos_b.row )
+		return pos_a.row - pos_b.row;
+	else
+		return pos_a.col - pos_b.col;
 }
 function log_point( pixi_point, msg ) {
 	console.log( "("+pixi_point.x+","+pixi_point.y+") " + msg?msg:"" );
