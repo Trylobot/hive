@@ -153,6 +153,7 @@ model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
 	"New (vs Human)": function() {
+		model.DEBUG_MODE = false;
 		start_game( 
 			"Human",
 			"Human",
@@ -162,6 +163,7 @@ model.dat_gui = {
 		gui.close();
 	},
 	"New (vs AI)": function() {
+		model.DEBUG_MODE = false;
 		start_game( 
 			"Human",
 			"AI",
@@ -189,6 +191,11 @@ model.dat_gui = {
 		});
 	},
 	"Themes": null, // (Folder)   "./themes/" + <model.possible_theme_dirs>
+	"Sandbox Mode": function() {
+		model.DEBUG_MODE = true;
+		start_game( "Testing", "Testing", true, true, true );
+		gui.close();
+	},
 	"Open Debugger": function() {
 		require("nw.gui").Window.get().showDevTools();
 		gui.close();
@@ -227,6 +234,7 @@ var gui_themes = gui.addFolder( "Themes" );
 _.forEach( model.dat_gui_themes, function( set_theme_fn, theme_name ) {
 	gui_themes.add( model.dat_gui_themes, theme_name );
 });
+gui.add( model.dat_gui, "Sandbox Mode" );
 gui.add( model.dat_gui, "Open Debugger" );
 
 //////////////////////////////////////////////////////////////////
@@ -327,8 +335,20 @@ function show_hive_game( model ) {
 	pixi_board.position.set( model.renderer_halfWidth, model.renderer_halfHeight + Math.floor(model.hand_gutter_size/2) );
 	model.stage.addChild( pixi_board );
 	//
-	var pixi_white_hand = create_pixi_hand( "White", hive_game.hands["White"] );
-	var pixi_black_hand = create_pixi_hand( "Black", hive_game.hands["Black"] );
+	var pixi_white_hand,
+	    pixi_black_hand,
+	    color;
+	if( !model.DEBUG_MODE ) {
+		color = "White";
+		pixi_white_hand = create_pixi_hand( color, hive_game.hands[color], hive_possible_turns, (color == hive_game.player_turn) );
+		color = "Black";
+		pixi_black_hand = create_pixi_hand( color, hive_game.hands[color], hive_possible_turns, (color == hive_game.player_turn) );
+	} else { // DEBUG_MODE
+		var infinite_hand = _.zipObject( Piece.types_enum, _.map( Piece.types_enum, function() { return Infinity; }));
+		var infinite_placement = { "Placement": { piece_types: Piece.types_enum, positions: ["0,0"] }};
+		pixi_white_hand = create_pixi_hand( "White", infinite_hand, infinite_placement, true );
+		pixi_black_hand = create_pixi_hand( "Black", infinite_hand, infinite_placement, true );
+	}
 	model.pixi_white_hand = pixi_white_hand;
 	model.pixi_black_hand = pixi_black_hand;
 	model.stage.addChild( pixi_white_hand );
@@ -540,13 +560,15 @@ function create_pixi_tile_sprite_container( hive_piece ) {
 	var tile_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " Tile" ]);
 	tile_sprite.anchor.set( 0.5, 0.5 );
 	var symbol_sprite = new PIXI.Sprite( model.textures[ hive_piece.color + " " + hive_piece.type ]);
-	symbol_sprite.anchor.set( 0.5, 0.5 );
 	var container = new PIXI.DisplayObjectContainer();
 	container.__symbol_sprite = symbol_sprite;
 	container.addChild( tile_sprite );
 	var symbol_squish_container = new PIXI.DisplayObjectContainer();
 	symbol_squish_container.scale.set( 1.0, model.symbol_scale_y );
-	symbol_sprite.anchor.set( 0.5, 0.5 / model.symbol_scale_y );
+	var symbol_anchor = _.extend({ x: 0.5, y: 0.5 }, model.theme.default_anchor );
+	if( model.theme.anchor_overrides )
+		symbol_anchor = _.extend( symbol_anchor, model.theme.anchor_overrides[ hive_piece.type ]);
+	symbol_sprite.anchor.set( symbol_anchor.x, symbol_anchor.y / model.symbol_scale_y );
 	symbol_squish_container.addChild( symbol_sprite );
 	symbol_squish_container.position.set( 0, 0.5 * model.height_delta_y );
 	container.addChild( symbol_squish_container );
@@ -578,16 +600,17 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		var pixi_x = position.col * model.col_delta_x;
 		var pixi_y = position.row * model.row_delta_y;
 		var hive_piece;
+		var hive_piece_stack = hive_board.lookup_piece_stack( position );
+		var hive_piece_stack_height = hive_piece_stack.length;
 		var position_register = {
 			occupied: true,
+			stack_height: hive_piece_stack_height,
 			hive_piece: null,
 			hive_pieces_under: [],
 			pixi_piece: null,
 			pixi_pieces_under: []
 		};
 		container.__hive_positions[ position_key ] = position_register;
-		var hive_piece_stack = hive_board.lookup_piece_stack( position );
-		var hive_piece_stack_height = hive_piece_stack.length;
 		// add all the pieces below the potentially interactive piece, so that if there's a stack, the user can see what's down 1 layer at least
 		if( hive_piece_stack_height >= 2 ) {
 			for( var i = 0; i <= hive_piece_stack_height - 2; ++i ) {
@@ -665,6 +688,7 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 	_.forEach( free_spaces, function( position, position_key ) {
 		var position_register = {
 			occupied: false,
+			stack_height: 0,
 			"White Marquee": null,
 			"Black Marquee": null 
 		};
@@ -685,25 +709,26 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 }
 function sort_pixi_board_pieces_for_isometric_rendering( pixi_board ) {
 	var occupied_position_keys = pixi_board.__hive_board.lookup_occupied_position_keys();
-	// remove all pixi pieces from the renderer
+	// remove all pixi pieces from the renderer, by hive position
 	_.forEach( occupied_position_keys, function( position_key ) {
 		var position_register = pixi_board.__hive_positions[ position_key ];
-		pixi_board.removeChild( position_register.pixi_piece );
 		_.forEach( position_register.pixi_pieces_under, pixi_board.removeChild, pixi_board );
+		pixi_board.removeChild( position_register.pixi_piece );
 	});
 	var occupied_positions = Position.decode_all( occupied_position_keys );
+	// sort positions in ascending row-major order
 	occupied_positions.sort( compare_positions_for_isometric_rendering );
-	// sort
 	occupied_position_keys = Position.encode_all( occupied_positions );
 	// re-add by key
 	_.forEach( occupied_position_keys, function( position_key ) {
 		var position_register = pixi_board.__hive_positions[ position_key ];
-		pixi_board.addChild( position_register.pixi_piece );
+		// add each piece in each stack, starting with the bottom piece
 		_.forEach( position_register.pixi_pieces_under, pixi_board.addChild, pixi_board );
+		pixi_board.addChild( position_register.pixi_piece );
 	});
 }
 // depends on global: model
-function create_pixi_hand( color, hive_hand ) {
+function create_pixi_hand( color, hive_hand, hive_possible_turns, is_player_turn ) {
 	var container = new PIXI.DisplayObjectContainer();
 	container.__color = color;
 	container.__hive_hand = hive_hand;
@@ -729,13 +754,13 @@ function create_pixi_hand( color, hive_hand ) {
 		container.addChild( sprite );
 		var bounds = sprite.getBounds();
 		// interactivity hack
-		if( model.pixi_board.__hive_possible_turns != null
-		&&  "Placement" in model.pixi_board.__hive_possible_turns
-		&&  "piece_types" in model.pixi_board.__hive_possible_turns["Placement"]
-		&&  "positions" in model.pixi_board.__hive_possible_turns["Placement"] 
-		&&  _.keys( model.pixi_board.__hive_possible_turns["Placement"].positions ).length > 0 ) {
-			if( color == model.game_instance.game.player_turn
-			&&  _.contains( model.pixi_board.__hive_possible_turns["Placement"].piece_types, piece_type )) {
+		if( hive_possible_turns != null
+		&&  "Placement" in hive_possible_turns
+		&&  "piece_types" in hive_possible_turns["Placement"]
+		&&  "positions" in hive_possible_turns["Placement"] 
+		&&  _.keys( hive_possible_turns["Placement"].positions ).length > 0 ) {
+			if( is_player_turn
+			&&  _.contains( hive_possible_turns["Placement"].piece_types, piece_type )) {
 				sprite.setInteractive( true );
 				sprite.mouseover = pixi_hand_mouseover;
 				sprite.mouseout = pixi_hand_mouseout;
@@ -750,8 +775,10 @@ function create_pixi_hand( color, hive_hand ) {
 		count_text_bg.alpha = default_alpha;
 		count_text_fg.position.set( c_x + delta_x/2 - 18, -5 );
 		count_text_bg.position.set( c_x + delta_x/2 - 18, -7 );
-		container.addChild( count_text_fg );
-		container.addChild( count_text_bg );
+		if( piece_count < Infinity ) {
+			container.addChild( count_text_fg );
+			container.addChild( count_text_bg );
+		}
 		sprite.__count_text_fg = count_text_fg;
 		sprite.__count_text_bg = count_text_bg;
 		c_x += delta_x;
@@ -905,7 +932,8 @@ function pixi_piece_mousemove( ix ) {
 			if( self_hive_position != position ) {
 				var position_register = model.pixi_board.__hive_positions[ position_key ];
 				if( position_register.occupied ) {
-					move_position = position_register.pixi_piece.position;
+					move_position = position_register.pixi_piece.position.clone();
+					move_position.y += model.height_delta_y; // * (position_register.stack_height - 1);
 				} else {
 					move_position = position_register["White Marquee"].position;
 				}
@@ -1022,7 +1050,10 @@ function pixi_hand_mousedown( ix ) {
 		pixi_piece.mouseup = pixi_hand_piece_mouseup;
 		pixi_piece.mouseupoutside = pixi_hand_piece_mouseup;
 		// show placement position marquees
-		pixi_piece.__hive_moves = _.values( model.pixi_board.__hive_possible_turns["Placement"].positions );
+		if( !model.DEBUG_MODE )
+			pixi_piece.__hive_moves = _.values( model.pixi_board.__hive_possible_turns["Placement"].positions );
+		else // DEBUG_MODE
+			pixi_piece.__hive_moves = _.values( model.game_instance.game.board.lookup_free_spaces() );
 		pixi_piece_set_move_marquee_visible.call( pixi_piece, true, true );
 		// create ghost piece
 		pixi_piece.__hive_pixi_ghost = create_pixi_piece( Piece.create( self.__hive_color, self.__hive_piece_type ));

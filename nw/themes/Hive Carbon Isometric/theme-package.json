@@ -5,5 +5,16 @@
 	"row_delta_y": 70,
 	"height_delta_y": -23,
 	"symbol_scale_y": 0.875,
-	"show_stack_counter": false
+	"show_stack_counter": false,
+	"default_anchor": { "x": 0.5,   "y": 0.5 },
+	"anchor_overrides": {
+		"Queen Bee":  { "x": 0.5,   "y": 0.4   },
+		"Beetle":     { "x": 0.5,   "y": 0.45  },
+		"Grasshopper":{ "x": 0.5,   "y": 0.45  },
+		"Spider":     { "x": 0.55,  "y": 0.45  },
+		"Soldier Ant":{ "x": 0.5,   "y": 0.45  },
+		"Mosquito":   { "x": 0.5,   "y": 0.475 },
+		"Ladybug":    { "x": 0.525, "y": 0.5   },
+		"Pillbug":    { "x": 0.5,   "y": 0.475 }
+	}
 }

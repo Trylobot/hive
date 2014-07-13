@@ -5,5 +5,7 @@
 	"row_delta_y": 80,
 	"height_delta_y": 0,
 	"symbol_scale_y": 1.0,
-	"show_stack_counter": true
+	"show_stack_counter": true,
+	"default_anchor": { "x": 0.5, "y": 0.5 },
+	"anchor_overrides": null
 }
