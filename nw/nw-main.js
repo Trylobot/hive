@@ -152,21 +152,21 @@ var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
-	"New (vs Human)": function() {
+	"Human-vs-AI (Local)": function() {
 		model.DEBUG_MODE = false;
 		start_game( 
 			"Human",
-			"Human",
+			"AI",
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
-	"New (vs AI)": function() {
+	"Human-vs-Human (Local)": function() {
 		model.DEBUG_MODE = false;
 		start_game( 
 			"Human",
-			"AI",
+			"Human",
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -223,19 +223,23 @@ model.dat_gui_themes = _.zipObject(
 		}
 	})
 );
-gui.add( model.dat_gui, "New (vs Human)" );
-gui.add( model.dat_gui, "New (vs AI)" );
-gui.add( model.dat_gui, "Use Mosquito" );
-gui.add( model.dat_gui, "Use Ladybug" );
-gui.add( model.dat_gui, "Use Pillbug" );
-gui.add( model.dat_gui, "Load Game" );
-gui.add( model.dat_gui, "Save Game" );
+var gui_game_options = gui.addFolder( "Game Add-Ons");
+	gui_game_options.add( model.dat_gui, "Use Mosquito" );
+	gui_game_options.add( model.dat_gui, "Use Ladybug" );
+	gui_game_options.add( model.dat_gui, "Use Pillbug" );
+var gui_new_game = gui.addFolder( "Start New Game" );
+	gui_new_game.add( model.dat_gui, "Human-vs-AI (Local)" );
+	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
+var gui_load_save = gui.addFolder( "Load/Save" );
+	gui_load_save.add( model.dat_gui, "Load Game" );
+	gui_load_save.add( model.dat_gui, "Save Game" );
 var gui_themes = gui.addFolder( "Themes" );
 _.forEach( model.dat_gui_themes, function( set_theme_fn, theme_name ) {
 	gui_themes.add( model.dat_gui_themes, theme_name );
 });
-gui.add( model.dat_gui, "Sandbox Mode" );
-gui.add( model.dat_gui, "Open Debugger" );
+var gui_dev_tools = gui.addFolder( "Debugging" );
+	gui_dev_tools.add( model.dat_gui, "Sandbox Mode" );
+	gui_dev_tools.add( model.dat_gui, "Open Debugger" );
 
 //////////////////////////////////////////////////////////////////
 // first-tier functions
