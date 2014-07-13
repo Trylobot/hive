@@ -94,6 +94,31 @@ exports["test position translation"] = function( assert ) {
 		"10 o'clock" );
 }
 
+exports["test position rotation_about_position"] = function( assert ) {
+	var position, rotated_position;
+
+	position = Position.create( -2, 0 );
+	rotated_position = position.rotation_about_position( Position.create( 0, 0 ), 1 );
+	assert.ok( rotated_position.row == -1 && rotated_position.col == 1,
+		"rotated_position should be in correct location" );
+}
+
+exports["test position adjacencies"] = function( assert ) {
+
+}
+
+exports["test position rotation"] = function( assert ) {
+
+}
+
+exports["test position force_encoded_string"] = function( assert ) {
+
+}
+
+exports["test position force_decoded_object"] = function( assert ) {
+
+}
+
 exports["test position copy"] = function( assert ) {
 	var position, position2;
 
@@ -109,3 +134,4 @@ exports["test position is_equal"] = function( assert ) {
 
 if( module == require.main )
 	require("test").run( exports );
+

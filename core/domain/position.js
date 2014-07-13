@@ -37,6 +37,11 @@ function create( row, col ) {
 	position.translation = function( direction ) {
 		return translation( position, direction );
 	}
+	// clockwise_increments represents the integer rotation factor, in direction-wise increments
+	// clockwise_increments can be positive or negative
+	position.rotation_about_position = function( anchor_position, clockwise_increments ) {
+		return this;
+	}
 	position.adjacencies = function() {
 		return _.map( directions_enum, function( direction ) {
 			return translation( position, direction );
