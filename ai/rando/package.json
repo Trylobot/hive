@@ -1,10 +1,8 @@
 {
-  "name": "hive-ai-rando",
-  "version": "0.0.1",
-  "description": "AI - Rando[m]",
-  "author": "Trylobot",
-  "license": "CC BY-NC-ND 4.0",
-  "dependencies": {
-    "express": "~4.2.0"
-  }
+	"name": "hive-ai-rando",
+	"description": "Rando[m]",
+	"dependencies": {
+		"express": "~4.2.0"
+	},
+	"active": true
 }

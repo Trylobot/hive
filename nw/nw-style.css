@@ -18,9 +18,14 @@ body {
 }
 .dg {
 	color: #eee;
-	font: 11px 'Roboto' !important;
+	font-size: 11px !important;
+	font-family: 'Roboto' !important;
 	font-weight: 400 !important;
 	text-shadow: 0px -2px 1px #111;
+}
+input, select {
+	font-family: 'Roboto' !important;
+	font-weight: 700 !important;
 }
 .dg ul.closed + .close-button {
 	opacity: 0.10;

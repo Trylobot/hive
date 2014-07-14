@@ -19,7 +19,6 @@ var Rules = require(core_basepath+"domain/rules");
 var Game = require(core_basepath+"domain/game");
 var Player = require(core_basepath+"domain/player");
 var Core = require(core_basepath+"core");
-var AI = require(ai_basepath+"rando/hive-ai-rando"); 
 
 /*
 nw-main.js
@@ -69,9 +68,9 @@ var model = {
 	core: null,
 	game_id: null,
 	game_instance: null,
-	AI: null,
 	// dat.gui
 	dat_gui: null,
+	available_ai_modules: null,
 	dat_gui_themes: null,
 	open_file_dialog: null,
 	save_file_dialog: null
@@ -146,17 +145,20 @@ requestAnimFrame( animate );
 var core = Core.create();
 model.core = core;
 model.pixi_board_piece_rotations = {};
-model.AI = AI;
 // dat.gui
 var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
+	"Use Mosquito": true,
+	"Use Ladybug": true,
+	"Use Pillbug": true,
+	"Local AI": {},
 	"Human-vs-AI (Local)": function() {
 		model.DEBUG_MODE = false;
-		start_game( 
-			"Human",
-			"AI",
+		start_game(
+			Player.create( "Human", "Local", null, null, null ),
+			Player.create( "AI", "Local", model.dat_gui["Local AI"], null, null ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -164,17 +166,36 @@ model.dat_gui = {
 	},
 	"Human-vs-Human (Local)": function() {
 		model.DEBUG_MODE = false;
-		start_game( 
-			"Human",
-			"Human",
+		start_game(
+			Player.create( "Human", "Local", null, null, null ),
+			Player.create( "Human", "Local", null, null, null ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
-	"Use Mosquito": false,
-	"Use Ladybug": false,
-	"Use Pillbug": false,
+	"Host:Port": "localhost:51337",
+	"Human-vs-AI (Connect)": function() {
+		model.DEBUG_MODE = false;
+		start_game(
+			Player.create( "Human", "Local", null, null, null ),
+			Player.create( "AI", "Remote", null, model.dat_gui["Remote Host:Port"], null ),
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
+		gui.close();
+	},
+	"Human-vs-Human (Connect)": function() {
+		model.DEBUG_MODE = false;
+
+		gui.close();
+	},
+	"Listen Port": "51337",
+	"Human-vs-Human (Listen)": function() {
+		model.DEBUG_MODE = false;
+
+		gui.close();
+	},
 	"Load Game": function() {
 		choose_read_file_path( function( path ) {
 			fs.readFile( path, function( error, data ) {
@@ -190,10 +211,15 @@ model.dat_gui = {
 			gui.close();
 		});
 	},
-	"Themes": null, // (Folder)   "./themes/" + <model.possible_theme_dirs>
+	"Themes": undefined, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
 	"Sandbox Mode": function() {
 		model.DEBUG_MODE = true;
-		start_game( "Testing", "Testing", true, true, true );
+		start_game( 
+			Player.create( "Testing" ), 
+			Player.create( "Testing" ), 
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
 	"Open Debugger": function() {
@@ -223,13 +249,34 @@ model.dat_gui_themes = _.zipObject(
 		}
 	})
 );
+(function(){
+	var active_ai = {};
+	var ai_dirs = fs.readdirSync( ai_basepath );
+	_.forEach( ai_dirs, function( ai_dir ) {
+		var ai_package_path = ai_basepath + ai_dir + "/package.json";
+		if( fs.existsSync( ai_package_path )) {
+			var ai_package = require( ai_package_path );
+			if( ai_package && ai_package.active ) {
+				var ai = require( ai_basepath + ai_dir + "/" + ai_package.name ); 
+				active_ai[ ai_package.description ] = ai;
+			}
+		}
+	});
+	model.available_ai_modules = active_ai;
+})();
 var gui_game_options = gui.addFolder( "Game Add-Ons");
 	gui_game_options.add( model.dat_gui, "Use Mosquito" );
 	gui_game_options.add( model.dat_gui, "Use Ladybug" );
 	gui_game_options.add( model.dat_gui, "Use Pillbug" );
 var gui_new_game = gui.addFolder( "Start New Game" );
+	gui_new_game.add( model.dat_gui, "Local AI", model.available_ai_modules );
 	gui_new_game.add( model.dat_gui, "Human-vs-AI (Local)" );
 	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
+	gui_new_game.add( model.dat_gui, "Host:Port" );
+	gui_new_game.add( model.dat_gui, "Human-vs-AI (Connect)" );
+	gui_new_game.add( model.dat_gui, "Human-vs-Human (Connect)" );
+	gui_new_game.add( model.dat_gui, "Listen Port" );
+	gui_new_game.add( model.dat_gui, "Human-vs-Human (Listen)" );
 var gui_load_save = gui.addFolder( "Load/Save" );
 	gui_load_save.add( model.dat_gui, "Load Game" );
 	gui_load_save.add( model.dat_gui, "Save Game" );
@@ -315,12 +362,12 @@ function load_game( saved_game_json_str ) {
 	show_hive_game( model );
 }
 //
-function start_game( white_player_type, black_player_type, use_mosquito, use_ladybug, use_pillbug ) {
+function start_game( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
 	model.stage.setBackgroundColor( model.background_color );
 	model.pixi_board_piece_rotations = {};
 	model.game_id = core.create_game(
-		Player.create( white_player_type ),
-		Player.create( black_player_type ),
+		white_player,
+		black_player,
 		use_mosquito,
 		use_ladybug,
 		use_pillbug );
@@ -391,8 +438,10 @@ function do_turn( model, turn ) {
 }
 // assumed AI already configured
 function fetch_and_apply_AI_turn_local( model ) {
+	var player_turn = model.game_instance.game.player_turn;
+	var player = model.game_instance.players[ player_turn ];
 	var message = prepare_choose_turn_request_message( model );
-	var response_message = model.AI.process_message( message );
+	var response_message = player.ai_module.process_message( message );
 	var turn = parse_response_message( response_message );
 	_.defer( do_turn, model, turn );
 }
