@@ -25,8 +25,8 @@ a derivative work from *SOFTWARE* without explicit written permission from
 8. **MODIFICATION** — No modification of *SOFTWARE* is permitted, except by
 *AUTHOR*
 
-9. **REDISTRIBUTION** — *LICENSE* permits *LICENSEE* to redistribute verbatim
-copies of *SOFTWARE*, provided it is accompanied by a copy of this *LICENSE.*
+9. **REDISTRIBUTION** — No redistribution of *SOFTWARE* is permitted, except
+by *AUTHOR*
 
 10. **FEES/ROYALTIES** — No fees or royalties must be paid by *LICENSEE* to
 *AUTHOR*
