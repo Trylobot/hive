@@ -15,7 +15,8 @@ var turn_types_enum = [
 	"Placement",
 	"Movement",
 	"Special Ability",
-	"Forfeit"
+	"Forfeit",
+	"Unknown" // used to represent a turn which took place, but has no other info
 ];
 
 // functions
@@ -55,10 +56,18 @@ function create_forfeit() {
 	return turn;
 }
 
+function create_unknown() {
+	var turn = {
+		turn_type: "Unknown"
+	};
+	return turn;
+}
+
 // exports
 
 exports.create_placement = create_placement;
 exports.create_movement = create_movement;
 exports.create_special_ability = create_special_ability;
 exports.create_forfeit = create_forfeit;
+exports.create_unknown = create_unknown;
 

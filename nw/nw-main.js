@@ -68,6 +68,9 @@ var model = {
 	core: null,
 	game_id: null,
 	game_instance: null,
+	webserver: null,
+	webserver_listening: null,
+	http_outgoing_response: null,
 	// dat.gui
 	dat_gui: null,
 	available_ai_modules: null,
@@ -147,6 +150,9 @@ model.core = core;
 model.pixi_board_piece_rotations = {};
 // events
 model.core.events.on( "game", handle_game_event );
+// server
+model.webserver = http.createServer( http_webserver_handle_request );
+model.webserver_listening = false;
 // dat.gui
 var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
@@ -157,7 +163,7 @@ model.dat_gui = {
 	"Use Pillbug": true,
 	"Local AI": undefined,
 	"Human-vs-AI (Local)": function() {
-		model.DEBUG_MODE = false;
+		pre_game_cleanup();
 		start_game(
 			Player.create( "Human", "White", "Local" ),
 			Player.create( "AI",    "Black", "Local", model.dat_gui["Local AI"] ),
@@ -165,9 +171,11 @@ model.dat_gui = {
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
+		// TODO: send GREETINGS message
+		//   save response info, for display on-screen
 	},
 	"Human-vs-Human (Local)": function() {
-		model.DEBUG_MODE = false;
+		pre_game_cleanup();
 		start_game(
 			Player.create( "Human", "White", "Local" ),
 			Player.create( "Human", "Black", "Local" ),
@@ -178,7 +186,7 @@ model.dat_gui = {
 	},
 	"Host:Port": "localhost:51337",
 	"Human-vs-AI (Connect)": function() {
-		model.DEBUG_MODE = false;
+		pre_game_cleanup();
 		start_game(
 			Player.create( "Human", "White", "Local" ),
 			Player.create( "AI",    "Black", "Remote", undefined, model.dat_gui["Host:Port"] ),
@@ -186,21 +194,43 @@ model.dat_gui = {
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
+		// TODO: send GREETINGS message
+		//   save response info, for display on-screen
 	},
 	"Human-vs-Human (Connect)": function() {
-		model.DEBUG_MODE = false;
-
+		pre_game_cleanup();
+		// for now, the CLIENT player is always White, 
+		//   and the SERVER player is always Black
+		start_game(
+			Player.create( "Human", "White", "Local" ),
+			Player.create( "Human", "Black", "Remote", undefined, model.dat_gui["Host:Port"] ),
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
 		gui.close();
+		// TODO: send GREETINGS message
+		//   not sure what would be in the response or what to do with it
 	},
 	"Listen Port": "51337",
 	"Human-vs-Human (Listen)": function() {
-		model.DEBUG_MODE = false;
-
+		pre_game_cleanup();
+		//
+		model.webserver.listen( model.dat_gui["Listen Port"] );
+		model.webserver_listening = true;
+		//
+		start_game(
+			Player.create( "None", "White" ), // remote player connecting to this instance
+			Player.create( "Human", "Black", "Local" ),
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
 	"Load Game": function() {
 		choose_read_file_path( function( path ) {
 			fs.readFile( path, function( error, data ) {
+				pre_game_cleanup();
+				//
 				load_game( data );
 				gui.close();
 			});
@@ -215,6 +245,7 @@ model.dat_gui = {
 	},
 	"Themes": undefined, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
 	"Sandbox Mode": function() {
+		pre_game_cleanup();
 		model.DEBUG_MODE = true;
 		start_game(
 			Player.create( "Testing", "White", "Local" ),
@@ -229,6 +260,11 @@ model.dat_gui = {
 		gui.close();
 	}
 };
+function pre_game_cleanup() {
+	model.DEBUG_MODE = false;
+	if( model.webserver_listening )
+		model.webserver.close();
+}
 model.dat_gui_themes = _.zipObject( 
 	model.possible_theme_dirs, 
 	_.map( model.possible_theme_dirs, function( theme_folder ) {
@@ -356,7 +392,7 @@ function save_game() {
 }
 // global
 function load_game( saved_game_json_str ) {
-	clear_hive_game( model );
+	clear_pixi_game( model );
 	var data = JSON.parse( saved_game_json_str );
 	model.game_id = core.load_game( 
 		Player.create( "Human", "White", "Local" ),
@@ -364,7 +400,7 @@ function load_game( saved_game_json_str ) {
 		data );
 	model.game_instance = core.lookup_game( model.game_id );
 	console.log( model.game_instance );
-	show_hive_game( model );
+	build_pixi_game_from_hive_game( model );
 }
 //
 function start_game( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
@@ -378,10 +414,10 @@ function start_game( white_player, black_player, use_mosquito, use_ladybug, use_
 		use_pillbug );
 	model.game_instance = core.lookup_game( model.game_id );
 	console.log( model.game_instance );
-	clear_hive_game( model );
-	show_hive_game( model );
+	clear_pixi_game( model );
+	build_pixi_game_from_hive_game( model );
 }
-function show_hive_game( model ) {
+function build_pixi_game_from_hive_game( model ) {
 	var hive_game = model.game_instance.game;
 	var hive_possible_turns = hive_game.possible_turns;
 	//
@@ -391,15 +427,26 @@ function show_hive_game( model ) {
 	pixi_board.position.set( model.renderer_halfWidth, model.renderer_halfHeight + Math.floor(model.hand_gutter_size/2) );
 	model.stage.addChild( pixi_board );
 	//
-	var pixi_white_hand,
-	    pixi_black_hand,
-	    color;
+	var pixi_white_hand, pixi_black_hand;
+	//
 	if( !model.DEBUG_MODE ) {
+		var color,
+		    hand,
+		    player,
+		    local_interactivity;
 		color = "White";
-		pixi_white_hand = create_pixi_hand( color, hive_game.hands[color], hive_possible_turns, (color == hive_game.player_turn) );
+		hand = hive_game.hands[color];
+		player = model.game_instance.players[ color ];
+		local_interactivity = (player.proximity == "Local" && player.player_type == "Human" && color == hive_game.player_turn);
+		pixi_white_hand = create_pixi_hand( color, hand, hive_possible_turns, local_interactivity );
+		//
 		color = "Black";
-		pixi_black_hand = create_pixi_hand( color, hive_game.hands[color], hive_possible_turns, (color == hive_game.player_turn) );
-	} else { // DEBUG_MODE
+		hand = hive_game.hands[color];
+		player = model.game_instance.players[ color ];
+		local_interactivity = (player.proximity == "Local" && player.player_type == "Human" && color == hive_game.player_turn);
+		pixi_black_hand = create_pixi_hand( color, hand, hive_possible_turns, local_interactivity );
+	}
+	else { // DEBUG_MODE
 		var infinite_hand = _.zipObject( Piece.types_enum, _.map( Piece.types_enum, function() { return Infinity; }));
 		var infinite_placement = { "Placement": { piece_types: Piece.types_enum, positions: ["0,0"] }};
 		pixi_white_hand = create_pixi_hand( "White", infinite_hand, infinite_placement, true );
@@ -416,22 +463,30 @@ function show_hive_game( model ) {
 }
 function do_turn( model, turn ) {
 	console.log( turn );
-	//model.game_instance.game.perform_turn( turn );
 	var turn_event = _.extend( {}, turn, {
 		response_type: "CHOOSE_TURN",
 		game_id: model.game_id
 	});
 	model.core.events.emit( "turn", turn_event );
+	//
+	if( model.http_outgoing_response ) {
+		var player_response = turn_event; // duck typing: similar enough
+		var player_response_str = JSON.stringify( player_response );
+		model.http_outgoing_response.writeHead( 200, { "content-type": "text/json" });
+		model.http_outgoing_response.write( player_response_str );
+		model.http_outgoing_response.end();
+		model.http_outgoing_response = null;
+	}
 }
 function handle_game_event( game_event ) {
 	model.stage.setInteractive( false );
 	var position = _.clone( model.pixi_board.position );
 	var scale_i = model.scale_i;
 	var scale = model.scale_values[ scale_i ];
-	clear_hive_game( model );
+	clear_pixi_game( model );
 	//
 	//model.game_id = game_event.game_id; // game_id assumed to be unchanged
-	show_hive_game( model );
+	build_pixi_game_from_hive_game( model );
 	//
 	model.pixi_board.position.set( position.x, position.y );
 	model.scale_i = scale_i;
@@ -439,32 +494,27 @@ function handle_game_event( game_event ) {
 	model.stage.setInteractive( true );
 	verify_board_integrity( model );
 
-	// handle AI in the hackiest possible way
-	// assumes AI is black, and human is white
-	// this code is going to change like VERY SOON (tm), yo
+	// request turn from Local AI or Remote player
 	var game = model.game_instance ? model.game_instance.game : null;
 	if( game && !game.game_over && game.possible_turns ) {
 		var player = model.game_instance.players[ game.player_turn ];
-		if( player.player_type == "AI" ) {
-			if( player.proximity == "Local" ) {
-				fetch_and_apply_AI_turn_local( model, player );
-			} else if( player.proximity == "Remote" ) {
-				var hostname = player.get_remote_hostname();
-				var port = player.get_remote_port();
-				fetch_and_apply_AI_turn_http( model, hostname, port );
-			}
+		if( player.player_type == "AI" && player.proximity == "Local" ) {
+			request_local_AI_turn( model, player );
+		}
+		else if( player.proximity == "Remote" ) {
+			var hostname = player.get_remote_hostname();
+			var port = player.get_remote_port();
+			request_remote_turn_http_post( model, hostname, port );
 		}
 	}
 }
-// assumed AI already configured
-function fetch_and_apply_AI_turn_local( model, player ) {
+function request_local_AI_turn( model, player ) {
 	var message = prepare_choose_turn_request_message( model );
 	var response_message = player.ai_module.process_message( message );
 	var turn = parse_response_message( response_message );
 	_.defer( do_turn, model, turn );
 }
-// not yet used
-function fetch_and_apply_AI_turn_http( model, hostname, port ) {
+function request_remote_turn_http_post( model, hostname, port ) {
 	var message = prepare_choose_turn_request_message( model );
 	var message_str = JSON.stringify( message );
 	var headers = { 
@@ -493,7 +543,40 @@ function fetch_and_apply_AI_turn_http( model, hostname, port ) {
 	request.write( message_str );
 	request.end();
 }
-function clear_hive_game( model ) {
+function http_webserver_handle_request( request, response ) {
+	if( request.method === "POST" ) {
+		var chunks = [], data;
+		request.on( "data", function( chunk ) {
+			chunks.push( chunk );
+		});
+		request.on( "end", function() {
+			data = chunks.join("");
+			var message = JSON.parse( data );
+			//
+			if( message.request_type === "CHOOSE_TURN" ) {
+				// THIS IS A PRETTY ENORMOUS HACK
+				var game = model.game_instance.game;
+				game.possible_turns = message.game_state.possible_turns;
+				game.board.pieces =   message.game_state.board.pieces;
+				game.hands =          message.game_state.hands;
+				game.player_turn =    message.game_state.player_turn;
+				game.turn_number =    message.game_state.turn_number;
+				game.game_over =      message.game_state.game_over;
+				game.winner =         message.game_state.winner;
+				game.is_draw =        message.game_state.is_draw;
+				// KNOWN ISSUE: since the turn history is not transmitted,
+				//   this implementation invalidates the turn history for both players
+				game.turn_history.push( Turn.create_unknown() );
+				// the next turn made will respond via this object
+				model.http_outgoing_response = response;
+				// update local UI
+				handle_game_event( message.game_id ); 
+				// interesting hack though; in the same way that a culture of bacteria can be interesting
+			}
+		});
+	}
+}
+function clear_pixi_game( model ) {
 	if( model.pixi_board ) {
 		model.stage.removeChild( model.pixi_board );
 		model.pixi_board = null;

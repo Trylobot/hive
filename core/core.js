@@ -48,7 +48,7 @@ function create() {
 	core.lookup_game = function( game_id ) {
 		return core.game_instances[ game_id ];
 	}
-	core.perform_turn = function( turn_event ) {
+	core.handle_turn_event = function( turn_event ) {
 		var game_id = turn_event.game_id;
 		var game_instance = core.lookup_game( game_id );
 		if( game_instance ) {
@@ -77,7 +77,7 @@ function create() {
 		return id;
 	}
 	// ---------------
-	core.events.on( "turn", core.perform_turn );
+	core.events.on( "turn", core.handle_turn_event );
 
 	return core;
 }

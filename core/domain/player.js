@@ -15,7 +15,8 @@ this module is used to represent a hive player.
 var player_types_enum = [
 	"Human",
 	"AI",
-	"Testing"
+	"Testing",
+	"None"
 ];
 
 var message_types_enum = [
