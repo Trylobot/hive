@@ -1,5 +1,5 @@
 {
-	"name": "hive",
+	"name": "hive-nw",
 	"license": "Research License 1.0",
 	"dependencies": {
 		"mersenne": "~0.0.3",

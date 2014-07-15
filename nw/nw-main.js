@@ -293,7 +293,7 @@ model.dat_gui_themes = _.zipObject(
 		if( fs.existsSync( ai_package_path )) {
 			var ai_package = require( ai_package_path );
 			if( ai_package && ai_package.active ) {
-				var ai = require( ai_basepath + ai_dir + "/" + ai_package.name ); 
+				var ai = require( ai_basepath + ai_dir + "/" + ai_package.module ); 
 				active_ai[ ai_package.description ] = ai;
 			}
 		}

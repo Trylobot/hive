@@ -12,13 +12,11 @@ function process_message( message ) {
 	switch( message.request_type ) {
 		case "GREETINGS":
 			response = {
-				response_type: message.request_type,
-				name: "Rando[m]",
-				version: "0.0.1",
-				author: "T.W.R. Cole",
-				project_url: "https://github.com/Trylobot/hive/tree/master/ai/rando",
-				language: "Javascript"
+				response_type: message.request_type
 			};
+			var package_json = require("./package.json");
+			for( var key in package_json )
+				response[key] = package_json[key];
 			break;
 		case "CHOOSE_TURN":
 			response = {
