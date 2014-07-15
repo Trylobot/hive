@@ -158,9 +158,16 @@ var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
-	"Use Mosquito": true,
-	"Use Ladybug": true,
-	"Use Pillbug": true,
+	"Human-vs-Human (Local)": function() {
+		pre_game_cleanup();
+		start_game(
+			Player.create( "Human", "White", "Local" ),
+			Player.create( "Human", "Black", "Local" ),
+			model.dat_gui["Use Mosquito"],
+			model.dat_gui["Use Ladybug"],
+			model.dat_gui["Use Pillbug"] );
+		gui.close();
+	},
 	"Local AI": undefined,
 	"Human-vs-AI (Local)": function() {
 		pre_game_cleanup();
@@ -173,16 +180,6 @@ model.dat_gui = {
 		gui.close();
 		// TODO: send GREETINGS message
 		//   save response info, for display on-screen
-	},
-	"Human-vs-Human (Local)": function() {
-		pre_game_cleanup();
-		start_game(
-			Player.create( "Human", "White", "Local" ),
-			Player.create( "Human", "Black", "Local" ),
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
-		gui.close();
 	},
 	"Host:Port": "localhost:51337",
 	"Human-vs-AI (Connect)": function() {
@@ -226,6 +223,9 @@ model.dat_gui = {
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
+	"Use Mosquito": true,
+	"Use Ladybug": true,
+	"Use Pillbug": true,
 	"Load Game": function() {
 		choose_read_file_path( function( path ) {
 			fs.readFile( path, function( error, data ) {
@@ -305,19 +305,19 @@ model.dat_gui_themes = _.zipObject(
 // select Rando[m] as the default Local AI
 model.dat_gui["Local AI"] = model.available_ai_modules["Rando[m]"];
 // init dat.GUI
-var gui_game_options = gui.addFolder( "Game Add-Ons");
-	gui_game_options.add( model.dat_gui, "Use Mosquito" );
-	gui_game_options.add( model.dat_gui, "Use Ladybug" );
-	gui_game_options.add( model.dat_gui, "Use Pillbug" );
 var gui_new_game = gui.addFolder( "Start New Game" );
+	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
 	gui_new_game.add( model.dat_gui, "Local AI", model.available_ai_modules );
 	gui_new_game.add( model.dat_gui, "Human-vs-AI (Local)" );
-	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
 	gui_new_game.add( model.dat_gui, "Host:Port" );
 	gui_new_game.add( model.dat_gui, "Human-vs-AI (Connect)" );
 	gui_new_game.add( model.dat_gui, "Human-vs-Human (Connect)" );
 	gui_new_game.add( model.dat_gui, "Listen Port" );
 	gui_new_game.add( model.dat_gui, "Human-vs-Human (Listen)" );
+var gui_game_options = gui.addFolder( "Game Add-Ons");
+	gui_game_options.add( model.dat_gui, "Use Mosquito" );
+	gui_game_options.add( model.dat_gui, "Use Ladybug" );
+	gui_game_options.add( model.dat_gui, "Use Pillbug" );
 var gui_load_save = gui.addFolder( "Load/Save" );
 	gui_load_save.add( model.dat_gui, "Load Game" );
 	gui_load_save.add( model.dat_gui, "Save Game" );
@@ -551,12 +551,12 @@ function http_webserver_handle_request( request, response ) {
 		});
 		request.on( "end", function() {
 			data = chunks.join("");
-			var message = JSON.parse( data );
+			var message = JSON.parse( data ); // not "real" objects (no methods)
 			//
 			if( message.request_type === "CHOOSE_TURN" ) {
 				// THIS IS A PRETTY ENORMOUS HACK
 				var game = model.game_instance.game;
-				game.possible_turns = message.game_state.possible_turns;
+				game.possible_turns = possible_turns__decode_positions( message.possible_turns );
 				game.board.pieces =   message.game_state.board.pieces;
 				game.hands =          message.game_state.hands;
 				game.player_turn =    message.game_state.player_turn;
@@ -640,19 +640,7 @@ function resolve_pixi_board_piece_rotation( registry, position_key, stack_layer,
 // depends on global: model
 function prepare_choose_turn_request_message( model ) {
 	// TODO: possible_turns should already be using position keys, and this should not be necessary
-	var possible_turns = _.cloneDeep( model.game_instance.game.possible_turns );
-	if( possible_turns["Placement"] )
-		possible_turns["Placement"].positions = Position.encode_all( possible_turns["Placement"].positions );
-	if( possible_turns["Movement"] )
-		possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
-			return Position.encode_all( destination_position_array );
-		});
-	if( possible_turns["Special Ability"] )
-		possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
-			return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
-				return Position.encode_all( destination_position_array );
-			});
-		});
+	var possible_turns = possible_turns__encode_positions( model.game_instance.game.possible_turns );
 	// TODO: game_state and possible turns should just use the native structure, this restructuring shouldn't be necessary
 	var message = {
 		request_type: "CHOOSE_TURN",
@@ -944,6 +932,31 @@ function create_pixi_hand( color, hive_hand, hive_possible_turns, is_player_turn
 //////////////////////////////////////////////////////////////////
 // third-tier functions
 //////////////////////////////////////////////////////////////////
+//
+function possible_turns__encode_positions( possible_turns_with_decoded_positions ) {
+	// TODO: possible_turns should already be using position keys, and this should not be necessary
+	return possible_turns__Xcode_positions( possible_turns_with_decoded_positions, Position.encode_all );
+}
+function possible_turns__decode_positions( possible_turns_with_encoded_positions ) {
+	return possible_turns__Xcode_positions( possible_turns_with_encoded_positions, Position.decode_all );
+}
+function possible_turns__Xcode_positions( possible_turns, position_collection_fn ) {
+	var possible_turns = _.cloneDeep( possible_turns );
+	if( possible_turns["Placement"] )
+		possible_turns["Placement"].positions = position_collection_fn( possible_turns["Placement"].positions );
+	if( possible_turns["Movement"] )
+		possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
+			return position_collection_fn( destination_position_array );
+		});
+	if( possible_turns["Special Ability"] )
+		possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
+			return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
+				return position_collection_fn( destination_position_array );
+			});
+		});
+	return possible_turns;
+}
+
 function document_mousewheel( event ) {
 	var ticks = event.wheelDelta / 120;
 	model.scale_i += ticks;
