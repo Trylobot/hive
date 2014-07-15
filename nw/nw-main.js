@@ -205,8 +205,11 @@ model.dat_gui = {
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
-		// TODO: send GREETINGS message
-		//   not sure what would be in the response or what to do with it
+		//
+		var remote_player = model.game_instance.players["Black"];
+		var hostname = remote_player.get_remote_hostname();
+		var port = remote_player.get_remote_port();
+		greetings_http_post( hostname, port );
 	},
 	"Listen Port": "51337",
 	"Human-vs-Human (Listen)": function() {
@@ -214,13 +217,8 @@ model.dat_gui = {
 		//
 		model.webserver.listen( model.dat_gui["Listen Port"] );
 		model.webserver_listening = true;
-		//
-		start_game(
-			Player.create( "None", "White" ), // remote player connecting to this instance
-			Player.create( "Human", "Black", "Local" ),
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
+		// game itself will be started when greetings message receieved
+		// 
 		gui.close();
 	},
 	"Use Mosquito": true,
@@ -421,8 +419,13 @@ function build_pixi_game_from_hive_game( model ) {
 	var hive_game = model.game_instance.game;
 	var hive_possible_turns = hive_game.possible_turns;
 	//
-	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns );
+	var allow_interactivity = true;
+	var current_player = model.game_instance.players[ hive_game.player_turn ];
+	if( current_player.proximity != "Local" )
+		allow_interactivity = false; // do not allow any board moves, the current player is non-local
+	var pixi_board = create_pixi_board( hive_game.board, hive_possible_turns, allow_interactivity );
 	model.pixi_board = pixi_board;
+	//
 	model.scale_i = model.default_scale_i; // default
 	pixi_board.position.set( model.renderer_halfWidth, model.renderer_halfHeight + Math.floor(model.hand_gutter_size/2) );
 	model.stage.addChild( pixi_board );
@@ -494,18 +497,25 @@ function handle_game_event( game_event ) {
 	model.stage.setInteractive( true );
 	verify_board_integrity( model );
 
-	// request turn from Local AI or Remote player
+	//
 	var game = model.game_instance ? model.game_instance.game : null;
+	var player = model.game_instance.players[ game.player_turn ];
+	var hostname, port;
+	if( player.proximity == "Remote" ) {
+		hostname = player.get_remote_hostname();
+		port = player.get_remote_port();
+	}
+	// request turn from Local AI or Remote player
 	if( game && !game.game_over && game.possible_turns ) {
-		var player = model.game_instance.players[ game.player_turn ];
-		if( player.player_type == "AI" && player.proximity == "Local" ) {
+		if( player.player_type == "AI" && player.proximity == "Local" )
 			request_local_AI_turn( model, player );
-		}
-		else if( player.proximity == "Remote" ) {
-			var hostname = player.get_remote_hostname();
-			var port = player.get_remote_port();
+		else if( player.proximity == "Remote" )
 			request_remote_turn_http_post( model, hostname, port );
-		}
+	}
+	else if( game && game.game_over ) {
+		// patch: synchronize White WINS! for Black server in networked human-vs-human
+		if( player.player_type == "Human" && player.proximity == "Remote" )
+			request_remote_turn_http_post( model, hostname, port );
 	}
 }
 function request_local_AI_turn( model, player ) {
@@ -516,6 +526,18 @@ function request_local_AI_turn( model, player ) {
 }
 function request_remote_turn_http_post( model, hostname, port ) {
 	var message = prepare_choose_turn_request_message( model );
+	http_post( hostname, port, message, function( response_message ) {
+		var turn = parse_response_message( response_message );
+		_.defer( do_turn, model, turn );
+	});
+}
+function greetings_http_post( hostname, port ) {
+	http_post( hostname, port, {
+		request_type: "GREETINGS",
+		system_version: package_json.version
+	});
+}
+function http_post( hostname, port, message, response_fn ) {
 	var message_str = JSON.stringify( message );
 	var headers = { 
 		"Content-Type": "application/json", 
@@ -533,12 +555,13 @@ function request_remote_turn_http_post( model, hostname, port ) {
 		response.on("data", function( data ) {
 			response_chunks.push( data );
 		});
-		response.on("end", function() {
-			var response_text = response_chunks.join("");
-			var response_message = JSON.parse( response_text );
-			var turn = parse_response_message( response_message );
-			_.defer( do_turn, model, turn );
-		});
+		if( response_fn && typeof response_fn === "function" ) {
+			response.on("end", function() {
+				var response_text = response_chunks.join("");
+				var response_message = JSON.parse( response_text );
+				response_fn( response_message );
+			});
+		}
 	});
 	request.write( message_str );
 	request.end();
@@ -553,7 +576,15 @@ function http_webserver_handle_request( request, response ) {
 			data = chunks.join("");
 			var message = JSON.parse( data ); // not "real" objects (no methods)
 			//
-			if( message.request_type === "CHOOSE_TURN" ) {
+			if( message.request_type === "GREETINGS" ) {
+				start_game(
+					Player.create( "None", "White" ), // remote player connecting to this instance
+					Player.create( "Human", "Black", "Local" ),
+					model.dat_gui["Use Mosquito"],
+					model.dat_gui["Use Ladybug"],
+					model.dat_gui["Use Pillbug"] );
+			}
+			else if( message.request_type === "CHOOSE_TURN" ) {
 				// THIS IS A PRETTY ENORMOUS HACK
 				var game = model.game_instance.game;
 				game.possible_turns = possible_turns__decode_positions( message.possible_turns );
@@ -724,7 +755,7 @@ function create_pixi_marquee( piece_color ) {
 	return pixi_marquee;
 }
 // depends on global: model
-function create_pixi_board( hive_board, hive_possible_turns ) {
+function create_pixi_board( hive_board, hive_possible_turns, allow_interactivity ) {
 	// for now, only shows pieces on top of each piece-stack
 	// due to top-down orthogonal view
 	var container = new PIXI.DisplayObjectContainer();
@@ -792,7 +823,8 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 			stack_counters.addChild( count_text_bg );
 		}
 		// movement for this piece ?
-		if( hive_possible_turns && hive_possible_turns["Movement"]
+		if( allow_interactivity
+		&&  hive_possible_turns && hive_possible_turns["Movement"]
 		&&  position_key in hive_possible_turns["Movement"] ) {
 			pixi_piece.__hive_moves = hive_possible_turns["Movement"][ position_key ]; // list of position keys this piece can move to
 			pixi_piece.interactive = true;
@@ -805,7 +837,8 @@ function create_pixi_board( hive_board, hive_possible_turns ) {
 		}
 	});
 	//
-	if( hive_possible_turns && hive_possible_turns["Special Ability"] ) {
+	if( allow_interactivity
+	&&  hive_possible_turns && hive_possible_turns["Special Ability"] ) {
 		_.forEach( hive_possible_turns["Special Ability"], function( special_abilities, ability_source_position_key ) {
 			// for now there's only one type of special ability; moving a nearby piece
 			_.forEach( special_abilities, function( destination_positions, source_position_key ) {
@@ -870,7 +903,7 @@ function sort_pixi_board_pieces_for_isometric_rendering( pixi_board ) {
 	});
 }
 // depends on global: model
-function create_pixi_hand( color, hive_hand, hive_possible_turns, is_player_turn ) {
+function create_pixi_hand( color, hive_hand, hive_possible_turns, allow_interactivity ) {
 	var container = new PIXI.DisplayObjectContainer();
 	container.__color = color;
 	container.__hive_hand = hive_hand;
@@ -896,18 +929,17 @@ function create_pixi_hand( color, hive_hand, hive_possible_turns, is_player_turn
 		container.addChild( sprite );
 		var bounds = sprite.getBounds();
 		// interactivity hack
-		if( hive_possible_turns != null
+		if( allow_interactivity
+		&&  hive_possible_turns != null
 		&&  "Placement" in hive_possible_turns
 		&&  "piece_types" in hive_possible_turns["Placement"]
 		&&  "positions" in hive_possible_turns["Placement"] 
-		&&  _.keys( hive_possible_turns["Placement"].positions ).length > 0 ) {
-			if( is_player_turn
-			&&  _.contains( hive_possible_turns["Placement"].piece_types, piece_type )) {
-				sprite.setInteractive( true );
-				sprite.mouseover = pixi_hand_mouseover;
-				sprite.mouseout = pixi_hand_mouseout;
-				sprite.mousedown = pixi_hand_mousedown;
-			}
+		&&  _.keys( hive_possible_turns["Placement"].positions ).length > 0
+		&&  _.contains( hive_possible_turns["Placement"].piece_types, piece_type )) {
+			sprite.setInteractive( true );
+			sprite.mouseover = pixi_hand_mouseover;
+			sprite.mouseout = pixi_hand_mouseout;
+			sprite.mousedown = pixi_hand_mousedown;
 		}
 		var delta_x = bounds.width*scale * 0.9;
 		var piece_count = hive_hand[ piece_type ];
@@ -941,19 +973,24 @@ function possible_turns__decode_positions( possible_turns_with_encoded_positions
 	return possible_turns__Xcode_positions( possible_turns_with_encoded_positions, Position.decode_all );
 }
 function possible_turns__Xcode_positions( possible_turns, position_collection_fn ) {
-	var possible_turns = _.cloneDeep( possible_turns );
-	if( possible_turns["Placement"] )
-		possible_turns["Placement"].positions = position_collection_fn( possible_turns["Placement"].positions );
-	if( possible_turns["Movement"] )
-		possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
-			return position_collection_fn( destination_position_array );
-		});
-	if( possible_turns["Special Ability"] )
-		possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
-			return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
+	if( possible_turns ) {
+		possible_turns = _.cloneDeep( possible_turns );
+		if( possible_turns["Placement"] ) {
+			possible_turns["Placement"].positions = position_collection_fn( possible_turns["Placement"].positions );
+		}
+		if( possible_turns["Movement"] ) {
+			possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
 				return position_collection_fn( destination_position_array );
 			});
-		});
+		}
+		if( possible_turns["Special Ability"] ) {
+			possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
+				return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
+					return position_collection_fn( destination_position_array );
+				});
+			});
+		}
+	}
 	return possible_turns;
 }
 

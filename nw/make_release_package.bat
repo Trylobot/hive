@@ -1,16 +1,22 @@
-mkdir dist
-mkdir dist\temp
+mkdir distro
+mkdir distro\temp
 
-node print_version.js > dist\temp\version.txt
-node print_package_json_release.js > dist\temp\package.json
+node print_version.js > distro\temp\version.txt
+node print_package_json_release.js > distro\temp\package.json
 
 set version=X.X.X
-set /p version= < dist\temp\version.txt
+set /p version= < distro\temp\version.txt
 
-del dist\trylobot-hive-v%version%.nw
-7z a -tzip dist\trylobot-hive-v%version%.nw @release_file_list.txt
+set archive=trylobot-hive-v%version%.nw
 
-del dist\temp\version.txt
-del dist\temp\package.json
-rmdir dist\temp
+del distro\%archive%
+7z a -tzip distro\%archive% @release_file_list.txt
+
+cd distro\temp
+7z a -tzip ..\%archive% package.json
+cd ..\..
+
+del distro\temp\version.txt
+del distro\temp\package.json
+rmdir distro\temp
 

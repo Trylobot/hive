@@ -1,5 +1,4 @@
 *.json
-dist\temp\package.json
 *.png
 *.css
 *.js
