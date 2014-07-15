@@ -2,8 +2,8 @@
 
 // dependencies
 //   built-in
-var http = require("http");
 var fs = require("fs");
+var http = require("http");
 //   3rd-party
 var _ = require("lodash");
 //   user
@@ -145,6 +145,8 @@ requestAnimFrame( animate );
 var core = Core.create();
 model.core = core;
 model.pixi_board_piece_rotations = {};
+// events
+model.core.events.on( "game", handle_game_event );
 // dat.gui
 var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
@@ -153,12 +155,12 @@ model.dat_gui = {
 	"Use Mosquito": true,
 	"Use Ladybug": true,
 	"Use Pillbug": true,
-	"Local AI": {},
+	"Local AI": undefined,
 	"Human-vs-AI (Local)": function() {
 		model.DEBUG_MODE = false;
 		start_game(
-			Player.create( "Human", "Local", null, null, null ),
-			Player.create( "AI", "Local", model.dat_gui["Local AI"], null, null ),
+			Player.create( "Human", "White", "Local" ),
+			Player.create( "AI",    "Black", "Local", model.dat_gui["Local AI"] ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -167,8 +169,8 @@ model.dat_gui = {
 	"Human-vs-Human (Local)": function() {
 		model.DEBUG_MODE = false;
 		start_game(
-			Player.create( "Human", "Local", null, null, null ),
-			Player.create( "Human", "Local", null, null, null ),
+			Player.create( "Human", "White", "Local" ),
+			Player.create( "Human", "Black", "Local" ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -178,8 +180,8 @@ model.dat_gui = {
 	"Human-vs-AI (Connect)": function() {
 		model.DEBUG_MODE = false;
 		start_game(
-			Player.create( "Human", "Local", null, null, null ),
-			Player.create( "AI", "Remote", null, model.dat_gui["Remote Host:Port"], null ),
+			Player.create( "Human", "White", "Local" ),
+			Player.create( "AI",    "Black", "Remote", undefined, model.dat_gui["Host:Port"] ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -214,9 +216,9 @@ model.dat_gui = {
 	"Themes": undefined, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
 	"Sandbox Mode": function() {
 		model.DEBUG_MODE = true;
-		start_game( 
-			Player.create( "Testing" ), 
-			Player.create( "Testing" ), 
+		start_game(
+			Player.create( "Testing", "White", "Local" ),
+			Player.create( "Testing", "Black", "Local" ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -264,6 +266,9 @@ model.dat_gui_themes = _.zipObject(
 	});
 	model.available_ai_modules = active_ai;
 })();
+// select Rando[m] as the default Local AI
+model.dat_gui["Local AI"] = model.available_ai_modules["Rando[m]"];
+// init dat.GUI
 var gui_game_options = gui.addFolder( "Game Add-Ons");
 	gui_game_options.add( model.dat_gui, "Use Mosquito" );
 	gui_game_options.add( model.dat_gui, "Use Ladybug" );
@@ -354,8 +359,8 @@ function load_game( saved_game_json_str ) {
 	clear_hive_game( model );
 	var data = JSON.parse( saved_game_json_str );
 	model.game_id = core.load_game( 
-		Player.create( "Human" ),
-		Player.create( "Human" ),
+		Player.create( "Human", "White", "Local" ),
+		Player.create( "Human", "Black", "Local" ),
 		data );
 	model.game_instance = core.lookup_game( model.game_id );
 	console.log( model.game_instance );
@@ -411,15 +416,23 @@ function show_hive_game( model ) {
 }
 function do_turn( model, turn ) {
 	console.log( turn );
+	//model.game_instance.game.perform_turn( turn );
+	var turn_event = _.extend( {}, turn, {
+		response_type: "CHOOSE_TURN",
+		game_id: model.game_id
+	});
+	model.core.events.emit( "turn", turn_event );
+}
+function handle_game_event( game_event ) {
 	model.stage.setInteractive( false );
 	var position = _.clone( model.pixi_board.position );
 	var scale_i = model.scale_i;
 	var scale = model.scale_values[ scale_i ];
 	clear_hive_game( model );
-	model.game_instance.game.perform_turn( turn );
-	////////////////////////
+	//
+	//model.game_id = game_event.game_id; // game_id assumed to be unchanged
 	show_hive_game( model );
-	////////////////////////
+	//
 	model.pixi_board.position.set( position.x, position.y );
 	model.scale_i = scale_i;
 	model.pixi_board.scale.set( scale, scale );
@@ -429,24 +442,29 @@ function do_turn( model, turn ) {
 	// handle AI in the hackiest possible way
 	// assumes AI is black, and human is white
 	// this code is going to change like VERY SOON (tm), yo
-	if( model.game_instance
-	&& !model.game_instance.game.game_over
-	&&  model.game_instance.game.possible_turns
-	&&  model.game_instance.players[ model.game_instance.game.player_turn ].player_type == "AI" ) {
-		fetch_and_apply_AI_turn_local( model );
+	var game = model.game_instance ? model.game_instance.game : null;
+	if( game && !game.game_over && game.possible_turns ) {
+		var player = model.game_instance.players[ game.player_turn ];
+		if( player.player_type == "AI" ) {
+			if( player.proximity == "Local" ) {
+				fetch_and_apply_AI_turn_local( model, player );
+			} else if( player.proximity == "Remote" ) {
+				var hostname = player.get_remote_hostname();
+				var port = player.get_remote_port();
+				fetch_and_apply_AI_turn_http( model, hostname, port );
+			}
+		}
 	}
 }
 // assumed AI already configured
-function fetch_and_apply_AI_turn_local( model ) {
-	var player_turn = model.game_instance.game.player_turn;
-	var player = model.game_instance.players[ player_turn ];
+function fetch_and_apply_AI_turn_local( model, player ) {
 	var message = prepare_choose_turn_request_message( model );
 	var response_message = player.ai_module.process_message( message );
 	var turn = parse_response_message( response_message );
 	_.defer( do_turn, model, turn );
 }
 // not yet used
-function fetch_and_apply_AI_turn_http( model ) {
+function fetch_and_apply_AI_turn_http( model, hostname, port ) {
 	var message = prepare_choose_turn_request_message( model );
 	var message_str = JSON.stringify( message );
 	var headers = { 
@@ -454,8 +472,8 @@ function fetch_and_apply_AI_turn_http( model ) {
 		"Content-Length": message_str.length
 	};
 	var options = {
-		hostname: "localhost",
-		port: 51337,
+		hostname: hostname,
+		port: port,
 		path: "/",
 		method: "POST"
 	};

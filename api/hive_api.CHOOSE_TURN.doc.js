@@ -9,23 +9,30 @@ CHOOSE_TURN request
 // example request structure sent from the game core to an AI module
 {
   request_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   possible_turns: {
-    "Placement": {
-      piece_types: [
-        "Soldier Ant"
+    "Placement": { // all data in here is related to placement of new pieces
+      piece_types: [ // list of piece types valid to place this turn
+        "Soldier Ant" 
       ],
-      positions: [ 
+      positions: [ // list of valid placement positions for any of the above piece types
         "-2,0",
         "-1,-1", 
         "1,-1"
       ]
     },
-    "Movement": {
-      "0,0": [
+    "Movement": { // all data in here is related to normal movement of existing pieces
+      "0,0": [ // this lists the valid movement destinations for the piece at this position
         "2,0",
         "-1,1"
       ]
+    },
+    "Special Ability": { // all data in here is related to special abilities (currently pillbug)
+      "0,0": { // pillbug's (or mosquito mimicking pillbug)'s location
+        "1,1": [ // list of valid destinations for the piece at this position, moved by the above pillbug
+          "2,0"
+        ]
+      }
     }
   },
   game_state: {
@@ -66,7 +73,7 @@ CHOOSE_TURN request
 // example response structure sent back to the server for the above request
 {
   response_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   turn_type: "Placement",
   piece_type: "Soldier Ant",
   destination: "-1,-1"
@@ -74,8 +81,22 @@ CHOOSE_TURN request
 // another example, for a different turn_type
 {
   response_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   turn_type: "Movement",
   source: "0,0",
   destination: "2,0"
+}
+// here's an example of pillbug special ability usage
+{
+  response_type: "CHOOSE_TURN",
+  game_id: "KqwSQ",
+  turn_type: "Special Ability",
+  ability_user: "0,0",
+  source: "1,1",
+  destination: "2,0"
+}
+{
+  response_type: "CHOOSE_TURN",
+  game_id: "KqwSQ",
+  turn_type: "Forfeit"
 }

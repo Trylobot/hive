@@ -14,8 +14,11 @@ var io = require("socket.io").listen( server ); // startup socket listener
 app.use( require("compression")() ); // use gzip compression on responses
 app.use( require("serve-favicon")( "favicon.png" )); // serve up favicons
 io.set( "log level", cfg.socket_io_log_level ); // socket.io logging level 0 - 4, in order of ascending verbosity
+/*
 var Player = require("../core/domain/player");
 var Core = require("../core/core");
+*/
+
 
 /*
 core.js
@@ -49,6 +52,7 @@ app.use( express.static( __dirname+"/public", {
 io.sockets.on( "connection", function( socket ) {
 	// create a new game
 	socket.on( "start_game", function( game_config ) {
+		/*
 		// create game objects and put game into initial state
 		// TODO: include the socket.id into the Player object so that players can't hijack each other
 		var game_id = core.create_game(
@@ -75,9 +79,11 @@ io.sockets.on( "connection", function( socket ) {
 		} else {
 			socket.emit( "bad_request", game_config ); // couldn't start the game, yo
 		}
+		*/
 	});
 	// join existing game
 	socket.on( "join_game", function( game_id ) {
+		/*
 		var game_instance = core.lookup_game( game_id );
 		if( game_instance ) {
 			socket.join( game_id );
@@ -86,6 +92,7 @@ io.sockets.on( "connection", function( socket ) {
 		} else {
 			socket.emit( "not_found", game_id ); // not found, yo
 		}
+		*/
 	});
 	// choose_turn: a human player is sending their turn choice for a game_instance
 	socket.on( "choose_turn", function( turn ) {
@@ -105,6 +112,7 @@ io.sockets.on( "connection", function( socket ) {
 // ---------------------
 
 function validate_create_game_request( request ) {
+	/*
 	if( typeof request === "object" && request != null
 	&&  typeof request.body === "object" && request.body != null
 	&&  typeof request.body.white_player === "object" && request.body.white_player != null
@@ -118,9 +126,11 @@ function validate_create_game_request( request ) {
 	} else {
 		return false;
 	}
+	*/
 }
 
 function extract_valid_game_id( request ) {
+	/*
 	var query_string_param_keys = _.keys( request.query );
 	if( query_string_param_keys.length != 1 )
 		return false;
@@ -128,5 +138,6 @@ function extract_valid_game_id( request ) {
 	if( !core.lookup_game( game_id ))
 		return false;
 	return game_id; // active game exists with given id
+	*/
 }
 

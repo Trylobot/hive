@@ -39,7 +39,7 @@ CHOOSE_TURN request
 // example request structure sent from the game core to an AI module
 {
   request_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   possible_turns: {
     "Placement": { // all data in here is related to placement of new pieces
       piece_types: [ // list of piece types valid to place this turn
@@ -103,7 +103,7 @@ CHOOSE_TURN request
 // example response structure sent back to the server for the above request
 {
   response_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   turn_type: "Placement",
   piece_type: "Soldier Ant",
   destination: "-1,-1"
@@ -111,7 +111,7 @@ CHOOSE_TURN request
 // another example, for a different turn_type
 {
   response_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   turn_type: "Movement",
   source: "0,0",
   destination: "2,0"
@@ -119,7 +119,7 @@ CHOOSE_TURN request
 // here's an example of pillbug special ability usage
 {
   response_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   turn_type: "Special Ability",
   ability_user: "0,0",
   source: "1,1",
@@ -127,7 +127,7 @@ CHOOSE_TURN request
 }
 {
   response_type: "CHOOSE_TURN",
-  game_id: "d1446da0-f105-11e3-aa3c-0002a5d5c51b",
+  game_id: "KqwSQ",
   turn_type: "Forfeit"
 }
 ```
