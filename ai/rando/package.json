@@ -1,8 +1,5 @@
 {
 	"name": "hive-ai-rando",
 	"description": "Rando[m]",
-	"dependencies": {
-		"express": "~4.2.0"
-	},
 	"active": true
 }
