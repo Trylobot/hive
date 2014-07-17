@@ -48,6 +48,20 @@ function create() {
 	core.lookup_game = function( game_id ) {
 		return core.game_instances[ game_id ];
 	}
+	core.list_games = function() {
+		return _.keys( core.game_instances );
+	}
+	core.start_game = function( game_id ) {
+		if( !(game_id in core.game_instances) )
+			return; // invalid game_id
+		var game_event = {
+			game_id: game_id
+		};
+		// emit an event indicating that the game with the given ID has changed.
+		//   event listener would then use core.lookup_game with the given ID
+		//   and update her internal model or user interface as appropriate.
+		core.events.emit( "game", game_event );
+	}
 	core.handle_turn_event = function( turn_event ) {
 		var game_id = turn_event.game_id;
 		var game_instance = core.lookup_game( game_id );
@@ -56,9 +70,6 @@ function create() {
 			var game_event = {
 				game_id: game_id
 			};
-			// emit an event indicating that the game with the given ID has changed.
-			//   event listener would then use core.lookup_game with the given ID
-			//   and update her internal model or user interface as appropriate.
 			core.events.emit( "game", game_event );
 		}
 	}

@@ -2,9 +2,8 @@
 
 /* 
 hive-ai-rando.js
-"Rando"
-	this is a simple ai that chooses a move at rando[m]
-	for api reference look in api/
+	"Rando[m]"
+	This AI module just chooses a move at rando[m]
 */
 
 function process_message( message ) {

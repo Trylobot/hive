@@ -1,0 +1,11 @@
+{
+	"name": "her",
+	"active": true,
+	"version": "0.0.1",
+	"long_name": "He[u]r[istic]",
+	"module": "hive-ai-her",
+	"description": "Uses a basic board-evaluation function",
+	"author": "Trylobot",
+	"project_url": "https://github.com/Trylobot/hive/tree/master/ai/her",
+	"language": "Javascript"
+}

@@ -49,6 +49,9 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 			game.turn_number,
 			game.turn_history );
 	}
+	game.check_if_turn_valid = function( turn_object ) {
+		return true; // TODO
+	}
 	game.perform_turn = function( turn_object, skip_self_evaluation ) {
 		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?
 		var turn_type = turn_object.turn_type;
@@ -57,7 +60,7 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 				var piece_color = game.player_turn;
 				var piece_type = turn_object.piece_type;
 				var piece = Piece.create( piece_color, piece_type );
-				var position = Position.decode( turn_object.destination );
+				var position = Position.force_decoded_object( turn_object.destination );
 				var hand = game.hands[ piece_color ];
 				hand[ turn_object.piece_type ]--;
 				if( hand[ turn_object.piece_type ] <= 0 )
@@ -65,14 +68,14 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 				game.board.place_piece( piece, position );
 				break;
 			case "Movement":
-				var position_0 = Position.decode( turn_object.source );
-				var position_1 = Position.decode( turn_object.destination );
+				var position_0 = Position.force_decoded_object( turn_object.source );
+				var position_1 = Position.force_decoded_object( turn_object.destination );
 				game.board.move_piece( position_0, position_1 );
 				break;
 			case "Special Ability":
 				// TODO: do something with the ability_user field?
-				var position_0 = Position.decode( turn_object.source );
-				var position_1 = Position.decode( turn_object.destination );
+				var position_0 = Position.force_decoded_object( turn_object.source );
+				var position_1 = Position.force_decoded_object( turn_object.destination );
 				game.board.move_piece( position_0, position_1 );
 			case "Forfeit":
 				break;
