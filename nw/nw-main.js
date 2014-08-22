@@ -168,12 +168,12 @@ model.dat_gui = {
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
 	},
-	"Local AI": undefined,
+	"Local AI": null,
 	"Human-vs-AI (Local)": function() {
 		pre_game_cleanup();
 		start_game(
 			Player.create( "Human", "White", "Local" ),
-			Player.create( "AI",    "Black", "Local", model.dat_gui["Local AI"] ),
+			Player.create( "AI",    "Black", "Local", model.available_ai_modules[model.dat_gui["Local AI"]] ),
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -241,7 +241,7 @@ model.dat_gui = {
 			gui.close();
 		});
 	},
-	"Themes": undefined, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
+	"Themes": null, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
 	"Sandbox Mode": function() {
 		pre_game_cleanup();
 		model.DEBUG_MODE = true;
@@ -294,18 +294,16 @@ model.dat_gui_themes = _.zipObject(
 			var ai_package = require( ai_package_path );
 			if( ai_package && ai_package.active ) {
 				var ai = require( ai_basepath + ai_dir + "/" + ai_package.module ); 
-				active_ai[ ai_package.description ] = ai;
+				active_ai[ ai_package.long_name ] = ai;
 			}
 		}
 	});
 	model.available_ai_modules = active_ai;
 })();
-// select Rando[m] as the default Local AI
-model.dat_gui["Local AI"] = model.available_ai_modules["Rando[m]"];
 // init dat.GUI
 var gui_new_game = gui.addFolder( "Start New Game" );
 	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
-	gui_new_game.add( model.dat_gui, "Local AI", model.available_ai_modules );
+	gui_new_game.add( model.dat_gui, "Local AI", _.keys(model.available_ai_modules) );
 	gui_new_game.add( model.dat_gui, "Human-vs-AI (Local)" );
 	gui_new_game.add( model.dat_gui, "Host:Port" );
 	gui_new_game.add( model.dat_gui, "Human-vs-AI (Connect)" );
