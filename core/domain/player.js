@@ -20,8 +20,8 @@ var player_types_enum = [
 ];
 
 var message_types_enum = [
-	"GREETINGS",
-	"CHOOSE_TURN"
+	"greetings",
+	"choose_turn"
 ];
 
 // functions

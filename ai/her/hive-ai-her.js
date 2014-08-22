@@ -1,11 +1,19 @@
 "use strict";
 
+var _ = require("lodash");
+_(global).extend(require("../../core/domain/util"));
 var Game = require("../../core/domain/game");
+var Player = require("../../core/domain/player");
+var Piece = require("../../core/domain/piece");
+var Position = require("../../core/domain/position");
+var Board = require("../../core/domain/board");
+var Rules = require("../../core/domain/rules");
+var Turn = require("../../core/domain/turn");
 
 /*
 hive-ai-her.js
   "He[u]r[istic]"
-  This AI module utilizes a basic board-scoring heuristic to decide on a move.
+  This AI module utilizes a basic (one-move lookahead) board-scoring heuristic to decide on a move.
 */
 
 function process_message( message ) {

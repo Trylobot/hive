@@ -1,8 +1,10 @@
 "use strict";
 
 var events = require("events");
+var async = require("async");
 var _ = require("lodash");
 var mt = new (require('mersenne').MersenneTwister19937);
+
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
 var Position = require("./domain/position");
@@ -87,6 +89,18 @@ function create() {
 		} while( id in core.game_instances );
 		return id;
 	}
+	// function request_turn_choice( player ) {
+	// 	var message = prepare_choose_turn_request_message();
+	// 	var response_message;
+	// 	if( player.player_type == "AI" && player.proximity == "Local" ) {
+	// 		response_message = player.ai_module.process_message( message );
+	// 	} else if( player.proximity == "Remote" ) {
+	// 		response_message 
+	// 	}
+	// 	var turn = parse_response_message( response_message );
+	// 	return turn;
+	// }
+	
 	// ---------------
 	core.events.on( "turn", core.handle_turn_event );
 
