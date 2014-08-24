@@ -50,6 +50,18 @@ program
 	.description( "List available Hive AI modules" )
 	.action( program_command_list_ai );
 program
+	.command( "add-local-ai [local-path]" )
+	.description( "Register a new local AI module (javascript/node.js only)")
+	.action( program_command_add_local_ai );
+program
+	.command( "add-remote-ai [remote-host-port]" )
+	.description( "Register a new remote AI endpoint (host:port)")
+	.action( program_command_add_remote_ai );
+program
+	.command( "local-ai-choose-turn [local-ai-name]" )
+	.description( "Use a given local AI module to choose the next turn for a given game-state; (stdin) --> (stdout)" )
+	.action( program_command_local_ai_choose_turn );
+program
 	.command( "play-single-random" )
 	.description( "Run a single match between two random AI participants selected from the available Hive AI modules")
 	.action( program_command_play_single_random );
@@ -122,12 +134,36 @@ function program_command_list_ai() {
 	process.exit();
 }
 
+function program_command_add_local_ai( local_path ) {
+	console.log( "TODO" );
+	command_executed = true;
+	process.exit();
+}
+
+function program_command_add_remote_ai( remote_host_port ) {
+	console.log( "TODO" );
+	command_executed = true;
+	process.exit();
+}
+
+function program_command_local_ai_choose_turn( local_ai_name ) {
+	console.log( "TODO" );
+	command_executed = true;
+	process.exit();
+}
+
 function program_command_tournament( participant_list ) {
 	console.log( "%j", participant_list );
 	command_executed = true;
 	// TODO: allow specifying an output directory
 	// and to this directory, the tournament should output an html file
 	//   which should contain a tournament summary
+	//     overall winner
+	//     participant list
+	//     running time
+	//     game creation parameters
+	//     total # of games
+	//     various other stats
 	//   and links to view all the recorded games
 	//   each with play/pause/rewind/fast-forward/skip-to-end functions
 	//   but are non-interactive otherwise
