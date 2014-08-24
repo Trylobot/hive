@@ -48,7 +48,10 @@ function create() {
 		return game_id;
 	}
 	core.lookup_game = function( game_id ) {
-		return core.game_instances[ game_id ];
+		var game_instance = core.game_instances[ game_id ];
+		if( !game_instance )
+			throw "game_id not found: "+game_id;
+		return game_instance;
 	}
 	core.list_games = function() {
 		return _.keys( core.game_instances );
@@ -67,13 +70,11 @@ function create() {
 	core.handle_turn_event = function( turn_event ) {
 		var game_id = turn_event.game_id;
 		var game_instance = core.lookup_game( game_id );
-		if( game_instance ) {
-			game_instance.game.perform_turn( turn_event ); // duck-typing
-			var game_event = {
-				game_id: game_id
-			};
-			core.events.emit( "game", game_event );
-		}
+		game_instance.game.perform_turn( turn_event ); // duck-typing
+		var game_event = {
+			game_id: game_id
+		};
+		core.events.emit( "game", game_event );
 	}
 	core.end_game = function( game_id ) {
 		// TODO: save game to archive
@@ -89,18 +90,89 @@ function create() {
 		} while( id in core.game_instances );
 		return id;
 	}
-	// function request_turn_choice( player ) {
-	// 	var message = prepare_choose_turn_request_message();
-	// 	var response_message;
-	// 	if( player.player_type == "AI" && player.proximity == "Local" ) {
-	// 		response_message = player.ai_module.process_message( message );
-	// 	} else if( player.proximity == "Remote" ) {
-	// 		response_message 
-	// 	}
-	// 	var turn = parse_response_message( response_message );
-	// 	return turn;
-	// }
-	
+	core.prepare_choose_turn_request_message = function( game_id ) {
+		var game_instance = core.lookup_game( game_id );
+		// TODO: possible_turns should already be using position keys, and this should not be necessary
+		var possible_turns = core.possible_turns__encode_positions( 
+			game_instance.game.possible_turns );
+		// TODO: game_state and possible turns should just use the native structure, this restructuring shouldn't be necessary
+		var message = {
+			request_type: "CHOOSE_TURN",
+			game_id: game_id,
+			possible_turns: possible_turns,
+			game_state: {
+				board: game_instance.game.board,
+				hands: game_instance.game.hands,
+				player_turn: game_instance.game.player_turn,
+				turn_number: game_instance.game.turn_number,
+				game_over: game_instance.game.game_over,
+				winner: game_instance.game.winner,
+				is_draw: game_instance.game.is_draw
+			}
+		};
+		return message;
+	}
+	core.prepare_turn_response_message = function( turn, game_id ) {
+		return _.extend( turn, {
+			response_type: "CHOOSE_TURN",
+			game_id: game_id
+		});
+	}
+	core.parse_response_message = function( response_message ) {
+		var turn;
+		switch( response_message.turn_type ) {
+			case "Placement":
+				turn = Turn.create_placement( 
+					response_message.piece_type, 
+					response_message.destination );
+				break;
+			case "Movement":
+				turn = Turn.create_movement(
+					response_message.source,
+					response_message.destination );
+				break;
+			case "Special Ability":
+				turn = Turn.create_special_ability(
+					response_message.ability_user,
+					response_message.source,
+					response_message.destination );
+				break;
+			case "Forfeit":
+				turn = Turn.create_forfeit();
+				break;
+		}
+		return turn;
+	}
+	core.possible_turns__encode_positions = function( possible_turns_with_decoded_positions ) {
+		// TODO: possible_turns should already be using position keys, and this should not be necessary
+		return core.possible_turns__Xcode_positions(
+			possible_turns_with_decoded_positions, Position.encode_all );
+	}
+	core.possible_turns__decode_positions = function( possible_turns_with_encoded_positions ) {
+		return core.possible_turns__Xcode_positions(
+			possible_turns_with_encoded_positions, Position.decode_all );
+	}
+	core.possible_turns__Xcode_positions = function( possible_turns, position_collection_fn ) {
+		if( possible_turns ) {
+			possible_turns = _.cloneDeep( possible_turns );
+			if( possible_turns["Placement"] ) {
+				possible_turns["Placement"].positions = position_collection_fn( possible_turns["Placement"].positions );
+			}
+			if( possible_turns["Movement"] ) {
+				possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
+					return position_collection_fn( destination_position_array );
+				});
+			}
+			if( possible_turns["Special Ability"] ) {
+				possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
+					return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
+						return position_collection_fn( destination_position_array );
+					});
+				});
+			}
+		}
+		return possible_turns;
+	}
 	// ---------------
 	core.events.on( "turn", core.handle_turn_event );
 

@@ -13,10 +13,10 @@ var Table = require("cli-table");
 var colors = require("colors");
 var multimeter = require("multimeter")(process);
 //   dynamic paths
-var self_path = path.dirname( process.argv[1] );
-var package_json = require(self_path+"/package.json");
-var core_basepath = path.resolve(self_path+"/../core/")+"/";
-var ai_basepath = path.resolve(self_path+"/../ai/")+"/";
+var self_path = path.dirname( process.argv[1] )+"/";
+var package_json = require(self_path+"package.json");
+var core_basepath = path.resolve(self_path+"../core/")+"/";
+var ai_basepath = path.resolve(self_path+"../ai/")+"/";
 //   user-defined modules
 var Piece = require(core_basepath+"domain/piece");
 var Position = require(core_basepath+"domain/position");
@@ -33,41 +33,78 @@ hive-cli.js
 
 // globals
 var core;
+var config;
+var command_executed = false;
 init();
 
 // program definition
 program
 	.version( package_json.version );
 program
-	.option( "-M, --UseMosquito", "Use the Mosquito" )
-	.option( "-L, --UseLadybug", "Use the Ladybug" )
-	.option( "-P, --UsePillbug", "Use the Pillbug" );
+	.option( "-m, --use-mosquito", "Use the Mosquito" )
+	.option( "-l, --use-ladybug", "Use the Ladybug" )
+	.option( "-p, --use-pillbug", "Use the Pillbug" )
+	.option( "-d, --turn-deadline", "Set the maximum turn time for any single AI turn, in milliseconds" );
 program
 	.command( "list-ai" )
 	.description( "List available Hive AI modules" )
 	.action( program_command_list_ai );
 program
 	.command( "play-single-random" )
-	.description( "Play a single game, with two random AI participants")
+	.description( "Run a single match between two random AI participants selected from the available Hive AI modules")
 	.action( program_command_play_single_random );
+program
+	.command( "tournament [participant-list]" )
+	.description( "Run one full single-elimination round-robin tournament between the listed AI participants")
+	.action( program_command_tournament );
+program
+	.command( "print-config" )
+	.description( "Print currently resolved config options (diagnostic function)")
+	.action( program_command_print_config );
 
 // execute
 program.parse( process.argv );
+
+// default behavior (no arguments given at all): show help and exit
+if( !command_executed )
+	program.help();
 
 ///////////////////////////////////////////////////////////////////////////////
 // init
 
 function init() {
-	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
-	multimeter.on( "^C", kill_all_games );
+	// core (game tracker)
 	core = Core.create();
 	core.events.on( "game", handle_game_event );
+	// init random seed
+	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
+	// cli progress bar library
+	multimeter.on( "^C", kill_all_games );
+}
+
+function load_config() {
+	config = {
+		use_mosquito:  program["useMosquito"],
+		use_ladybug:   program["useLadybug"],
+		use_pillbug:   program["usePillbug"],
+		turn_deadline: program["turnDeadline"]
+	};
+	function default_( key, value ) {
+		if( typeof config[key] === "undefined" || config[key] == null )
+			config[key] = value;
+	}
+	// defaults
+	default_( "use_mosquito",  false );
+	default_( "use_ladybug",   false );
+	default_( "use_pillbug",   false );
+	default_( "turn_deadline", 30 * 1000 ); // 30 second AI turn deadline
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // command functions
 
 function program_command_list_ai() {
+	load_config();
 	var active_ai = find_active_ai();
 	var table = create_table();
 	table.push.apply( table, _.map( active_ai, 
@@ -81,10 +118,26 @@ function program_command_list_ai() {
 		}
 	));
 	console.log( table.toString() );
+	command_executed = true;
 	process.exit();
 }
 
+function program_command_tournament( participant_list ) {
+	console.log( "%j", participant_list );
+	command_executed = true;
+	// TODO: allow specifying an output directory
+	// and to this directory, the tournament should output an html file
+	//   which should contain a tournament summary
+	//   and links to view all the recorded games
+	//   each with play/pause/rewind/fast-forward/skip-to-end functions
+	//   but are non-interactive otherwise
+	
+	// process exits when: 
+	//   handle_game_event(..) is called while core.list_games() returns 0 active games.
+}
+
 function program_command_play_single_random() {
+	load_config();
 	var ai_packages = find_active_ai();
 	var ai_names = _.keys( ai_packages );
 	var ai_count = ai_names.length;
@@ -101,27 +154,77 @@ function program_command_play_single_random() {
 		program.UsePillbug
 	);
 	core.start_game( game_id );
+	command_executed = true;
+	// process exits when: 
+	//   handle_game_event(..) is called while core.list_games() returns 0 active games.
+}
+
+function program_command_print_config() {
+	load_config();
+	var table = create_table();
+	table.push.apply( table, _.map( config,
+		function( value, key ) {
+			return [
+				key.grey,
+				JSON.stringify( value ).bold
+			];
+		}
+	));
+	console.log( table.toString() );
+	command_executed = true;
+	process.exit();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // events
 
 function handle_game_event( game_event ) {
-	var game_core = core.lookup_game( game_event.game_id );
-	show_progress( compute_progress() );
-	var player = game_core.players[ game_core.game.player_turn ];
-	var turn = choose_turn( game_core, player );
-	var turn_event = _.extend( turn, {
-		response_type: "CHOOSE_TURN",
-		game_id: game_event.game_id
-	});
-	core.events.emit( "turn", turn_event );
+	var game_id = game_event.game_id;
+	var game_instance = core.lookup_game( game_id );
+	show_progress( compute_progress() ); // must occur before turn is applied
+	if( !game_instance.game.game_over
+	&&  game_instance.game.possible_turns != null ) {
+		var player = game_instance.players[ game_instance.game.player_turn ];
+		var message = core.prepare_choose_turn_request_message( game_id );
+		var response_message;
+		try {
+			/////////////////////////////////////////
+			// TODO: run this on a separate thread
+			var response_message = player.ai_module.process_message( message );
+			/////////////////////////////////////////
+		} catch( exception ) {
+			// player who threw the exception unconditionally forfeits the game
+			var turn = Turn.create_ai_exception( exception );
+			var turn_event = core.prepare_turn_response_message( turn, game_id );
+			// wait for the callstack to clear, then notify core program of the turn
+			_.defer( function() {
+				core.events.emit( "turn", turn_event );
+			});
+		}
+		var turn = core.parse_response_message( response_message );
+		var turn_event = core.prepare_turn_response_message( turn, game_id );
+		// wait for the callstack to clear, then notify core program of the turn
+		_.defer( function() { 
+			core.events.emit( "turn", turn_event );
+		});
+	}
+	else { //( game_over == true || possible_turns == null )
+		// TODO: output recorded game data
+		core.end_game( game_id );
+		//
+		var active_games = core.list_games();
+		if( active_games.length == 0 )
+			process.exit();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // tier 1 supporting functions
 
 function kill_all_games() {
+	// TODO: output partial recorded game data for all games in progress
+	//   additionally making sure that the "partial" flag for these games
+	//   is visible on the tournament manifest
 	_( core.list_games() ).map( core.end_game );
 }
 
@@ -161,101 +264,13 @@ function compute_progress() {
 function show_progress( progress ) {
 	// TODO: use pre-instantiated progress bar object, created when game is created
 	//   persist progress bar ordering; chronological by game creation
+	// TODO: show AI names instead of game ID's
 	var y = 0;
 	_.forEach( progress, function( progress_value, game_id ) {
 		var bar = multimeter.bars[ y ] || multimeter.rel( 7, y++,
 			_.extend( progress_bar_params(), { before: game_id + " [" }) );
 		bar.ratio( progress_value, 6 );
 	});
-}
-
-// COPIED & PASTED FROM nw/nw-main.js
-function choose_turn( game_core, player ) {
-	var message = prepare_choose_turn_request_message( game_core );
-	var response_message = player.ai_module.process_message( message );
-	var turn = parse_response_message( response_message );
-	return turn;
-}
-
-// COPIED & PASTED FROM nw/nw-main.js
-function prepare_choose_turn_request_message( game_core ) {
-	// TODO: possible_turns should already be using position keys, and this should not be necessary
-	var possible_turns = possible_turns__encode_positions( game_core.game.possible_turns );
-	// TODO: game_state and possible turns should just use the native structure, this restructuring shouldn't be necessary
-	var message = {
-		request_type: "CHOOSE_TURN",
-		game_id: game_core.game_id,
-		possible_turns: possible_turns,
-		game_state: {
-			board: game_core.game.board,
-			hands: game_core.game.hands,
-			player_turn: game_core.game.player_turn,
-			turn_number: game_core.game.turn_number,
-			game_over: game_core.game.game_over,
-			winner: game_core.game.winner,
-			is_draw: game_core.game.is_draw
-		}
-	};
-	return message;
-}
-
-// COPIED & PASTED FROM nw/nw-main.js
-function parse_response_message( response_message ) {
-	var turn;
-	switch( response_message.turn_type ) {
-		case "Placement":
-			turn = Turn.create_placement( 
-				response_message.piece_type, 
-				response_message.destination );
-			break;
-		case "Movement":
-			turn = Turn.create_movement(
-				response_message.source,
-				response_message.destination );
-			break;
-		case "Special Ability":
-			turn = Turn.create_special_ability(
-				response_message.ability_user,
-				response_message.source,
-				response_message.destination );
-			break;
-		case "Forfeit":
-			turn = Turn.create_forfeit();
-			break;
-	}
-	return turn;
-}
-
-// COPIED & PASTED FROM nw/nw-main.js
-function possible_turns__encode_positions( possible_turns_with_decoded_positions ) {
-	// TODO: possible_turns should already be using position keys, and this should not be necessary
-	return possible_turns__Xcode_positions( possible_turns_with_decoded_positions, Position.encode_all );
-}
-// COPIED & PASTED FROM nw/nw-main.js
-function possible_turns__decode_positions( possible_turns_with_encoded_positions ) {
-	return possible_turns__Xcode_positions( possible_turns_with_encoded_positions, Position.decode_all );
-}
-// COPIED & PASTED FROM nw/nw-main.js
-function possible_turns__Xcode_positions( possible_turns, position_collection_fn ) {
-	if( possible_turns ) {
-		possible_turns = _.cloneDeep( possible_turns );
-		if( possible_turns["Placement"] ) {
-			possible_turns["Placement"].positions = position_collection_fn( possible_turns["Placement"].positions );
-		}
-		if( possible_turns["Movement"] ) {
-			possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
-				return position_collection_fn( destination_position_array );
-			});
-		}
-		if( possible_turns["Special Ability"] ) {
-			possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
-				return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
-					return position_collection_fn( destination_position_array );
-				});
-			});
-		}
-	}
-	return possible_turns;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

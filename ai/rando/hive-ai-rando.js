@@ -18,6 +18,8 @@ function process_message( message ) {
 				response[key] = package_json[key];
 			break;
 		case "CHOOSE_TURN":
+			if( !has_nonzero_key_set_length( message.possible_turns ))
+				throw "cannot choose from empty possible_turns";
 			response = {
 				response_type: message.request_type,
 				game_id: message.game_id,
@@ -43,6 +45,11 @@ function process_message( message ) {
 			break;
 	}
 	return response;
+}
+
+function has_nonzero_key_set_length( object )
+{
+	return( typeof object != "undefined" && object != null && Object.keys( object ).length > 0 );
 }
 
 function random_object_key( object ) {

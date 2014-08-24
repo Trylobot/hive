@@ -79,6 +79,16 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 				game.board.move_piece( position_0, position_1 );
 			case "Forfeit":
 				break;
+			case "AI Exception":
+				skip_self_evaluation = true;
+				game.game_over = true;
+				game.winner = Piece.opposite_color( game.player_turn );
+				game.is_draw = false;
+				game.possible_turns = null;
+				break;
+			// case "Unknown":
+			// 	// ..?
+			// 	break;
 			default:
 				throw "invalid turn type: " + turn_type;
 		}

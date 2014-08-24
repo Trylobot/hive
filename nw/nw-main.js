@@ -517,15 +517,15 @@ function handle_game_event( game_event ) {
 	}
 }
 function request_local_AI_turn( model, player ) {
-	var message = prepare_choose_turn_request_message( model );
+	var message = core.prepare_choose_turn_request_message( model.game_id );
 	var response_message = player.ai_module.process_message( message );
-	var turn = parse_response_message( response_message );
+	var turn = core.parse_response_message( response_message );
 	_.defer( do_turn, model, turn );
 }
 function request_remote_turn_http_post( model, hostname, port ) {
-	var message = prepare_choose_turn_request_message( model );
+	var message = core.prepare_choose_turn_request_message( model.game_id );
 	http_post( hostname, port, message, function( response_message ) {
-		var turn = parse_response_message( response_message );
+		var turn = core.parse_response_message( response_message );
 		_.defer( do_turn, model, turn );
 	});
 }
@@ -585,7 +585,7 @@ function http_webserver_handle_request( request, response ) {
 			else if( message.request_type === "CHOOSE_TURN" ) {
 				// THIS IS A PRETTY ENORMOUS HACK
 				var game = model.game_instance.game;
-				game.possible_turns = possible_turns__decode_positions( message.possible_turns );
+				game.possible_turns = core.possible_turns__decode_positions( message.possible_turns );
 				game.board.pieces =   message.game_state.board.pieces;
 				game.hands =          message.game_state.hands;
 				game.player_turn =    message.game_state.player_turn;
@@ -667,51 +667,6 @@ function resolve_pixi_board_piece_rotation( registry, position_key, stack_layer,
 // second-tier functions
 //////////////////////////////////////////////////////////////////
 // depends on global: model
-function prepare_choose_turn_request_message( model ) {
-	// TODO: possible_turns should already be using position keys, and this should not be necessary
-	var possible_turns = possible_turns__encode_positions( model.game_instance.game.possible_turns );
-	// TODO: game_state and possible turns should just use the native structure, this restructuring shouldn't be necessary
-	var message = {
-		request_type: "CHOOSE_TURN",
-		game_id: model.game_id,
-		possible_turns: possible_turns,
-		game_state: {
-			board: model.game_instance.game.board,
-			hands: model.game_instance.game.hands,
-			player_turn: model.game_instance.game.player_turn,
-			turn_number: model.game_instance.game.turn_number,
-			game_over: model.game_instance.game.game_over,
-			winner: model.game_instance.game.winner,
-			is_draw: model.game_instance.game.is_draw
-		}
-	};
-	return message;
-}
-function parse_response_message( response_message ) {
-	var turn;
-	switch( response_message.turn_type ) {
-		case "Placement":
-			turn = Turn.create_placement( 
-				response_message.piece_type, 
-				response_message.destination );
-			break;
-		case "Movement":
-			turn = Turn.create_movement(
-				response_message.source,
-				response_message.destination );
-			break;
-		case "Special Ability":
-			turn = Turn.create_special_ability(
-				response_message.ability_user,
-				response_message.source,
-				response_message.destination );
-			break;
-		case "Forfeit":
-			turn = Turn.create_forfeit();
-			break;
-	}
-	return turn;
-}
 function create_pixi_piece( hive_piece ) {
 	var container = create_pixi_tile_sprite_container( hive_piece );
 	var ghost_container = create_pixi_tile_sprite_container( hive_piece );
@@ -962,36 +917,6 @@ function create_pixi_hand( color, hive_hand, hive_possible_turns, allow_interact
 //////////////////////////////////////////////////////////////////
 // third-tier functions
 //////////////////////////////////////////////////////////////////
-//
-function possible_turns__encode_positions( possible_turns_with_decoded_positions ) {
-	// TODO: possible_turns should already be using position keys, and this should not be necessary
-	return possible_turns__Xcode_positions( possible_turns_with_decoded_positions, Position.encode_all );
-}
-function possible_turns__decode_positions( possible_turns_with_encoded_positions ) {
-	return possible_turns__Xcode_positions( possible_turns_with_encoded_positions, Position.decode_all );
-}
-function possible_turns__Xcode_positions( possible_turns, position_collection_fn ) {
-	if( possible_turns ) {
-		possible_turns = _.cloneDeep( possible_turns );
-		if( possible_turns["Placement"] ) {
-			possible_turns["Placement"].positions = position_collection_fn( possible_turns["Placement"].positions );
-		}
-		if( possible_turns["Movement"] ) {
-			possible_turns["Movement"] = _.mapValues( possible_turns["Movement"], function( destination_position_array, source_position_key ) {
-				return position_collection_fn( destination_position_array );
-			});
-		}
-		if( possible_turns["Special Ability"] ) {
-			possible_turns["Special Ability"] = _.mapValues( possible_turns["Special Ability"], function( movement_map, ability_user_position_key ) {
-				return _.mapValues( movement_map, function( destination_position_array, source_position_key ) {
-					return position_collection_fn( destination_position_array );
-				});
-			});
-		}
-	}
-	return possible_turns;
-}
-
 function document_mousewheel( event ) {
 	var ticks = event.wheelDelta / 120;
 	model.scale_i += ticks;

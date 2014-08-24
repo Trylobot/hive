@@ -1,6 +1,6 @@
 {
 	"name": "her",
-	"active": true,
+	"active": false,
 	"version": "0.0.1",
 	"long_name": "He[u]r[istic]",
 	"module": "hive-ai-her",
