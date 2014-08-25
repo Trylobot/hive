@@ -9,7 +9,7 @@ hive-ai-rando.js
 function process_message( message ) {
 	var response;
 	switch( message.request_type ) {
-		case "GREETINGS":
+		case "greetings":
 			response = {
 				response_type: message.request_type
 			};
@@ -17,27 +17,28 @@ function process_message( message ) {
 			for( var key in package_json )
 				response[key] = package_json[key];
 			break;
-		case "CHOOSE_TURN":
-			if( !has_nonzero_key_set_length( message.possible_turns ))
+		case "choose_turn":
+			var possible_turns = message.game_state.possible_turns;
+			if( !has_nonzero_key_set_length( possible_turns ))
 				throw "cannot choose from empty possible_turns";
 			response = {
 				response_type: message.request_type,
 				game_id: message.game_id,
-				turn_type: random_object_key( message.possible_turns )
+				turn_type: random_object_key( possible_turns )
 			};
 			switch( response.turn_type ) {
 				case "Placement":
-					response.piece_type = random_array_item( message.possible_turns[ response.turn_type ].piece_types );
-					response.destination = random_array_item( message.possible_turns[ response.turn_type ].positions );
+					response.piece_type = random_array_item( possible_turns[ response.turn_type ].piece_types );
+					response.destination = random_array_item( possible_turns[ response.turn_type ].positions );
 					break;
 				case "Movement":
-					response.source = random_object_key( message.possible_turns[ response.turn_type ]);
-					response.destination = random_array_item( message.possible_turns[ response.turn_type ][ response.source ]);
+					response.source = random_object_key( possible_turns[ response.turn_type ]);
+					response.destination = random_array_item( possible_turns[ response.turn_type ][ response.source ]);
 					break;
 				case "Special Ability":
-					response.ability_user = random_object_key( message.possible_turns[ response.turn_type ]);
-					response.source = random_object_key( message.possible_turns[ response.turn_type ][ response.ability_user ]);
-					response.destination = random_array_item( message.possible_turns[ response.turn_type ][ response.ability_user ][ response.source ]);
+					response.ability_user = random_object_key( possible_turns[ response.turn_type ]);
+					response.source = random_object_key( possible_turns[ response.turn_type ][ response.ability_user ]);
+					response.destination = random_array_item( possible_turns[ response.turn_type ][ response.ability_user ][ response.source ]);
 					break;
 				case "Forfeit":
 					break;
@@ -47,8 +48,7 @@ function process_message( message ) {
 	return response;
 }
 
-function has_nonzero_key_set_length( object )
-{
+function has_nonzero_key_set_length( object ) {
 	return( typeof object != "undefined" && object != null && Object.keys( object ).length > 0 );
 }
 

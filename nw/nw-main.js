@@ -178,7 +178,7 @@ model.dat_gui = {
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
-		// TODO: send GREETINGS message
+		// TODO: send greetings message
 		//   save response info, for display on-screen
 	},
 	"Host:Port": "localhost:51337",
@@ -191,7 +191,7 @@ model.dat_gui = {
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
-		// TODO: send GREETINGS message
+		// TODO: send greetings message
 		//   save response info, for display on-screen
 	},
 	"Human-vs-Human (Connect)": function() {
@@ -300,6 +300,7 @@ model.dat_gui_themes = _.zipObject(
 	});
 	model.available_ai_modules = active_ai;
 })();
+model.dat_gui["Local AI"] = "Rando[m]"; // default AI; the easiest possible
 // init dat.GUI
 var gui_new_game = gui.addFolder( "Start New Game" );
 	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
@@ -465,7 +466,7 @@ function build_pixi_game_from_hive_game( model ) {
 function do_turn( model, turn ) {
 	console.log( turn );
 	var turn_event = _.extend( {}, turn, {
-		response_type: "CHOOSE_TURN",
+		response_type: "choose_turn",
 		game_id: model.game_id
 	});
 	model.core.events.emit( "turn", turn_event );
@@ -531,7 +532,7 @@ function request_remote_turn_http_post( model, hostname, port ) {
 }
 function greetings_http_post( hostname, port ) {
 	http_post( hostname, port, {
-		request_type: "GREETINGS",
+		request_type: "greetings",
 		system_version: package_json.version
 	});
 }
@@ -574,7 +575,7 @@ function http_webserver_handle_request( request, response ) {
 			data = chunks.join("");
 			var message = JSON.parse( data ); // not "real" objects (no methods)
 			//
-			if( message.request_type === "GREETINGS" ) {
+			if( message.request_type === "greetings" ) {
 				start_game(
 					Player.create( "None", "White" ), // remote player connecting to this instance
 					Player.create( "Human", "Black", "Local" ),
@@ -582,7 +583,7 @@ function http_webserver_handle_request( request, response ) {
 					model.dat_gui["Use Ladybug"],
 					model.dat_gui["Use Pillbug"] );
 			}
-			else if( message.request_type === "CHOOSE_TURN" ) {
+			else if( message.request_type === "choose_turn" ) {
 				// THIS IS A PRETTY ENORMOUS HACK
 				var game = model.game_instance.game;
 				game.possible_turns = core.possible_turns__decode_positions( message.possible_turns );
@@ -1022,8 +1023,7 @@ function pixi_piece_mousedown( ix ) {
 function pixi_piece_set_move_marquee_visible( visible, use_opposite_color ) {
 	var self = this;
 	var destinations = _.compact( _.flatten([ self.__hive_moves, self.__hive_special_moves ]));
-	_.forEach( destinations, function( position ) {
-		var position_key = position.encode();
+	_.forEach( destinations, function( position_key ) {
 		var position_register = model.pixi_board.__hive_positions[ position_key ];
 		if( position_register.occupied ) {
 			position_register.pixi_piece.__hive_pixi_marquee.visible = visible;
@@ -1051,12 +1051,11 @@ function pixi_piece_mousemove( ix ) {
 		var min_distance_squared = Infinity;
 		var closest_position_key = null;
 		var closest_pixi_position = null;
-		var self_hive_position = Position.decode( self.__hive_position_key );
-		var hive_moves_and_current_position = _.compact( _.flatten([ self_hive_position, self.__hive_moves, self.__hive_special_moves ]));
-		_.forEach( hive_moves_and_current_position, function( position ) {
-			var position_key = position.encode();
+		var hive_moves_and_current_position = _.compact( _.flatten([ self.__hive_position_key, self.__hive_moves, self.__hive_special_moves ]));
+		_.forEach( hive_moves_and_current_position, function( position_key ) {
+			var position = Position.decode( position_key );
 			var move_position;
-			if( self_hive_position != position ) {
+			if( self.__hive_position_key != position_key ) {
 				var position_register = model.pixi_board.__hive_positions[ position_key ];
 				if( position_register.occupied ) {
 					move_position = position_register.pixi_piece.position.clone();
@@ -1104,16 +1103,13 @@ function pixi_piece_mouseup( ix ) {
 			var destination_position_key = self.__hive_pixi_ghost.__hive_position_key;
 			var source_position = Position.decode( source_position_key );
 			var destination_position = Position.decode( destination_position_key );
-			var match_destination_position = function( potential_destination ) {
-				return destination_position.is_equal( potential_destination );
-			}
-			if( _.find( self.__hive_moves, match_destination_position )) {
+			if( _.contains( self.__hive_moves, destination_position_key )) {
 				turn = Turn.create_movement( 
 					source_position,
 					destination_position );
 				_.defer( do_turn, model, turn );
 			} 
-			else if( _.find( self.__hive_special_moves, match_destination_position )) {
+			else if( _.contains( self.__hive_special_moves, destination_position_key )) {
 				var ability_user_position_key = self.__hive_ability_user_source_position_key;
 				var ability_user_position = Position.decode( ability_user_position_key );
 				turn = Turn.create_special_ability( 
@@ -1211,8 +1207,7 @@ function pixi_hand_piece_mousemove( ix ) {
 		if( ix.global.y > model.hand_gutter_size ) {
 			// get position in terms of board coordinates
 			var boardspace_mouse_position = ix.getLocalPosition( model.pixi_board );
-			_.forEach( self.__hive_moves, function( position ) {
-				var position_key = position.encode();
+			_.forEach( self.__hive_moves, function( position_key ) {
 				var position_register = model.pixi_board.__hive_positions[ position_key ];
 				var move_position = position_register["White Marquee"].position;
 				var distance_squared = get_distance_squared( move_position, boardspace_mouse_position );

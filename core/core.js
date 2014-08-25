@@ -90,31 +90,20 @@ function create() {
 		} while( id in core.game_instances );
 		return id;
 	}
-	core.prepare_choose_turn_request_message = function( game_id ) {
+	core.prepare_choose_turn_request_message = function( game_id, turn_time_ms ) {
 		var game_instance = core.lookup_game( game_id );
-		// TODO: possible_turns should already be using position keys, and this should not be necessary
-		var possible_turns = core.possible_turns__encode_positions( 
-			game_instance.game.possible_turns );
-		// TODO: game_state and possible turns should just use the native structure, this restructuring shouldn't be necessary
-		var message = {
-			request_type: "CHOOSE_TURN",
+		var now = (new Date()).getTime();
+		return {
+			request_type: "choose_turn",
 			game_id: game_id,
-			possible_turns: possible_turns,
-			game_state: {
-				board: game_instance.game.board,
-				hands: game_instance.game.hands,
-				player_turn: game_instance.game.player_turn,
-				turn_number: game_instance.game.turn_number,
-				game_over: game_instance.game.game_over,
-				winner: game_instance.game.winner,
-				is_draw: game_instance.game.is_draw
-			}
+			request_timestamp: now,
+			response_deadline: ((typeof turn_time_ms != "undefined") ? now + turn_time_ms : null),
+			game_state: game_instance.game
 		};
-		return message;
 	}
 	core.prepare_turn_response_message = function( turn, game_id ) {
 		return _.extend( turn, {
-			response_type: "CHOOSE_TURN",
+			response_type: "choose_turn",
 			game_id: game_id
 		});
 	}

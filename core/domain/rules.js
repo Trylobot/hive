@@ -54,6 +54,7 @@ function lookup_possible_turns( color, board, hand, turn_number, turn_history ) 
 		// at least one turn type will be available; if nothing else, then the ability to forfeit due to no other types being available
 		possible_turns = {};
 		possible_placement_positions = find_valid_placement_positions( color, board, turn_number );
+		possible_placement_positions = Position.encode_all( possible_placement_positions );
 		//
 		if( check_force_queen_placement( color, board, turn_number )) {
 			// queen must be placed because it is the fourth turn and the player has not yet placed their queen
@@ -85,6 +86,7 @@ function lookup_possible_turns( color, board, hand, turn_number, turn_history ) 
 					}
 					//
 					movement = find_valid_movement( board, owned_piece.position );
+					movement = Position.encode_all( movement );
 					if( typeof movement !== "undefined" 
 					&&  movement != null 
 					&&  movement.length > 0 ) {
@@ -94,6 +96,9 @@ function lookup_possible_turns( color, board, hand, turn_number, turn_history ) 
 					}
 					//
 					special_abilities = find_valid_special_abilities( board, owned_piece.position, turn_history );
+					special_abilities = _.mapValues( special_abilities, function( destination_position_array ) {
+						return Position.encode_all( destination_position_array );
+					});
 					if( typeof special_abilities !== "undefined" 
 					&&  special_abilities != null 
 					&&  _.keys( special_abilities ).length > 0 ) {
