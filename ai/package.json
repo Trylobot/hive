@@ -1,0 +1,8 @@
+{
+	"name": "ai-tcp-server",
+	"version": "0.0.1",
+	"description": "Generic TCP Server for Node.js implementations of Hive AI modules",
+	"author": "Trylobot",
+	"project_url": "https://github.com/Trylobot/hive/tree/master/ai",
+	"language": "Javascript"
+}

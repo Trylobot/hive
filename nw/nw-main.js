@@ -3,7 +3,7 @@
 // dependencies
 //   built-in
 var fs = require("fs");
-var http = require("http");
+var net = require("net");
 //   3rd-party
 var _ = require("lodash");
 //   user
@@ -68,9 +68,16 @@ var model = {
 	core: null,
 	game_id: null,
 	game_instance: null,
+	tcp_server: null,
+	tcp_server_listening: null,
+	tcp_outgoing_response: null,
+	tcp_client: null,
+	//////////////////////////////
+	// DELETE ME
 	webserver: null,
 	webserver_listening: null,
 	http_outgoing_response: null,
+	//////////////////////////////
 	// dat.gui
 	dat_gui: null,
 	available_ai_modules: null,
@@ -151,8 +158,13 @@ model.pixi_board_piece_rotations = {};
 // events
 model.core.events.on( "game", handle_game_event );
 // server
-model.webserver = http.createServer( http_webserver_handle_request );
-model.webserver_listening = false;
+///////////////////////////////////
+// DELETE ME
+// model.webserver = http.createServer( http_webserver_handle_request );
+// model.webserver_listening = false;
+///////////////////////////////////
+model.tcp_server = net.createServer( tcp_server_handle_connection )
+model.tcp_server_listening = false;
 // dat.gui
 var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
@@ -565,6 +577,7 @@ function http_post( hostname, port, message, response_fn ) {
 	request.write( message_str );
 	request.end();
 }
+/*
 function http_webserver_handle_request( request, response ) {
 	if( request.method === "POST" ) {
 		var chunks = [], data;
@@ -573,38 +586,43 @@ function http_webserver_handle_request( request, response ) {
 		});
 		request.on( "end", function() {
 			data = chunks.join("");
-			var message = JSON.parse( data ); // not "real" objects (no methods)
-			//
-			if( message.request_type === "greetings" ) {
-				start_game(
-					Player.create( "None", "White" ), // remote player connecting to this instance
-					Player.create( "Human", "Black", "Local" ),
-					model.dat_gui["Use Mosquito"],
-					model.dat_gui["Use Ladybug"],
-					model.dat_gui["Use Pillbug"] );
-			}
-			else if( message.request_type === "choose_turn" ) {
-				// THIS IS A PRETTY ENORMOUS HACK
-				var game = model.game_instance.game;
-				game.possible_turns = core.possible_turns__decode_positions( message.possible_turns );
-				game.board.pieces =   message.game_state.board.pieces;
-				game.hands =          message.game_state.hands;
-				game.player_turn =    message.game_state.player_turn;
-				game.turn_number =    message.game_state.turn_number;
-				game.game_over =      message.game_state.game_over;
-				game.winner =         message.game_state.winner;
-				game.is_draw =        message.game_state.is_draw;
-				// KNOWN ISSUE: since the turn history is not transmitted,
-				//   this implementation invalidates the turn history for both players
-				game.turn_history.push( Turn.create_unknown() );
-				// the next turn made will respond via this object
-				model.http_outgoing_response = response;
-				// update local UI
-				handle_game_event( message.game_id ); 
-				// interesting hack though; in the same way that a culture of bacteria can be interesting
-			}
+			// ...
 		});
 	}
+}*/
+function tcp_server_handle_connection( socket ) { // this is only used in human-vs-human games
+	socket.on( "data", function( data ) {
+		var message = JSON.parse( data ); // not "real" objects (no methods)
+		//
+		if( message.request_type === "greetings" ) {
+			start_game(
+				Player.create( "None", "White" ), // remote player connecting to this instance
+				Player.create( "Human", "Black", "Local" ),
+				model.dat_gui["Use Mosquito"],
+				model.dat_gui["Use Ladybug"],
+				model.dat_gui["Use Pillbug"] );
+		}
+		else if( message.request_type === "choose_turn" ) {
+			// THIS IS A PRETTY ENORMOUS HACK
+			var game = model.game_instance.game;
+			game.possible_turns = core.possible_turns__decode_positions( message.possible_turns );
+			game.board.pieces =   message.game_state.board.pieces;
+			game.hands =          message.game_state.hands;
+			game.player_turn =    message.game_state.player_turn;
+			game.turn_number =    message.game_state.turn_number;
+			game.game_over =      message.game_state.game_over;
+			game.winner =         message.game_state.winner;
+			game.is_draw =        message.game_state.is_draw;
+			// KNOWN ISSUE: since the turn history is not transmitted,
+			//   this implementation invalidates the turn history for both players
+			game.turn_history.push( Turn.create_unknown() );
+			// the next turn made will respond via this object
+			model.http_outgoing_response = response;
+			// update local UI
+			handle_game_event( message.game_id ); 
+			// interesting hack though; in the same way that a culture of bacteria can be interesting
+		}
+	});
 }
 function clear_pixi_game( model ) {
 	if( model.pixi_board ) {
