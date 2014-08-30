@@ -6,7 +6,6 @@
 		"mersenne": "~0.0.3",
 		"commander": "~2.3.0",
 		"cli-table": "~0.3.0",
-		"colors": "~0.6.2",
-		"multimeter": "~0.1.1"
+		"colors": "~0.6.2"
 	}
 }

@@ -3,7 +3,7 @@
 var events = require("events");
 var async = require("async");
 var _ = require("lodash");
-var mt = new (require('mersenne').MersenneTwister19937);
+var mersenne_twister = new (require('mersenne').MersenneTwister19937);
 
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
@@ -21,11 +21,12 @@ this module manages game instances, and handles communications between players a
 
 // functions
 
-function create() {
+function create( system_version ) {
 	var core = {
 		game_instances: {},
 		events: new events.EventEmitter
 	}
+	// ---------
 	core.create_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
 		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
 		return core.register_game( white_player, black_player, game );
@@ -34,6 +35,7 @@ function create() {
 		var game = Game.load( save_data.creation_parameters, save_data.turn_history );
 		return core.register_game( white_player, black_player, game );
 	}
+	// ---------
 	core.register_game = function( white_player, black_player, game ) {
 		var game_id = core.generate_game_id();
 		var game_instance = {
@@ -56,12 +58,15 @@ function create() {
 	core.list_games = function() {
 		return _.keys( core.game_instances );
 	}
+	// ---------
 	core.start_game = function( game_id ) {
 		if( !(game_id in core.game_instances) )
 			return; // invalid game_id
 		var game_event = {
 			game_id: game_id
 		};
+		// TODO: instruct player objects for this game to start listening for events 
+		//   related to this game ID
 		// emit an event indicating that the game with the given ID has changed.
 		//   event listener would then use core.lookup_game with the given ID
 		//   and update her internal model or user interface as appropriate.
@@ -77,33 +82,47 @@ function create() {
 		core.events.emit( "game", game_event );
 	}
 	core.end_game = function( game_id ) {
+		// TODO: instruct players associated with game id to stop listening for events
+		//   related to that game id.
 		// TODO: save game to archive
 		//   html + embedded game history as JSON + auto playback + turn navigation
 		delete core.game_instances[ game_id ];
 	}
+	// ---------
 	core.generate_game_id = function() {
 		var id;
 		do {
-			mt.init_genrand( (new Date()).getTime() % 1000000000 );
-			var num = Math.floor( mt.genrand_real2()*(62*62*62*62*62) );
-			var id = pad( base62_encode( num ), 5 );
-		} while( id in core.game_instances );
+			id = generate_id();
+		} while( id in core.game_instances ); // collisions unacceptable
 		return id;
+	}
+	core.generate_request_id = function() {
+		return generate_id(); // do not care about collisions, only non-sequentiality
+	}
+	// ---------
+	core.prepare_greetings_request_message = function() {
+		return {
+			request_type: "Greetings",
+			request_id: core.generate_request_id(),
+			system_version: system_version
+		}
 	}
 	core.prepare_choose_turn_request_message = function( game_id, turn_time_ms ) {
 		var game_instance = core.lookup_game( game_id );
 		var now = (new Date()).getTime();
 		return {
-			request_type: "choose_turn",
+			request_type: "Choose Turn",
+			request_id: core.generate_request_id(),
 			game_id: game_id,
 			request_timestamp: now,
 			response_deadline: ((typeof turn_time_ms != "undefined") ? now + turn_time_ms : null),
 			game_state: game_instance.game
 		};
 	}
+	// ---------
 	core.prepare_turn_response_message = function( turn, game_id ) {
 		return _.extend( turn, {
-			response_type: "choose_turn",
+			response_type: "Choose Turn",
 			game_id: game_id
 		});
 	}
@@ -132,6 +151,7 @@ function create() {
 		}
 		return turn;
 	}
+	// ---------
 	core.possible_turns__encode_positions = function( possible_turns_with_decoded_positions ) {
 		// TODO: possible_turns should already be using position keys, and this should not be necessary
 		return core.possible_turns__Xcode_positions(
@@ -162,10 +182,15 @@ function create() {
 		}
 		return possible_turns;
 	}
-	// ---------------
+	// ------------------------------
 	core.events.on( "turn", core.handle_turn_event );
-
+	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
+	//
 	return core;
+}
+
+function generate_id() {
+	return pad( base62_encode( Math.floor( mersenne_twister.genrand_real2()*(62*62*62*62*62) )), 5 );
 }
 
 // exports

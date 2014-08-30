@@ -59,7 +59,4 @@ var hive_app = angular.module( "hive_app", [] )
 			use_pillbug: false
 		});
 	}
-	$scope.choose_turn = function() {
-		socket.emit( "choose_turn", turn );
-	};
 });

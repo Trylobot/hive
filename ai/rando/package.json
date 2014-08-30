@@ -1,11 +1,11 @@
 {
-	"name": "rando",
-	"active": true,
-	"version": "0.0.1",
-	"long_name": "Rando[m]",
-	"module": "hive-ai-rando",
-	"description": "The random monkey AI",
-	"author": "Trylobot",
-	"project_url": "https://github.com/Trylobot/hive/tree/master/ai/rando",
-	"language": "Javascript"
+  "name": "rando",
+  "active": true,
+  "version": "0.0.1",
+  "long_name": "Rando[m]",
+  "module": "hive-ai-rando",
+  "description": "The random monkey AI",
+  "author": "Trylobot",
+  "project_url": "https://github.com/Trylobot/hive/tree/master/ai/rando",
+  "language": "Javascript"
 }

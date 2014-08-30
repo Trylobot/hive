@@ -1,0 +1,17 @@
+{
+  "ai_modules": {
+    "local": [
+      {
+        "name": "rando",
+        "local_path": "../ai/rando"
+      }
+    ],
+    "remote": [
+      {
+        "name": "rando",
+        "remote_host": "localhost",
+        "remote_port": 51337
+      }
+    ]
+  }
+}

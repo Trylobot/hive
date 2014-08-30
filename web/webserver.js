@@ -94,11 +94,6 @@ io.sockets.on( "connection", function( socket ) {
 		}
 		*/
 	});
-	// choose_turn: a human player is sending their turn choice for a game_instance
-	socket.on( "choose_turn", function( turn ) {
-		// TODO: when the board state changes, notify all connected participants via:
-		// io.sockets.in( game_id ).emit( "update_game", game_instance.game );
-	});
 	// set_player: human player is setting the configuration options for one of the players in a game_instance
 	//   for example, setting the white or black player to human or AI, or swapping an AI module out for another
 	socket.on( "set_player", function( player ) {

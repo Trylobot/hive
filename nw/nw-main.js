@@ -152,7 +152,7 @@ model.renderer.view.className = "PIXI-Renderer";
 document.body.appendChild( model.renderer.view );
 requestAnimFrame( animate );
 // hive domain
-var core = Core.create();
+var core = Core.create( package_json.version );
 model.core = core;
 model.pixi_board_piece_rotations = {};
 // events
@@ -173,8 +173,8 @@ model.dat_gui = {
 	"Human-vs-Human (Local)": function() {
 		pre_game_cleanup();
 		start_game(
-			Player.create( "Human", "White", "Local" ),
-			Player.create( "Human", "Black", "Local" ),
+			Player.create( "Human", "White", "Local" ), // TODO: broken
+			Player.create( "Human", "Black", "Local" ), // TODO: broken
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -184,26 +184,26 @@ model.dat_gui = {
 	"Human-vs-AI (Local)": function() {
 		pre_game_cleanup();
 		start_game(
-			Player.create( "Human", "White", "Local" ),
-			Player.create( "AI",    "Black", "Local", model.available_ai_modules[model.dat_gui["Local AI"]] ),
+			Player.create( "Human", "White", "Local" ), // TODO: broken
+			Player.create( "AI",    "Black", "Local", model.available_ai_modules[model.dat_gui["Local AI"]] ), // TODO: broken
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
-		// TODO: send greetings message
+		// TODO: send Greetings message
 		//   save response info, for display on-screen
 	},
 	"Host:Port": "localhost:51337",
 	"Human-vs-AI (Connect)": function() {
 		pre_game_cleanup();
 		start_game(
-			Player.create( "Human", "White", "Local" ),
-			Player.create( "AI",    "Black", "Remote", undefined, model.dat_gui["Host:Port"] ),
+			Player.create( "Human", "White", "Local" ), // TODO: broken
+			Player.create( "AI",    "Black", "Remote", undefined, model.dat_gui["Host:Port"] ), // TODO: broken
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
 		gui.close();
-		// TODO: send greetings message
+		// TODO: send Greetings message
 		//   save response info, for display on-screen
 	},
 	"Human-vs-Human (Connect)": function() {
@@ -211,8 +211,8 @@ model.dat_gui = {
 		// for now, the CLIENT player is always White, 
 		//   and the SERVER player is always Black
 		start_game(
-			Player.create( "Human", "White", "Local" ),
-			Player.create( "Human", "Black", "Remote", undefined, model.dat_gui["Host:Port"] ),
+			Player.create( "Human", "White", "Local" ), // TODO: broken
+			Player.create( "Human", "Black", "Remote", undefined, model.dat_gui["Host:Port"] ), // TODO: broken
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -229,7 +229,7 @@ model.dat_gui = {
 		//
 		model.webserver.listen( model.dat_gui["Listen Port"] );
 		model.webserver_listening = true;
-		// game itself will be started when greetings message receieved
+		// game itself will be started when Greetings message receieved
 		// 
 		gui.close();
 	},
@@ -258,8 +258,8 @@ model.dat_gui = {
 		pre_game_cleanup();
 		model.DEBUG_MODE = true;
 		start_game(
-			Player.create( "Testing", "White", "Local" ),
-			Player.create( "Testing", "Black", "Local" ),
+			Player.create( "Testing", "White", "Local" ), // TODO: broken
+			Player.create( "Testing", "Black", "Local" ), // TODO: broken
 			model.dat_gui["Use Mosquito"],
 			model.dat_gui["Use Ladybug"],
 			model.dat_gui["Use Pillbug"] );
@@ -404,8 +404,8 @@ function load_game( saved_game_json_str ) {
 	clear_pixi_game( model );
 	var data = JSON.parse( saved_game_json_str );
 	model.game_id = core.load_game( 
-		Player.create( "Human", "White", "Local" ),
-		Player.create( "Human", "Black", "Local" ),
+		Player.create( "Human", "White", "Local" ), // TODO: broken
+		Player.create( "Human", "Black", "Local" ), // TODO: broken
 		data );
 	model.game_instance = core.lookup_game( model.game_id );
 	console.log( model.game_instance );
@@ -478,7 +478,7 @@ function build_pixi_game_from_hive_game( model ) {
 function do_turn( model, turn ) {
 	console.log( turn );
 	var turn_event = _.extend( {}, turn, {
-		response_type: "choose_turn",
+		response_type: "Choose Turn",
 		game_id: model.game_id
 	});
 	model.core.events.emit( "turn", turn_event );
@@ -542,12 +542,15 @@ function request_remote_turn_http_post( model, hostname, port ) {
 		_.defer( do_turn, model, turn );
 	});
 }
+/*
 function greetings_http_post( hostname, port ) {
 	http_post( hostname, port, {
-		request_type: "greetings",
+		request_type: "Greetings",
 		system_version: package_json.version
 	});
 }
+*/
+/*
 function http_post( hostname, port, message, response_fn ) {
 	var message_str = JSON.stringify( message );
 	var headers = { 
@@ -577,6 +580,7 @@ function http_post( hostname, port, message, response_fn ) {
 	request.write( message_str );
 	request.end();
 }
+*/
 /*
 function http_webserver_handle_request( request, response ) {
 	if( request.method === "POST" ) {
@@ -591,18 +595,19 @@ function http_webserver_handle_request( request, response ) {
 	}
 }*/
 function tcp_server_handle_connection( socket ) { // this is only used in human-vs-human games
+/*
 	socket.on( "data", function( data ) {
 		var message = JSON.parse( data ); // not "real" objects (no methods)
 		//
-		if( message.request_type === "greetings" ) {
+		if( message.request_type === "Greetings" ) {
 			start_game(
-				Player.create( "None", "White" ), // remote player connecting to this instance
-				Player.create( "Human", "Black", "Local" ),
+				Player.create( "None", "White" ), // remote player connecting to this instance // TODO: broken
+				Player.create( "Human", "Black", "Local" ), // TODO: broken
 				model.dat_gui["Use Mosquito"],
 				model.dat_gui["Use Ladybug"],
 				model.dat_gui["Use Pillbug"] );
 		}
-		else if( message.request_type === "choose_turn" ) {
+		else if( message.request_type === "Choose Turn" ) {
 			// THIS IS A PRETTY ENORMOUS HACK
 			var game = model.game_instance.game;
 			game.possible_turns = core.possible_turns__decode_positions( message.possible_turns );
@@ -623,6 +628,7 @@ function tcp_server_handle_connection( socket ) { // this is only used in human-
 			// interesting hack though; in the same way that a culture of bacteria can be interesting
 		}
 	});
+*/
 }
 function clear_pixi_game( model ) {
 	if( model.pixi_board ) {

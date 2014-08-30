@@ -9,7 +9,7 @@ hive-ai-rando.js
 function process_message( message ) {
 	var response;
 	switch( message.request_type ) {
-		case "greetings":
+		case "Greetings":
 			response = {
 				response_type: message.request_type
 			};
@@ -17,10 +17,10 @@ function process_message( message ) {
 			for( var key in package_json )
 				response[key] = package_json[key];
 			break;
-		case "choose_turn":
+		case "Choose Turn":
 			var possible_turns = message.game_state.possible_turns;
 			if( !has_nonzero_key_set_length( possible_turns ))
-				throw "cannot choose from empty possible_turns";
+				throw "Cannot choose from empty object possible_turns";
 			response = {
 				response_type: message.request_type,
 				game_id: message.game_id,

@@ -2,40 +2,34 @@
 "use strict";
 
 // dependencies
-//   built-in
+//   node (built-in)
 var fs = require("fs");
 var path = require("path");
-//   3rd-party
+var net = require("net");
+//   3rd-party modules
 var _ = require("lodash");
 var mersenne_twister = new (require("mersenne").MersenneTwister19937);
 var program = require("commander");
 var Table = require("cli-table");
 var colors = require("colors");
-var multimeter = require("multimeter")(process);
-//   dynamic paths
-var self_path = path.dirname( process.argv[1] )+"/";
-var package_json = require(self_path+"package.json");
-var core_basepath = path.resolve(self_path+"../core/")+"/";
-var ai_basepath = path.resolve(self_path+"../ai/")+"/";
+//   semi-dynamic paths
+var self_path = path.dirname( process.argv[1] )+"/"; // dir
+var package_json = require(self_path+"package.json"); // dir
+var core_basepath = path.resolve(self_path+"../core/")+"/"; // dir
+var ai_basepath = path.resolve(self_path+"../ai/")+"/"; // dir
 //   user-defined modules
-var Piece = require(core_basepath+"domain/piece");
-var Position = require(core_basepath+"domain/position");
-var Turn = require(core_basepath+"domain/turn");
-var Board = require(core_basepath+"domain/board");
-var Rules = require(core_basepath+"domain/rules");
-var Game = require(core_basepath+"domain/game");
-var Player = require(core_basepath+"domain/player");
-var Core = require(core_basepath+"core");
+var Piece = require(core_basepath+"domain/piece"); // + ".js"
+var Position = require(core_basepath+"domain/position"); // + ".js"
+var Turn = require(core_basepath+"domain/turn"); // + ".js"
+var Board = require(core_basepath+"domain/board"); // + ".js"
+var Rules = require(core_basepath+"domain/rules"); // + ".js"
+var Game = require(core_basepath+"domain/game"); // + ".js"
+var Player = require(core_basepath+"domain/player"); // + ".js"
+var Core = require(core_basepath+"core"); // + ".js"
 
 /*
 hive-cli.js
 */
-
-// globals
-var core;
-var config;
-var command_executed = false;
-init();
 
 // program definition
 program
@@ -47,7 +41,7 @@ program
 	.option( "-d, --turn-deadline", "Set the maximum turn time for any single AI turn, in milliseconds" );
 program
 	.command( "list-ai" )
-	.description( "List available Hive AI modules" )
+	.description( "List all registered Hive AI modules and their statuses" )
 	.action( program_command_list_ai );
 program
 	.command( "add-local-ai [local-path]" )
@@ -74,87 +68,87 @@ program
 	.description( "Print currently resolved config options (diagnostic function)")
 	.action( program_command_print_config );
 
-// execute
-program.parse( process.argv );
-
-// default behavior (no arguments given at all): show help and exit
-if( !command_executed )
-	program.help();
+// persistent objects
+var core = null;
+var ai_registry = null;
+// cross-command flags
+var show_help = true;
 
 ///////////////////////////////////////////////////////////////////////////////
-// init
+// main
 
-function init() {
-	// core (game tracker)
-	core = Core.create();
-	core.events.on( "game", handle_game_event );
-	// init random seed
-	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
-	// cli progress bar library
-	multimeter.on( "^C", kill_all_games );
-}
-
-function load_config() {
-	config = {
-		use_mosquito:  program["useMosquito"],
-		use_ladybug:   program["useLadybug"],
-		use_pillbug:   program["usePillbug"],
-		turn_deadline: program["turnDeadline"]
-	};
-	function default_( key, value ) {
-		if( typeof config[key] === "undefined" || config[key] == null )
-			config[key] = value;
-	}
-	// defaults
-	default_( "use_mosquito",  false );
-	default_( "use_ladybug",   false );
-	default_( "use_pillbug",   false );
-	default_( "turn_deadline", 30 * 1000 ); // 30 second AI turn deadline
+// hive/core
+core = Core.create( package_json.version );
+core.events.on( "game", handle_game_event );
+// init random seed
+mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
+// -----------
+program.parse( process.argv );
+// -----------
+// default behavior (no arguments given at all): show help and exit
+if( show_help ) {
+	program.help();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // command functions
 
-function program_command_list_ai() {
-	load_config();
-	var active_ai = find_active_ai();
+function program_command_print_config() {
+	var config = resolve_config();
 	var table = create_table();
-	table.push.apply( table, _.map( active_ai, 
-		function( ai_package, ai_package_name ) {
+	table.push.apply( table, _.map( config,
+		function( value, key ) {
 			return [
-				ai_package_name.bold.cyan,
-				ai_package.long_name,
-				ai_package.version.grey,
-				ai_package.description.grey
+				key.grey,
+				JSON.stringify( value ).bold
 			];
 		}
 	));
 	console.log( table.toString() );
-	command_executed = true;
-	process.exit();
+	show_help = false;
+}
+
+function program_command_list_ai() {
+	var config = resolve_config();
+	var ai_registry = load_ai_registry( config["ai_registry_path"] );
+	resolve_ai_module_metadata( ai_registry, on_progress, on_finished );
+	show_help = false;
+	//
+	function on_ai_loaded() {
+		var table = create_table();
+		table.push.apply( table, _.map( ai_registry.ai_status, 
+			function( ai_status, ai_package_name ) {
+				return [
+					ai_package_name.bold.cyan,
+					ai_package.long_name,
+					ai_package.version.grey,
+					ai_package.description.grey
+				];
+			}
+		));
+		console.log( table.toString() );
+		process.exit();
+	}
 }
 
 function program_command_add_local_ai( local_path ) {
 	console.log( "TODO" );
-	command_executed = true;
 	process.exit();
 }
 
 function program_command_add_remote_ai( remote_host_port ) {
 	console.log( "TODO" );
-	command_executed = true;
 	process.exit();
 }
 
 function program_command_local_ai_choose_turn( local_ai_name ) {
 	console.log( "TODO" );
-	command_executed = true;
 	process.exit();
 }
 
 function program_command_tournament( participant_list ) {
 	console.log( "%j", participant_list );
-	command_executed = true;
+	show_help = false;
 	// TODO: allow specifying an output directory
 	// and to this directory, the tournament should output an html file
 	//   which should contain a tournament summary
@@ -173,42 +167,117 @@ function program_command_tournament( participant_list ) {
 }
 
 function program_command_play_single_random() {
-	load_config();
+	var config = resolve_config();
 	var ai_packages = find_active_ai();
 	var ai_names = _.keys( ai_packages );
 	var ai_count = ai_names.length;
 	var ai = [];
 	for( var i = 0; i < 2; ++i )
 		ai.push( load_ai( ai_packages[ ai_names[ rand( ai_count ) ]] ));
-	var white_player = Player.create( "AI", "White", "Local", ai[0] );
-	var black_player = Player.create( "AI", "Black", "Local", ai[1] );
+	var white_player = Player.create( "AI", "White", "Local", ai[0] ); // TODO: broken
+	var black_player = Player.create( "AI", "Black", "Local", ai[1] ); // TODO: broken
 	var game_id = core.create_game( 
 		white_player,
 		black_player,
-		program.UseMosquito,
-		program.UseLadybug,
-		program.UsePillbug
+		config["use_mosquito"],
+		config["use_ladybug"],
+		config["use_pillbug"]
 	);
 	core.start_game( game_id );
-	command_executed = true;
+	show_help = false;
 	// process exits when: 
 	//   handle_game_event(..) is called while core.list_games() returns 0 active games.
 }
 
-function program_command_print_config() {
-	load_config();
-	var table = create_table();
-	table.push.apply( table, _.map( config,
-		function( value, key ) {
-			return [
-				key.grey,
-				JSON.stringify( value ).bold
-			];
-		}
-	));
-	console.log( table.toString() );
-	command_executed = true;
-	process.exit();
+///////////////////////////////////////////////////////////////////////////////
+// complex initialization & configuration
+
+function resolve_config() {
+	// initialize config from command-line
+	var config = {
+		"use_mosquito": program["useMosquito"],
+		"use_ladybug": program["useLadybug"],
+		"use_pillbug": program["usePillbug"],
+		"turn_deadline": program["turnDeadline"]
+	};
+	// fall back to default values for unspecified configuration values
+	function default_( key, value ) {
+		if( typeof config[key] === "undefined" || config[key] == null )
+			config[key] = value;
+	}
+	// defaults
+	default_( "use_mosquito",  false );
+	default_( "use_ladybug",   false );
+	default_( "use_pillbug",   false );
+	default_( "turn_deadline", 30 * 1000 ); // 30 second AI turn deadline
+	// hard-wired (may become configurable in future)
+	config["ai_registry_path"] = "./.hive-cli-ai-registry";
+	return config;
+}
+
+function load_ai_registry( ai_registry_path ) {
+	var ai_registry = {
+		ai_modules: {
+			local: [],
+			remote: []
+		},
+		ai_metadata: null
+	};
+	if( fs.existsSync( self_path + ai_registry_path )) {
+		ai_registry = JSON.parse( fs.readFileSync( self_path + ai_registry_path ));
+	}
+	return ai_registry;
+}
+
+// asynchronous
+//   ai_registry <-- standard ai_registry object (global)
+//   progress_callback_fn <-- ( metadata_object )
+//   finished_callback_fn <-- void
+function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished_callback_fn ) {
+	ai_registry.ai_metadata = {};
+	async.parallel( _.flatten(
+		// check local modules, load their package info from disk
+		_( ai_registry.ai_modules.local ).map( function( local_reference ) {
+			var metadata = {
+				name: local_reference.name,
+				proximity: "Local",
+				ai_active: false
+				package_found: false,
+				package_data: null,
+				module_found: false,
+			};
+			ai_registry.ai_metadata[ local_reference.name ] = metadata;
+			var ai_package_path = self_path + local_reference.local_path + "/package.json";
+			if( fs.existsSync( ai_package_path )) {
+				metadata.package_found = true;
+				var ai_package = JSON.parse( fs.readFileSync( ai_package_path ));
+				metadata.package_data = ai_package;
+				metadata.ai_active = ai_package.active;
+				metadata.module_found = fs.existsSync( self_path + local_reference.local_path + "/" + ai_package_path.module + ".js" );
+			}
+			progress_callback_fn( metadata );
+		}),
+		// check remote modules, send greetings message, save responses
+		_( ai_registry.ai_modules.remote ).map( function( remote_reference ) {
+			var metadata = {
+				name: local_reference.name,
+				proximity: "Remote",
+				ai_active: false
+				can_connect: false,
+				greetings_response_received: false,
+				greetings_data: null,
+			};
+			ai_registry.ai_metadata[ local_reference.name ] = metadata;
+			var client = new net.Socket();
+			try {
+				client.connect( remote_reference.remote_port, remote_reference.remote_host, function() {
+					
+				});
+			} catch( ex ) {
+
+			}
+		})
+	), finished_callback_fn );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,7 +286,7 @@ function program_command_print_config() {
 function handle_game_event( game_event ) {
 	var game_id = game_event.game_id;
 	var game_instance = core.lookup_game( game_id );
-	show_progress( compute_progress() ); // must occur before turn is applied
+	//show_tournament_progress( tournament ); // TODO
 	if( !game_instance.game.game_over
 	&&  game_instance.game.possible_turns != null ) {
 		var player = game_instance.players[ game_instance.game.player_turn ];
@@ -257,6 +326,11 @@ function handle_game_event( game_event ) {
 ///////////////////////////////////////////////////////////////////////////////
 // tier 1 supporting functions
 
+function show_tournament_progress( tournament ) {
+	// TODO: given a tournament object, show the status of all games
+	//   along with turns taken for each side, current turn, time elapsed etc.
+}
+
 function kill_all_games() {
 	// TODO: output partial recorded game data for all games in progress
 	//   additionally making sure that the "partial" flag for these games
@@ -264,19 +338,20 @@ function kill_all_games() {
 	_( core.list_games() ).map( core.end_game );
 }
 
-function find_active_ai() {
-	var ai_packages = {};
-	_.forEach( fs.readdirSync( ai_basepath ), function( ai_dir ) {
-		var ai_package_path = ai_basepath + ai_dir + "/package.json";
-		if( fs.existsSync( ai_package_path )) {
-			var ai_package = require( ai_package_path );
-			if( ai_package && ai_package.active ) {
-				ai_packages[ ai_package.name ] = ai_package;
-			}
-		}
-	});
-	return ai_packages;
-}
+// deprecated
+// function find_active_ai() {
+// 	var ai_packages = {};
+// 	_.forEach( fs.readdirSync( ai_basepath ), function( ai_dir ) {
+// 		var ai_package_path = ai_basepath + ai_dir + "/package.json";
+// 		if( fs.existsSync( ai_package_path )) {
+// 			var ai_package = require( ai_package_path );
+// 			if( ai_package && ai_package.active ) {
+// 				ai_packages[ ai_package.name ] = ai_package;
+// 			}
+// 		}
+// 	});
+// 	return ai_packages;
+// }
 
 function compute_progress() {
 	var game_ids = core.list_games();
@@ -295,18 +370,6 @@ function compute_progress() {
 		})
 		.value();
 	return _.zipObject( game_ids, progress_values );
-}
-
-function show_progress( progress ) {
-	// TODO: use pre-instantiated progress bar object, created when game is created
-	//   persist progress bar ordering; chronological by game creation
-	// TODO: show AI names instead of game ID's
-	var y = 0;
-	_.forEach( progress, function( progress_value, game_id ) {
-		var bar = multimeter.bars[ y ] || multimeter.rel( 7, y++,
-			_.extend( progress_bar_params(), { before: game_id + " [" }) );
-		bar.ratio( progress_value, 6 );
-	});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -346,11 +409,63 @@ function create_table() {
 	});
 }
 
-function progress_bar_params() {
-	return {
-		width: 30,
-		solid: { background: null, foreground: "white", text: "=" },
-		empty: { background: null, foreground: null, text: " " }
-	};
+/*
+via: http://stackoverflow.com/questions/10585683/how-do-you-edit-existing-text-and-move-the-cursor-around-in-the-terminal
+----
+https://github.com/hij1nx/cdir/blob/master/cdir.js#L26
+http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x361.html
+http://ascii-table.com/ansi-escape-sequences-vt-100.php
+
+Position the Cursor: \033[<L>;<C>H or \033[<L>;<C>f (puts the cursor at line L and column C)
+Move the cursor up N lines: \033[<N>A
+Move the cursor down N lines: \033[<N>B
+Move the cursor forward N columns: \033[<N>C
+Move the cursor backward N columns: \033[<N>D
+Clear the screen, move to (0,0): \033[2J
+Erase to end of line: \033[K
+Save cursor position: \033[s
+Restore cursor position: \033[u
+
+"The latter two codes are NOT honoured by many terminal emulators. The only ones that I'm aware of
+  that do are xterm and nxterm - even though the majority of terminal emulators are based on xterm code.
+  As far as I can tell, rxvt, kvt, xiterm, and Eterm do not support them. They are supported on the console."
+*/
+
+function set_cursor_position( L, C ) {
+	process.stdout.write( "\033["+L+";"+C+"H" );
+}
+
+function cursor_move_up( L ) {
+	process.stdout.write( "\033["+L+"A" );
+}
+
+function cursor_move_down( L ) {
+	process.stdout.write( "\033["+L+"B" );
+}
+
+function cursor_move_forward( C ) {
+	process.stdout.write( "\033["+C+"C" );
+}
+
+function cursor_move_backward( C ) {
+	process.stdout.write( "\033["+C+"D" );
+}
+
+function clear_screen() {
+	process.stdout.write( "\033[2J" );
+}
+
+function erase_to_end_of_line() {
+	process.stdout.write( "\033[K" );
+}
+
+// not supported in many terminal emulators
+function save_cursor_position() {
+	process.stdout.write( "\033[s" );
+}
+
+// not supported in many terminal emulators
+function restore_cursor_position() {
+	process.stdout.write( "\033[u" );
 }
 

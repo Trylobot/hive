@@ -1,30 +1,37 @@
 // HIVE API VERSION 0.0.5
 
 /*
-greetings request
+"Greetings" request
   this request type is used to establish the identity of a remote AI module
   and also to inform the module about the semantic version string of the system.
 */
 
 // example request structure sent from the game core to an AI module
 {
-  request_type: "greetings",
+  request_type: "Greetings",
+  request_id: "n6Vvi",
   system_version: "0.0.5"
 }
 // example response structure sent back to the requestor
+// Note: this is the same format as the package.json files bundled with the AI in this, the main Hive project.
 {
-  response_type: "greetings",
-  name: "Rando[m]",
-  version: "0.0.5",
-  author: "Trylobot",
-  project_url: "https://github.com/user/project",
-  language: "Javascript"
+  response_type: "Greetings",
+  response_id: "n6Vvi",
+  name: "rando", // short name / code-name internally used to identify in records involving this module
+  active: true, // whether this AI is considered to be in a usable state by its owner
+  version: "0.0.1", // version of the AI code
+  long_name: "Rando[m]", // display name
+  module: "hive-ai-rando", // [optional] currently only used to locate local AI modules
+  description: "The random monkey AI", // short description; displayed to user
+  author: "Trylobot", // [optional] author(s) of the AI module code
+  project_url: "https://github.com/Trylobot/hive/tree/master/ai/rando", // [optional] url to a project page
+  language: "Javascript" // [optional] primary language used to write the AI module
 }
 
 // ----------------------------------------------------------------------------
 
 /*
-choose_turn request
+"Choose Turn" request
   this request type is used to request turns from remote AI modules.
   the possible turns are enumerated in advance, and the AI is expected to choose one.
   the board state and the contents of each players' hand is also given.
@@ -33,7 +40,8 @@ choose_turn request
 
 // example request structure sent from the game core to an AI module
 {
-  request_type: "choose_turn",
+  request_type: "Choose Turn",
+  request_id: "7pNQ4",
   game_id: "KqwSQ", // used to identify game among multiple simultaneous ongoing games
   request_timestamp: 1405582952293, // a reference point for the receiver
   response_deadline: 1405583012293, // response not received by this time? game is thrown in favor of opponent (+/- 5 seconds)
@@ -121,7 +129,8 @@ choose_turn request
 }
 // example response structure sent back to the requestor
 {
-  response_type: "choose_turn",
+  response_type: "Choose Turn",
+  request_id: "7pNQ4",
   game_id: "KqwSQ",
   turn_type: "Placement",
   piece_type: "Soldier Ant",
@@ -129,7 +138,8 @@ choose_turn request
 }
 // another example
 {
-  response_type: "choose_turn",
+  response_type: "Choose Turn",
+  request_id: "7pNQ4",
   game_id: "KqwSQ",
   turn_type: "Movement",
   source: "0,0",
@@ -137,7 +147,8 @@ choose_turn request
 }
 // special ability usage
 {
-  response_type: "choose_turn",
+  response_type: "Choose Turn",
+  request_id: "7pNQ4",
   game_id: "KqwSQ",
   turn_type: "Special Ability",
   ability_user: "0,0",
@@ -146,7 +157,8 @@ choose_turn request
 }
 // forfeit turn
 {
-  response_type: "choose_turn",
+  response_type: "Choose Turn",
+  request_id: "7pNQ4",
   game_id: "KqwSQ",
   turn_type: "Forfeit"
 }
