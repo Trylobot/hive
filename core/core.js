@@ -138,7 +138,7 @@ function create( system_version ) {
 			var local_ai = child_process.fork( __dirname + "/../ai/ai-local-fork.js", [ local_path ]);
 			local_ai.on( "message", function( message ) {
 				_.defer( callback_fn, message );
-				local_ai.kill();
+				local_ai.kill(); // TODO: keep alive for longer?
 			});
 			local_ai.send( message );
 		} catch( err ) {
@@ -149,12 +149,13 @@ function create( system_version ) {
 		// you can use ../ai/ai-tcp-server.js to simulate/test this
 		try {
 			var socket = new net.Socket();
+			socket.on( "error", function( err ) {
+				_.defer( callback_fn, { error: err });
+			});
 			socket.on( "data", function( data ) {
 				var response_message = JSON.parse( data );
 				_.defer( callback_fn, response_message );
-			});
-			socket.on( "error", function( err ) {
-				_.defer( callback_fn, { error: err });
+				socket.destroy(); // TODO: keep alive for longer?
 			});
 			socket.connect( port, host, function() {
 				socket.write( JSON.stringify( message ));
