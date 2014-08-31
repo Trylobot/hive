@@ -4,13 +4,67 @@
       {
         "name": "rando",
         "local_path": "../ai/rando"
+      },
+      {
+        "name": "her",
+        "local_path": "../ai/her"
+      },
+      {
+        "name": "cheater",
+        "local_path": "../ai/test/cheater"
+      },
+      {
+        "name": "crash",
+        "local_path": "../ai/test/crash"
+      },
+      {
+        "name": "forever",
+        "local_path": "../ai/test/forever"
+      },
+      {
+        "name": "garbage",
+        "local_path": "../ai/test/garbage"
+      },
+      {
+        "name": "garbage2",
+        "local_path": "../ai/test/garbage2"
       }
     ],
     "remote": [
       {
-        "name": "rando",
+        "name": "rando-net",
         "remote_host": "localhost",
         "remote_port": 51337
+      },
+      {
+        "name": "her-net",
+        "remote_host": "localhost",
+        "remote_port": 51338
+      },
+      {
+        "name": "cheater-net",
+        "remote_host": "localhost",
+        "remote_port": 52440
+      },
+      {
+        "name": "crash-net",
+        "remote_host": "localhost",
+        "remote_port": 52441
+      },
+      {
+        "name": "forever-net",
+        "remote_host": "localhost",
+        "remote_port": 52442
+      },
+      {
+        "name": "garbage-net",
+        "remote_host": "localhost",
+        "remote_port": 52443
+      },
+      {
+        "name": "garbage2-net",
+        "remote_host": "localhost",
+        "remote_port": 52444
       }
     ]
   }
