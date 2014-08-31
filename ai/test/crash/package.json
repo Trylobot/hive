@@ -1,0 +1,8 @@
+{
+  "name": "crash",
+  "active": false,
+  "version": "0.0.1",
+  "long_name": "Crash",
+  "module": "test-crash",
+  "description": "Always crashes",
+}

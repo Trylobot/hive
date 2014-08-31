@@ -1,0 +1,8 @@
+{
+  "name": "garbage",
+  "active": false,
+  "version": "0.0.1",
+  "long_name": "Garbage",
+  "module": "test-garbage",
+  "description": "Sends random strings, with a random delay",
+}

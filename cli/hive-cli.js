@@ -54,6 +54,10 @@ program
 	.description( "Register a new remote AI endpoint (host:port) (names must be globally unique)")
 	.action( program_command_add_remote_ai );
 program
+	.command( "remove-ai [name]" )
+	.description( "Remove a previously-registered AI of any type")
+	.action( program_command_remove_ai );
+program
 	.command( "play-single-random" )
 	.description( "Run a single match between two random AI participants selected from the available Hive AI modules")
 	.action( program_command_play_single_random );
@@ -137,25 +141,43 @@ function program_command_list_ai() {
 			var ai_metadata = ai_registry.ai_metadata 
 				? ai_registry.ai_metadata[ ai_reference.name ]
 				: null;
-			if( !ai_metadata )
-				return [ // in progress
+			if( !ai_metadata ) {
+				// loading or communication in progress
+				return [
 					ai_reference.name.bold.cyan,
 					"       ",
 					"    ",
-					"... checking".grey
+					"            ",
+					"...".grey
 				];
-			else
-				return [ // loaded
-					ai_reference.name.bold.cyan,
-					ai_metadata.greetings_data.long_name,
-					ai_metadata.greetings_data.version.grey,
-					ai_metadata.greetings_data.description.grey
-				];
+			}
+			else {
+				if( !ai_metadata.error && ai_metadata.greetings_data) {
+					// no error + greeting received
+					return [
+						ai_reference.name.bold.cyan,
+						ai_metadata.greetings_data.long_name,
+						ai_metadata.greetings_data.version.grey,
+						ai_metadata.greetings_data.description.grey,
+						"OK".bold.green
+					];
+				}
+				else { 
+					// error
+					return [
+						ai_reference.name.cyan,
+						"       ",
+						"    ",
+						"            ",
+						"ERROR".bold.red
+					];
+				}
+			}
 		}
-		table.push.apply( table, [_.flatten([
-			_.map( ai_registry.ai_modules.local, render_metadata ),
-			_.map( ai_registry.ai_modules.remote, render_metadata )
-		])]);
+		table.push.apply( table, 
+			_.map( ai_registry.ai_modules.local, render_metadata ).concat(
+			_.map( ai_registry.ai_modules.remote, render_metadata ))
+		);
 		console.log( table.toString() );
 	}
 }
@@ -196,8 +218,15 @@ function program_command_add_remote_ai( name, remote_host_port ) {
 	process.exit();
 }
 
-function program_command_local_ai_choose_turn( local_ai_name ) {
-	console.log( "TODO" );
+function program_command_remove_ai( name ) {
+	config = resolve_config();
+	var ai_registry = load_ai_registry();
+	// remove any AI modules with a matching name
+	function match( ref ) { return ref.name == name; }
+	ai_registry.ai_modules.local = _.reject( ai_registry.ai_modules.local, match );
+	ai_registry.ai_modules.remote = _.reject( ai_registry.ai_modules.remote, match );
+	// write to disk and exit
+	save_ai_registry( ai_registry );
 	process.exit();
 }
 
@@ -319,19 +348,24 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 					can_connect: false,
 					greetings_response_received: false,
 					ai_active: false,
-					greetings_data: null
+					greetings_data: null,
+					error: null
 				}
 				ai_registry.ai_metadata[ reference.name ] = metadata;
 				var greetings_message = core.prepare_greetings_request_message();
 				if( proximity == "Local" ) {
-					var ai_package_path = path.resolve( self_path + reference.local_path + "/package.json" );
-					var ai_package_json = JSON.parse( fs.readFileSync( ai_package_path ));
-					var resolved_module_path = path.resolve( self_path + reference.local_path + "/" + ai_package_json.module + ".js" );
-					core.send_message_to_local_ai( 
-						greetings_message, 
-						resolved_module_path, 
-						handle_response
-					);
+					try {
+						var ai_package_path = path.resolve( self_path + reference.local_path + "/package.json" );
+						var ai_package_json = JSON.parse( fs.readFileSync( ai_package_path ));
+						var resolved_module_path = path.resolve( self_path + reference.local_path + "/" + ai_package_json.module + ".js" );
+						core.send_message_to_local_ai( 
+							greetings_message, 
+							resolved_module_path, 
+							handle_response
+						);
+					} catch( err ) { // catch problems trying to load package.json
+						handle_response({ error: err });
+					}
 				}
 				else if( proximity == "Remote" ) {
 					core.send_message_to_remote_ai( 
@@ -347,6 +381,14 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 						metadata.greetings_response_received = true;
 						metadata.ai_active = response.active;
 						metadata.greetings_data = response;
+						metadata.error = null;
+					}
+					else {
+						metadata.can_connect = false;
+						metadata.greetings_response_received = false;
+						metadata.ai_active = false;
+						metadata.greetings_data = null;
+						metadata.error = response.error;
 					}
 					progress_callback_fn(); // allow render progress
 					callback( null, metadata ); // indicate task success
@@ -357,10 +399,10 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 	// generate, in a single sequence, one "resolve task" function per registered AI reference
 	//   and then execute them in parallel, returning progress notifications to the caller
 	//   and finally calling the finished callback indicating total completion.
-	async.parallel( _.flatten([
-		_.map( ai_registry.ai_modules.local, make_ai_resolve_task( "Local" )),
-		_.map( ai_registry.ai_modules.remote, make_ai_resolve_task( "Remote" ))
-	]), function( err, results ) {
+	async.parallel(
+		_.map( ai_registry.ai_modules.local, make_ai_resolve_task( "Local" )).concat(
+		_.map( ai_registry.ai_modules.remote, make_ai_resolve_task( "Remote" )))
+	, function( err, results ) {
 		finished_callback_fn();
 	});
 }

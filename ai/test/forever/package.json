@@ -1,0 +1,8 @@
+{
+  "name": "forever",
+  "active": false,
+  "version": "0.0.1",
+  "long_name": "Forever",
+  "module": "test-forever",
+  "description": "Ignores all messages",
+}

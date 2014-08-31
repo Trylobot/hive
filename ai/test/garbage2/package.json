@@ -1,0 +1,8 @@
+{
+  "name": "garbage2",
+  "active": false,
+  "version": "0.0.1",
+  "long_name": "Garbage-2",
+  "module": "test-garbage2",
+  "description": "Sends valid JSON but with random keys & values",
+}
