@@ -6,6 +6,7 @@
 var fs = require("fs");
 var path = require("path");
 var net = require("net");
+var readline = require("readline");
 //   3rd-party modules
 var _ = require("lodash");
 var mersenne_twister = new (require("mersenne").MersenneTwister19937);
@@ -19,7 +20,6 @@ var package_json = require(self_path+"package.json"); // dir
 var core_basepath = path.resolve(self_path+"../core/")+"/"; // dir
 var ai_basepath = path.resolve(self_path+"../ai/")+"/"; // dir
 //   user-defined modules
-_(global).extend(require("./terminal-cursor"));
 var Piece = require(core_basepath+"domain/piece"); // + ".js"
 var Position = require(core_basepath+"domain/position"); // + ".js"
 var Turn = require(core_basepath+"domain/turn"); // + ".js"
@@ -114,26 +114,29 @@ function program_command_print_config() {
 function program_command_list_ai() {
 	config = resolve_config();
 	var ai_registry = load_ai_registry();
-	if( count_registered_ai_modules( ai_registry ) == 0 ) {
+	var registered_ai_modules = count_registered_ai_modules( ai_registry );
+	if( registered_ai_modules == 0 ) {
 		process.exit(); // print nothing (by design) indicating an empty list
 	}
 	else {
-		save_cursor_position();
+		readline.clearScreenDown( process.stdout );
 		print_status();
-		restore_cursor_position();
+		readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
+		var on_progress = _.debounce( function() {
+			readline.clearScreenDown( process.stdout );
+			print_status();
+			readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
+		}, 250 );
+		var on_complete = function() {
+			readline.clearScreenDown( process.stdout );
+			print_status();
+			// write to disk and exit
+			save_ai_registry( ai_registry );
+			process.exit();
+		};
 		// async lookup on all registered ai modules, in parallel
 		resolve_ai_module_metadata( ai_registry, on_progress, on_complete );
 		show_help = false;
-	}
-	// single-use functions
-	function on_progress() {
-		restore_cursor_position();
-		print_status();
-	}
-	function on_complete() {
-		restore_cursor_position();
-		print_status();
-		process.exit();
 	}
 	function print_status() {
 		var table = create_table();
@@ -145,9 +148,9 @@ function program_command_list_ai() {
 				// loading or communication in progress
 				return [
 					ai_reference.name.bold.cyan,
-					"       ",
-					"    ",
-					"            ",
+					"",
+					"",
+					"",
 					"...".grey
 				];
 			}
@@ -159,17 +162,17 @@ function program_command_list_ai() {
 						ai_metadata.greetings_data.long_name,
 						ai_metadata.greetings_data.version.grey,
 						ai_metadata.greetings_data.description.grey,
-						"OK".bold.green
+						"OK!".bold.green
 					];
 				}
 				else { 
 					// error
 					return [
 						ai_reference.name.cyan,
-						"       ",
-						"    ",
-						"            ",
-						"ERROR".bold.red
+						"",
+						"",
+						"",
+						"error".bold.red
 					];
 				}
 			}
@@ -316,11 +319,7 @@ function load_ai_registry() {
 
 function save_ai_registry( ai_registry ) {
 	var ai_registry_path = config["ai_registry_path"];
-	// do not save entire object, some is dynamic runtime-only stuff
-	var registry_obj = {
-		ai_modules: ai_registry.ai_modules
-	}
-	fs.writeFileSync( self_path + ai_registry_path, JSON.stringify( registry_obj, null, 2 ));
+	fs.writeFileSync( self_path + ai_registry_path, JSON.stringify( ai_registry, null, 2 ));
 }
 
 function count_registered_ai_modules( ai_registry ) {
@@ -399,10 +398,11 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 	// generate, in a single sequence, one "resolve task" function per registered AI reference
 	//   and then execute them in parallel, returning progress notifications to the caller
 	//   and finally calling the finished callback indicating total completion.
-	async.parallel(
+	var limit = 6;
+	async.parallelLimit(
 		_.map( ai_registry.ai_modules.local, make_ai_resolve_task( "Local" )).concat(
 		_.map( ai_registry.ai_modules.remote, make_ai_resolve_task( "Remote" )))
-	, function( err, results ) {
+	, limit, function( err, results ) {
 		finished_callback_fn();
 	});
 }

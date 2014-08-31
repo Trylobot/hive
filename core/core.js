@@ -149,13 +149,14 @@ function create( system_version ) {
 		// you can use ../ai/ai-tcp-server.js to simulate/test this
 		try {
 			var socket = new net.Socket();
+			socket.on( "data", function( data ) {
+				var response_message = JSON.parse( data );
+				_.defer( callback_fn, response_message );
+			});
+			socket.on( "error", function( err ) {
+				_.defer( callback_fn, { error: err });
+			});
 			socket.connect( port, host, function() {
-				// connected
-				socket.on( "data", function( data ) {
-					var response_message = JSON.parse( data );
-					_.defer( callback_fn, response_message );
-				});
-				//
 				socket.write( JSON.stringify( message ));
 			});
 		} catch( err ) {
