@@ -17,7 +17,7 @@ var turn_types_enum = [
 	"Special Ability",
 	"Forfeit",
 	// -----------------------------------------------
-	"AI Exception", // used in AI games only; signifies an AI module caused an exception to be thrown
+	"Error", // used in AI games only; signifies an AI module caused an exception to be thrown
 	"Unknown" // used to represent a turn which took place, but has no other info available
 ];
 
@@ -58,10 +58,10 @@ function create_forfeit() {
 	return turn;
 }
 
-function create_ai_exception( exception ) {
+function create_error( error ) {
 	var turn = {
-		turn_type: "AI Exception",
-		exception: exception
+		turn_type: "Error",
+		error: error
 	};
 	return turn;
 }

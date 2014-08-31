@@ -19,17 +19,21 @@ hive-ai-her.js
 function process_message( message ) {
 	var response;
 	switch( message.request_type ) {
+		
 		case "Greetings":
 			response = {
-				response_type: message.request_type
+				response_type: message.request_type,
+				response_id: message.request_id
 			};
 			var package_json = require("./package.json");
 			for( var key in package_json )
 				response[key] = package_json[key];
 			break;
+		
 		case "Choose Turn":
 			response = {
 				response_type: message.request_type,
+				response_id: message.request_id,
 				game_id: message.game_id
 			};
 

@@ -532,13 +532,13 @@ function handle_game_event( game_event ) {
 function request_local_AI_turn( model, player ) {
 	var message = core.prepare_choose_turn_request_message( model.game_id );
 	var response_message = player.ai_module.process_message( message );
-	var turn = core.parse_response_message( response_message );
+	var turn = core.parse_response_message_as_turn_object( response_message );
 	_.defer( do_turn, model, turn );
 }
 function request_remote_turn_http_post( model, hostname, port ) {
 	var message = core.prepare_choose_turn_request_message( model.game_id );
 	http_post( hostname, port, message, function( response_message ) {
-		var turn = core.parse_response_message( response_message );
+		var turn = core.parse_response_message_as_turn_object( response_message );
 		_.defer( do_turn, model, turn );
 	});
 }

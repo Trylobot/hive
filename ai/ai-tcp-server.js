@@ -7,7 +7,7 @@ var net = require("net");
 var cfg = require("./ai-tcp-server.config.json");
 var ai_module;
 if( !process.argv[2] ) { // ai_module_path must be provided as first argument <required>; server-port is [optional]
-	"usage: node ai-tcp-server.js <./path/to/ai-module.js> [server-port]";
+	console.log( "usage: node ai-tcp-server.js <./path/to/ai-module.js> [server-port]" );
 	process.exit();
 }
 else {

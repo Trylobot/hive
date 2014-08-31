@@ -1,10 +1,14 @@
 "use strict";
 
+// dependencies
+//   node (built-in)
 var events = require("events");
-var async = require("async");
+var net = require("net");
+var child_process = require("child_process");
+//   3rd-party modules
 var _ = require("lodash");
 var mersenne_twister = new (require('mersenne').MersenneTwister19937);
-
+//   user-defined modules
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
 var Position = require("./domain/position");
@@ -15,9 +19,18 @@ var Game = require("./domain/game");
 var Player = require("./domain/player");
 
 /*
+
 core.js
 this module manages game instances, and handles communications between players and games.
+
+local AI are completely managed.
+  they are stopped and started as needed, as forked child processes
+
+remote AI are not managed at all.
+  it is up to the remote AI's owner to start and stop it
+
 */
+
 
 // functions
 
@@ -26,7 +39,7 @@ function create( system_version ) {
 		game_instances: {},
 		events: new events.EventEmitter
 	}
-	// ---------
+	// ---
 	core.create_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
 		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
 		return core.register_game( white_player, black_player, game );
@@ -35,7 +48,7 @@ function create( system_version ) {
 		var game = Game.load( save_data.creation_parameters, save_data.turn_history );
 		return core.register_game( white_player, black_player, game );
 	}
-	// ---------
+	// ---
 	core.register_game = function( white_player, black_player, game ) {
 		var game_id = core.generate_game_id();
 		var game_instance = {
@@ -58,7 +71,7 @@ function create( system_version ) {
 	core.list_games = function() {
 		return _.keys( core.game_instances );
 	}
-	// ---------
+	// ---
 	core.start_game = function( game_id ) {
 		if( !(game_id in core.game_instances) )
 			return; // invalid game_id
@@ -88,7 +101,7 @@ function create( system_version ) {
 		//   html + embedded game history as JSON + auto playback + turn navigation
 		delete core.game_instances[ game_id ];
 	}
-	// ---------
+	// ---
 	core.generate_game_id = function() {
 		var id;
 		do {
@@ -99,7 +112,7 @@ function create( system_version ) {
 	core.generate_request_id = function() {
 		return generate_id(); // do not care about collisions, only non-sequentiality
 	}
-	// ---------
+	// ---
 	core.prepare_greetings_request_message = function() {
 		return {
 			request_type: "Greetings",
@@ -116,17 +129,40 @@ function create( system_version ) {
 			game_id: game_id,
 			request_timestamp: now,
 			response_deadline: ((typeof turn_time_ms != "undefined") ? now + turn_time_ms : null),
-			game_state: game_instance.game
+			game_state: game_instance.game // represents entire game state
 		};
 	}
-	// ---------
-	core.prepare_turn_response_message = function( turn, game_id ) {
-		return _.extend( turn, {
-			response_type: "Choose Turn",
-			game_id: game_id
+	// ---
+	core.send_message_to_local_ai = function( message, local_path, callback_fn ) {
+		var local_ai = child_process.spawn( "node", [ "../ai/ai-local-stdio.js", local_path ]);
+		var message_str = JSON.stringify( message );
+		//
+		local_ai.stdout.on( "data", function( data ) {
+			var response_message = JSON.parse( data );
+			callback_fn( response_message );
+			_.defer( local_ai.kill );
 		});
+		local_ai.stdin.write( message_str );
 	}
-	core.parse_response_message = function( response_message ) {
+	core.send_message_to_remote_ai = function( message, host, port, callback_fn ) {
+		// you can use ../ai/ai-tcp-server.js to simulate/test this
+		var socket = new net.Socket();
+		try {
+			socket.connect( port, host, function() {
+				// connected
+				socket.on( "data", function( data ) {
+					var response_message = JSON.parse( data );
+					callback_fn( response_message );
+				});
+				//
+				socket.write( JSON.stringify( message ));
+			});
+		} catch( ex ) {
+			callback_fn({ exception: ex });
+		}
+	}
+	// ---
+	core.parse_response_message_as_turn_object = function( response_message ) {
 		var turn;
 		switch( response_message.turn_type ) {
 			case "Placement":
@@ -148,10 +184,24 @@ function create( system_version ) {
 			case "Forfeit":
 				turn = Turn.create_forfeit();
 				break;
+			case "Error":
+				turn = Turn.create_error( 
+					response_message.error );
+				break;
+			case "Unknown":
+				turn = Turn.create_unknown();
+				break;
 		}
 		return turn;
 	}
-	// ---------
+	// ---
+	core.prepare_turn_response_message = function( turn, game_id ) {
+		return _.extend( turn, {
+			response_type: "Choose Turn",
+			game_id: game_id
+		});
+	}
+	// ---
 	core.possible_turns__encode_positions = function( possible_turns_with_decoded_positions ) {
 		// TODO: possible_turns should already be using position keys, and this should not be necessary
 		return core.possible_turns__Xcode_positions(

@@ -52,10 +52,6 @@ program
 	.description( "Register a new remote AI endpoint (host:port)")
 	.action( program_command_add_remote_ai );
 program
-	.command( "local-ai-choose-turn [local-ai-name]" )
-	.description( "Use a given local AI module to choose the next turn for a given game-state; (stdin) --> (stdout)" )
-	.action( program_command_local_ai_choose_turn );
-program
 	.command( "play-single-random" )
 	.description( "Run a single match between two random AI participants selected from the available Hive AI modules")
 	.action( program_command_play_single_random );
@@ -111,24 +107,36 @@ function program_command_print_config() {
 function program_command_list_ai() {
 	var config = resolve_config();
 	var ai_registry = load_ai_registry( config["ai_registry_path"] );
-	resolve_ai_module_metadata( ai_registry, on_progress, on_finished );
-	show_help = false;
 	//
-	function on_ai_loaded() {
+	save_cursor_position();
+	resolve_ai_module_metadata( ai_registry, function() {
+		restore_cursor_position();
 		var table = create_table();
-		table.push.apply( table, _.map( ai_registry.ai_status, 
-			function( ai_status, ai_package_name ) {
-				return [
-					ai_package_name.bold.cyan,
-					ai_package.long_name,
-					ai_package.version.grey,
-					ai_package.description.grey
+		function render_metadata( ai_reference ) {
+			var ai_metadata = ai_registry.ai_metadata[ ai_reference.name ];
+			if( ai_metadata )
+				return [ // in progress
+					ai_metadata.name.bold.cyan,
+					"       ",
+					"    ",
+					"...".grey
 				];
-			}
+			else
+				return [ // loaded
+					ai_metadata.name.bold.cyan,
+					ai_metadata.long_name,
+					ai_metadata.version.grey,
+					ai_metadata.description.grey
+				];
+		}
+		table.push.apply( table, _.flatten(
+			_( ai_registry.ai_modules.local ).map( render_metadata ),
+			_( ai_registry.ai_modules.remote ).map( render_metadata )
 		));
 		console.log( table.toString() );
-		process.exit();
-	}
+	}, process.exit );
+	//
+	show_help = false;
 }
 
 function program_command_add_local_ai( local_path ) {
@@ -235,47 +243,53 @@ function load_ai_registry( ai_registry_path ) {
 //   finished_callback_fn <-- void
 function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished_callback_fn ) {
 	ai_registry.ai_metadata = {};
+	function make_metadata( name, proximity ) {
+		return {
+			name: name,
+			proximity: proximity,
+			can_connect: false,
+			greetings_response_received: false,
+			ai_active: false,
+			greetings_data: null
+		};
+	}
 	async.parallel( _.flatten(
 		// check local modules, load their package info from disk
 		_( ai_registry.ai_modules.local ).map( function( local_reference ) {
-			var metadata = {
-				name: local_reference.name,
-				proximity: "Local",
-				ai_active: false
-				package_found: false,
-				package_data: null,
-				module_found: false,
-			};
+			var metadata = make_metadata( local_reference.name, "Local" );
 			ai_registry.ai_metadata[ local_reference.name ] = metadata;
-			var ai_package_path = self_path + local_reference.local_path + "/package.json";
-			if( fs.existsSync( ai_package_path )) {
-				metadata.package_found = true;
-				var ai_package = JSON.parse( fs.readFileSync( ai_package_path ));
-				metadata.package_data = ai_package;
-				metadata.ai_active = ai_package.active;
-				metadata.module_found = fs.existsSync( self_path + local_reference.local_path + "/" + ai_package_path.module + ".js" );
-			}
-			progress_callback_fn( metadata );
+			var greetings_message = core.prepare_greetings_request_message();
+			core.send_request_to_local_ai( 
+				greetings_message, 
+				local_reference.local_path, 
+				function( response ) {
+					if( !response.exception ) {
+						metadata.can_connect = true;
+						metadata.greetings_response_received = true;
+						metadata.ai_active = response.active;
+						metadata.greetings_data = response;
+					}
+					progress_callback_fn();
+				});
 		}),
 		// check remote modules, send greetings message, save responses
 		_( ai_registry.ai_modules.remote ).map( function( remote_reference ) {
-			var metadata = {
-				name: local_reference.name,
-				proximity: "Remote",
-				ai_active: false
-				can_connect: false,
-				greetings_response_received: false,
-				greetings_data: null,
-			};
-			ai_registry.ai_metadata[ local_reference.name ] = metadata;
-			var client = new net.Socket();
-			try {
-				client.connect( remote_reference.remote_port, remote_reference.remote_host, function() {
-					
+			var metadata = make_metadata( remote_reference.name, "Remote" );
+			ai_registry.ai_metadata[ remote_reference.name ] = metadata;
+			var greetings_message = core.prepare_greetings_request_message();
+			core.send_request_to_remote_ai( 
+				greetings_message, 
+				remote_reference.remote_host,
+				remote_reference.remote_port,
+				function( response ) {
+					if( !response.exception ) {
+						metadata.can_connect = true;
+						metadata.greetings_response_received = true;
+						metadata.ai_active = response.active;
+						metadata.greetings_data = response;
+					}
+					progress_callback_fn();
 				});
-			} catch( ex ) {
-
-			}
 		})
 	), finished_callback_fn );
 }
@@ -306,7 +320,7 @@ function handle_game_event( game_event ) {
 				core.events.emit( "turn", turn_event );
 			});
 		}
-		var turn = core.parse_response_message( response_message );
+		var turn = core.parse_response_message_as_turn_object( response_message );
 		var turn_event = core.prepare_turn_response_message( turn, game_id );
 		// wait for the callstack to clear, then notify core program of the turn
 		_.defer( function() { 

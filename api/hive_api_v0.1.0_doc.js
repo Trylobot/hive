@@ -1,4 +1,4 @@
-// HIVE API VERSION 0.0.5
+// HIVE API VERSION 0.1.0
 
 /*
 "Greetings" request
@@ -10,7 +10,7 @@
 {
   request_type: "Greetings",
   request_id: "n6Vvi",
-  system_version: "0.0.5"
+  system_version: "0.1.0"
 }
 // example response structure sent back to the requestor
 // Note: this is the same format as the package.json files bundled with the AI in this, the main Hive project.

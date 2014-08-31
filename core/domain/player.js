@@ -40,11 +40,6 @@ function create_local_human( color ) {
 		proximity: "Local",
 		enforce_rules: true
 	}
-	// humans cannot be directly interfaced with
-	//   for local humans, the UI is responsible for updating the game_state directly
-	player.send_greetings_request = null;
-	player.send_choose_turn_request = null;
-	// ----
 	return player;
 }
 
@@ -55,12 +50,6 @@ function create_local_tester( color ) {
 		proximity: "Local",
 		enforce_rules: false
 	}
-	// humans cannot be directly interfaced with
-	//   for local humans, the UI is responsible for updating the game_state directly
-	//   with rules enforcement turned off, this game becomes a test game.
-	player.send_greetings_request = null;
-	player.send_choose_turn_request = null;
-	// ----
 	return player;
 }
 
@@ -71,12 +60,6 @@ function create_local_ai( color, local_path ) {
 		proximity: "Local",
 		local_path: local_path,
 		enforce_rules: true
-	}
-	player.send_greetings_request = function( greetings_request_message, response_callback_fn, error_callback_fn ) {
-		// TODO: invoke hive-cli as child process
-	}
-	player.send_choose_turn_request = function( choose_turn_request_message, response_callback_fn, error_callback_fn ) {
-		// TODO: invoke hive-cli as child process
 	}
 	return player;
 }
@@ -90,12 +73,6 @@ function create_remote_human( color, remote_host, remote_port ) {
 		remote_port: remote_port,
 		enforce_rules: true
 	}
-	// humans cannot be directly interfaced with
-	//   for remote humans, the system will rely on that human's client program to invoke the core-to-core
-	//   communication directly, synchronizing full game_state over TCP in the event of any sort of change
-	player.send_greetings_request = null;
-	player.send_choose_turn_request = null;
-	// ----
 	return player;
 }
 
@@ -107,12 +84,6 @@ function create_remote_ai( color, remote_host, remote_port ) {
 		remote_host: remote_host,
 		remote_port: remote_port,
 		enforce_rules: true
-	}
-	player.send_greetings_request = function( greetings_request_message, response_callback_fn, error_callback_fn ) {
-		// TODO: send request over TCP
-	}
-	player.send_choose_turn_request = function( choose_turn_request_message, response_callback_fn, error_callback_fn ) {
-		// TODO: send request over TCP
 	}
 	return player;
 }
