@@ -83,6 +83,7 @@ function create( system_version ) {
 		// emit an event indicating that the game with the given ID has changed.
 		//   event listener would then use core.lookup_game with the given ID
 		//   and update her internal model or user interface as appropriate.
+		// TODO: WELL SOMEONE NEEDS TO LISTEN!
 		core.events.emit( "game", game_event );
 	}
 	core.handle_turn_event = function( turn_event ) {

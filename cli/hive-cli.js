@@ -255,22 +255,23 @@ function program_command_tournament( participant_list ) {
 
 function program_command_play_single_random() {
 	config = resolve_config();
-	var ai_packages = find_active_ai();
-	var ai_names = _.keys( ai_packages );
-	var ai_count = ai_names.length;
-	var ai = [];
-	for( var i = 0; i < 2; ++i )
-		ai.push( load_ai( ai_packages[ ai_names[ rand( ai_count ) ]] ));
-	var white_player = Player.create( "AI", "White", "Local", ai[0] ); // TODO: broken
-	var black_player = Player.create( "AI", "Black", "Local", ai[1] ); // TODO: broken
-	var game_id = core.create_game( 
-		white_player,
-		black_player,
-		config["use_mosquito"],
-		config["use_ladybug"],
-		config["use_pillbug"]
-	);
-	core.start_game( game_id );
+	var ai_registry = load_ai_registry();
+	resolve_ai_module_metadata( ai_registry, null, function() {
+		var local_ai_count = ai_registry.ai_modules.local.length;
+		var ai = [];
+		for( var i = 0; i < 2; ++i )
+			ai.push( ai_registry.ai_modules.local[ rand( local_ai_count )]);
+		var white_player = Player.create_local_ai( "White", ai[0].local_path );
+		var black_player = Player.create_local_ai( "Black", ai[1].local_path );
+		var game_id = core.create_game( 
+			white_player,
+			black_player,
+			config["use_mosquito"],
+			config["use_ladybug"],
+			config["use_pillbug"]
+		);
+		core.start_game( game_id );
+	});
 	show_help = false;
 	// process exits when: 
 	//   handle_game_event(..) is called while core.list_games() returns 0 active games.
@@ -389,7 +390,8 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 						metadata.greetings_data = null;
 						metadata.error = response.error;
 					}
-					progress_callback_fn(); // allow render progress
+					if( progress_callback_fn )
+						progress_callback_fn(); // allow render progress
 					callback( null, metadata ); // indicate task success
 				}
 			};
@@ -403,7 +405,8 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 		_.map( ai_registry.ai_modules.local, make_ai_resolve_task( "Local" )).concat(
 		_.map( ai_registry.ai_modules.remote, make_ai_resolve_task( "Remote" )))
 	, limit, function( err, results ) {
-		finished_callback_fn();
+		if( finished_callback_fn )
+			finished_callback_fn();
 	});
 }
 
