@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+"use strict";
 
 // dependencies
 //   node (built-in)
@@ -18,6 +19,7 @@ var package_json = require(self_path+"package.json"); // dir
 var core_basepath = path.resolve(self_path+"../core/")+"/"; // dir
 var ai_basepath = path.resolve(self_path+"../ai/")+"/"; // dir
 //   user-defined modules
+_(global).extend(require("./terminal-cursor"));
 var Piece = require(core_basepath+"domain/piece"); // + ".js"
 var Position = require(core_basepath+"domain/position"); // + ".js"
 var Turn = require(core_basepath+"domain/turn"); // + ".js"
@@ -109,8 +111,8 @@ function program_command_list_ai() {
 	config = resolve_config();
 	var ai_registry = load_ai_registry();
 	if( count_registered_ai_modules( ai_registry ) == 0 ) {
-		process.exit(); // print nothing
-	} 
+		process.exit(); // print nothing (by design) indicating an empty list
+	}
 	else {
 		save_cursor_position();
 		resolve_ai_module_metadata( ai_registry, function() {
@@ -133,13 +135,14 @@ function program_command_list_ai() {
 						ai_metadata.description.grey
 					];
 			}
-			table.push.apply( table, _.flatten(
+			table.push.apply( table, _.flatten([
 				_( ai_registry.ai_modules.local ).map( render_metadata ),
 				_( ai_registry.ai_modules.remote ).map( render_metadata )
-			));
+			]));
 			console.log( table.toString() );
-		}, process.exit );
-		//
+		}, function() {
+			process.exit();
+		});
 		show_help = false;
 	}
 }
@@ -292,63 +295,59 @@ function count_registered_ai_modules( ai_registry ) {
 //   finished_callback_fn <-- void
 function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished_callback_fn ) {
 	ai_registry.ai_metadata = {};
-	function make_metadata( name, proximity ) {
-		return {
-			name: name,
-			proximity: proximity,
-			can_connect: false,
-			greetings_response_received: false,
-			ai_active: false,
-			greetings_data: null
+	// function generator creates a lodash closure for an AI reference
+	//   that returns a function appropriate for use with async
+	function make_ai_resolve_task( proximity ) { // executed in this context
+		return function( reference ) { // executed by lodash
+			return function( callback ) { // executed by async.parallel
+				var metadata = {
+					name: reference.name,
+					proximity: proximity,
+					can_connect: false,
+					greetings_response_received: false,
+					ai_active: false,
+					greetings_data: null
+				}
+				ai_registry.ai_metadata[ reference.name ] = metadata;
+				var greetings_message = core.prepare_greetings_request_message();
+				if( proximity == "Local" ) {
+					var ai_package_path = path.resolve( self_path + reference.local_path + "/package.json" );
+					var ai_package_json = JSON.parse( fs.readFileSync( ai_package_path ));
+					var resolved_module_path = path.resolve( self_path + reference.local_path + "/" + ai_package_json.module + ".js" );
+					core.send_message_to_local_ai( 
+						greetings_message, 
+						resolved_module_path, 
+						handle_response
+					);
+				}
+				else if( proximity == "Remote" ) {
+					core.send_message_to_remote_ai( 
+						greetings_message, 
+						reference.remote_host,
+						reference.remote_port,
+						handle_response
+					);
+				}
+				function handle_response( response ) {
+					if( !response.error ) {
+						metadata.can_connect = true;
+						metadata.greetings_response_received = true;
+						metadata.ai_active = response.active;
+						metadata.greetings_data = response;
+					}
+					progress_callback_fn(); // allow render progress
+					callback( null, metadata ); // indicate task success
+				}
+			};
 		};
 	}
-	async.parallel( _.flatten(
-		// check local modules, load their package info from disk
-		_( ai_registry.ai_modules.local ).map( function( local_reference ) {
-			return function( callback ) {
-				var metadata = make_metadata( local_reference.name, "Local" );
-				ai_registry.ai_metadata[ local_reference.name ] = metadata;
-				var greetings_message = core.prepare_greetings_request_message();
-				core.send_message_to_local_ai( 
-					greetings_message, 
-					local_reference.local_path, 
-					function( response ) {
-						if( !response.exception ) {
-							metadata.can_connect = true;
-							metadata.greetings_response_received = true;
-							metadata.ai_active = response.active;
-							metadata.greetings_data = response;
-						}
-						progress_callback_fn(); // allow render progress
-						callback( null ); // indicate success
-					}
-				);
-			}
-		}),
-		// check remote modules, send greetings message, save responses
-		_( ai_registry.ai_modules.remote ).map( function( remote_reference ) {
-			return function( callback ) {
-				var metadata = make_metadata( remote_reference.name, "Remote" );
-				ai_registry.ai_metadata[ remote_reference.name ] = metadata;
-				var greetings_message = core.prepare_greetings_request_message();
-				core.send_message_to_remote_ai( 
-					greetings_message, 
-					remote_reference.remote_host,
-					remote_reference.remote_port,
-					function( response ) {
-						if( !response.exception ) {
-							metadata.can_connect = true;
-							metadata.greetings_response_received = true;
-							metadata.ai_active = response.active;
-							metadata.greetings_data = response;
-						}
-						progress_callback_fn(); // allow render progress
-						callback( null ); // indicate success
-					}
-				);
-			}
-		})
-	), function( err, results ) {
+	// generate, in a single sequence, one "resolve task" function per registered AI reference
+	//   and then execute them in parallel, returning progress notifications to the caller
+	//   and finally calling the finished callback indicating total completion.
+	async.parallel( _.flatten([
+		_.map( ai_registry.ai_modules.local, make_ai_resolve_task( "Local" )),
+		_.map( ai_registry.ai_modules.remote, make_ai_resolve_task( "Remote" ))
+	]), function( err, results ) {
 		finished_callback_fn();
 	});
 }
@@ -480,65 +479,5 @@ function create_table() {
 			"padding-right": 0
 		}
 	});
-}
-
-/*
-via: http://stackoverflow.com/questions/10585683/how-do-you-edit-existing-text-and-move-the-cursor-around-in-the-terminal
-----
-https://github.com/hij1nx/cdir/blob/master/cdir.js#L26
-http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x361.html
-http://ascii-table.com/ansi-escape-sequences-vt-100.php
-
-Position the Cursor: \033[<L>;<C>H or \033[<L>;<C>f (puts the cursor at line L and column C)
-Move the cursor up N lines: \033[<N>A
-Move the cursor down N lines: \033[<N>B
-Move the cursor forward N columns: \033[<N>C
-Move the cursor backward N columns: \033[<N>D
-Clear the screen, move to (0,0): \033[2J
-Erase to end of line: \033[K
-Save cursor position: \033[s
-Restore cursor position: \033[u
-
-"The latter two codes are NOT honoured by many terminal emulators. The only ones that I'm aware of
-  that do are xterm and nxterm - even though the majority of terminal emulators are based on xterm code.
-  As far as I can tell, rxvt, kvt, xiterm, and Eterm do not support them. They are supported on the console."
-*/
-
-function set_cursor_position( L, C ) {
-	process.stdout.write( "\033["+L+";"+C+"H" );
-}
-
-function cursor_move_up( L ) {
-	process.stdout.write( "\033["+L+"A" );
-}
-
-function cursor_move_down( L ) {
-	process.stdout.write( "\033["+L+"B" );
-}
-
-function cursor_move_forward( C ) {
-	process.stdout.write( "\033["+C+"C" );
-}
-
-function cursor_move_backward( C ) {
-	process.stdout.write( "\033["+C+"D" );
-}
-
-function clear_screen() {
-	process.stdout.write( "\033[2J" );
-}
-
-function erase_to_end_of_line() {
-	process.stdout.write( "\033[K" );
-}
-
-// not supported in many terminal emulators
-function save_cursor_position() {
-	process.stdout.write( "\033[s" );
-}
-
-// not supported in many terminal emulators
-function restore_cursor_position() {
-	process.stdout.write( "\033[u" );
 }
 

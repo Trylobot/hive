@@ -134,15 +134,16 @@ function create( system_version ) {
 	}
 	// ---
 	core.send_message_to_local_ai = function( message, local_path, callback_fn ) {
-		var local_ai = child_process.spawn( "node", [ "../ai/ai-local-stdio.js", local_path ]);
-		var message_str = JSON.stringify( message );
-		//
-		local_ai.stdout.on( "data", function( data ) {
-			var response_message = JSON.parse( data );
-			callback_fn( response_message );
-			_.defer( local_ai.kill );
+		var local_ai = child_process.fork( __dirname + "/../ai/ai-local-fork.js", [ local_path ]);
+		local_ai.on( "message", function( message ) {
+			callback_fn( message );
+			local_ai.kill();
 		});
-		local_ai.stdin.write( message_str );
+		try {
+			local_ai.send( message );
+		} catch( err ) {
+			callback_fn({ error: err });
+		}
 	}
 	core.send_message_to_remote_ai = function( message, host, port, callback_fn ) {
 		// you can use ../ai/ai-tcp-server.js to simulate/test this
@@ -157,8 +158,8 @@ function create( system_version ) {
 				//
 				socket.write( JSON.stringify( message ));
 			});
-		} catch( ex ) {
-			callback_fn({ exception: ex });
+		} catch( err ) {
+			callback_fn({ error: err });
 		}
 	}
 	// ---

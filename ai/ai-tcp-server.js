@@ -1,22 +1,16 @@
 "use strict";
 
-// managed dependencies
-var net = require("net");
-
-// local dependencies
-var cfg = require("./ai-tcp-server.config.json");
-var ai_module;
-if( !process.argv[2] ) { // ai_module_path must be provided as first argument <required>; server-port is [optional]
-	console.log( "usage: node ai-tcp-server.js <./path/to/ai-module.js> [server-port]" );
+if( !process.argv[2] || !process.argv[3] ) {
+	console.log( "usage:  node ai-tcp-server.js [./path/to/ai-module] [server-port]" );
 	process.exit();
 }
-else {
-	var ai_module_path = process.argv[2];
-	ai_module = require( ai_module_path ); 
-	if( process.argv[3] ) { // cli argument overrides default server port
-		cfg.server_port = process.argv[3];
-	}
-}
+
+// dependencies
+var net = require("net");
+var helper = require("./ai-helper");
+
+var ai_module = helper.load_ai_module( process.argv[2] );
+var server_port = process.argv[3];
 
 var server = net.createServer( function( socket ) { // connect handler
 	// wait for incoming messages
@@ -28,7 +22,7 @@ var server = net.createServer( function( socket ) { // connect handler
 	});
 });
 
-server.listen( cfg.server_port, function() { // listening handler
-	console.log( "listening on port " + cfg.server_port );
+server.listen( server_port, function() { // listening handler
+	console.log( "listening on port " + server_port );
 });
 

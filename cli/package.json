@@ -1,5 +1,6 @@
 {
 	"name": "hive-cli",
+	"version": "0.1.0",
 	"license": "Research License 1.0",
 	"dependencies": {
 		"lodash": "~2.4.1",
