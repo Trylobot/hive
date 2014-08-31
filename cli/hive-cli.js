@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-"use strict";
 
 // dependencies
 //   node (built-in)
@@ -12,6 +11,7 @@ var mersenne_twister = new (require("mersenne").MersenneTwister19937);
 var program = require("commander");
 var Table = require("cli-table");
 var colors = require("colors");
+var async = require("async");
 //   semi-dynamic paths
 var self_path = path.dirname( process.argv[1] )+"/"; // dir
 var package_json = require(self_path+"package.json"); // dir
@@ -44,12 +44,12 @@ program
 	.description( "List all registered Hive AI modules and their statuses" )
 	.action( program_command_list_ai );
 program
-	.command( "add-local-ai [local-path]" )
-	.description( "Register a new local AI module (javascript/node.js only)")
+	.command( "add-local-ai [name] [local-path]" )
+	.description( "Register a new local AI module (javascript/node.js only) (names must be globally unique)")
 	.action( program_command_add_local_ai );
 program
-	.command( "add-remote-ai [remote-host-port]" )
-	.description( "Register a new remote AI endpoint (host:port)")
+	.command( "add-remote-ai [name] [remote-host-port]" )
+	.description( "Register a new remote AI endpoint (host:port) (names must be globally unique)")
 	.action( program_command_add_remote_ai );
 program
 	.command( "play-single-random" )
@@ -65,6 +65,7 @@ program
 	.action( program_command_print_config );
 
 // persistent objects
+var config = null;
 var core = null;
 var ai_registry = null;
 // cross-command flags
@@ -90,7 +91,7 @@ if( show_help ) {
 // command functions
 
 function program_command_print_config() {
-	var config = resolve_config();
+	config = resolve_config();
 	var table = create_table();
 	table.push.apply( table, _.map( config,
 		function( value, key ) {
@@ -105,47 +106,77 @@ function program_command_print_config() {
 }
 
 function program_command_list_ai() {
-	var config = resolve_config();
-	var ai_registry = load_ai_registry( config["ai_registry_path"] );
-	//
-	save_cursor_position();
-	resolve_ai_module_metadata( ai_registry, function() {
-		restore_cursor_position();
-		var table = create_table();
-		function render_metadata( ai_reference ) {
-			var ai_metadata = ai_registry.ai_metadata[ ai_reference.name ];
-			if( ai_metadata )
-				return [ // in progress
-					ai_metadata.name.bold.cyan,
-					"       ",
-					"    ",
-					"...".grey
-				];
-			else
-				return [ // loaded
-					ai_metadata.name.bold.cyan,
-					ai_metadata.long_name,
-					ai_metadata.version.grey,
-					ai_metadata.description.grey
-				];
-		}
-		table.push.apply( table, _.flatten(
-			_( ai_registry.ai_modules.local ).map( render_metadata ),
-			_( ai_registry.ai_modules.remote ).map( render_metadata )
-		));
-		console.log( table.toString() );
-	}, process.exit );
-	//
-	show_help = false;
+	config = resolve_config();
+	var ai_registry = load_ai_registry();
+	if( count_registered_ai_modules( ai_registry ) == 0 ) {
+		process.exit(); // print nothing
+	} 
+	else {
+		save_cursor_position();
+		resolve_ai_module_metadata( ai_registry, function() {
+			restore_cursor_position();
+			var table = create_table();
+			function render_metadata( ai_reference ) {
+				var ai_metadata = ai_registry.ai_metadata[ ai_reference.name ];
+				if( ai_metadata )
+					return [ // in progress
+						ai_metadata.name.bold.cyan,
+						"       ",
+						"    ",
+						"...".grey
+					];
+				else
+					return [ // loaded
+						ai_metadata.name.bold.cyan,
+						ai_metadata.long_name,
+						ai_metadata.version.grey,
+						ai_metadata.description.grey
+					];
+			}
+			table.push.apply( table, _.flatten(
+				_( ai_registry.ai_modules.local ).map( render_metadata ),
+				_( ai_registry.ai_modules.remote ).map( render_metadata )
+			));
+			console.log( table.toString() );
+		}, process.exit );
+		//
+		show_help = false;
+	}
 }
 
-function program_command_add_local_ai( local_path ) {
-	console.log( "TODO" );
+function program_command_add_local_ai( name, local_path ) {
+	config = resolve_config();
+	var ai_registry = load_ai_registry();
+	// remove any AI modules with a matching name
+	function match( ref ) { return ref.name == name; }
+	ai_registry.ai_modules.local = _.reject( ai_registry.ai_modules.local, match );
+	ai_registry.ai_modules.remote = _.reject( ai_registry.ai_modules.remote, match );
+	// add AI module
+	ai_registry.ai_modules.local.push({
+		name: name,
+		local_path: local_path
+	});
+	// write to disk and exit
+	save_ai_registry( ai_registry );
 	process.exit();
 }
 
-function program_command_add_remote_ai( remote_host_port ) {
-	console.log( "TODO" );
+function program_command_add_remote_ai( name, remote_host_port ) {
+	config = resolve_config();
+	var ai_registry = load_ai_registry();
+	// remove any AI modules with a matching name
+	function match( ref ) { return ref.name == name; }
+	ai_registry.ai_modules.local = _.reject( ai_registry.ai_modules.local, match );
+	ai_registry.ai_modules.remote = _.reject( ai_registry.ai_modules.remote, match );
+	// add AI module
+	var address = remote_host_port.split(":");
+	ai_registry.ai_modules.remote.push({
+		name: name,
+		remote_host: address[0],
+		remote_port: address[1]
+	});
+	// write to disk and exit
+	save_ai_registry( ai_registry );
 	process.exit();
 }
 
@@ -175,7 +206,7 @@ function program_command_tournament( participant_list ) {
 }
 
 function program_command_play_single_random() {
-	var config = resolve_config();
+	config = resolve_config();
 	var ai_packages = find_active_ai();
 	var ai_names = _.keys( ai_packages );
 	var ai_count = ai_names.length;
@@ -223,7 +254,8 @@ function resolve_config() {
 	return config;
 }
 
-function load_ai_registry( ai_registry_path ) {
+function load_ai_registry() {
+	var ai_registry_path = config["ai_registry_path"];
 	var ai_registry = {
 		ai_modules: {
 			local: [],
@@ -235,6 +267,23 @@ function load_ai_registry( ai_registry_path ) {
 		ai_registry = JSON.parse( fs.readFileSync( self_path + ai_registry_path ));
 	}
 	return ai_registry;
+}
+
+function save_ai_registry( ai_registry ) {
+	var ai_registry_path = config["ai_registry_path"];
+	// do not save entire object, some is dynamic runtime-only stuff
+	var registry_obj = {
+		ai_modules: ai_registry.ai_modules
+	}
+	fs.writeFileSync( self_path + ai_registry_path, JSON.stringify( registry_obj, null, 2 ));
+}
+
+function count_registered_ai_modules( ai_registry ) {
+	if( !ai_registry || !ai_registry.ai_modules )
+		return 0;
+	var ai_modules = ai_registry.ai_modules;
+	return (ai_modules.local ? ai_modules.local.length : 0)
+		+  (ai_modules.remote ? ai_modules.remote.length : 0);
 }
 
 // asynchronous
@@ -256,42 +305,52 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 	async.parallel( _.flatten(
 		// check local modules, load their package info from disk
 		_( ai_registry.ai_modules.local ).map( function( local_reference ) {
-			var metadata = make_metadata( local_reference.name, "Local" );
-			ai_registry.ai_metadata[ local_reference.name ] = metadata;
-			var greetings_message = core.prepare_greetings_request_message();
-			core.send_request_to_local_ai( 
-				greetings_message, 
-				local_reference.local_path, 
-				function( response ) {
-					if( !response.exception ) {
-						metadata.can_connect = true;
-						metadata.greetings_response_received = true;
-						metadata.ai_active = response.active;
-						metadata.greetings_data = response;
+			return function( callback ) {
+				var metadata = make_metadata( local_reference.name, "Local" );
+				ai_registry.ai_metadata[ local_reference.name ] = metadata;
+				var greetings_message = core.prepare_greetings_request_message();
+				core.send_message_to_local_ai( 
+					greetings_message, 
+					local_reference.local_path, 
+					function( response ) {
+						if( !response.exception ) {
+							metadata.can_connect = true;
+							metadata.greetings_response_received = true;
+							metadata.ai_active = response.active;
+							metadata.greetings_data = response;
+						}
+						progress_callback_fn(); // allow render progress
+						callback( null ); // indicate success
 					}
-					progress_callback_fn();
-				});
+				);
+			}
 		}),
 		// check remote modules, send greetings message, save responses
 		_( ai_registry.ai_modules.remote ).map( function( remote_reference ) {
-			var metadata = make_metadata( remote_reference.name, "Remote" );
-			ai_registry.ai_metadata[ remote_reference.name ] = metadata;
-			var greetings_message = core.prepare_greetings_request_message();
-			core.send_request_to_remote_ai( 
-				greetings_message, 
-				remote_reference.remote_host,
-				remote_reference.remote_port,
-				function( response ) {
-					if( !response.exception ) {
-						metadata.can_connect = true;
-						metadata.greetings_response_received = true;
-						metadata.ai_active = response.active;
-						metadata.greetings_data = response;
+			return function( callback ) {
+				var metadata = make_metadata( remote_reference.name, "Remote" );
+				ai_registry.ai_metadata[ remote_reference.name ] = metadata;
+				var greetings_message = core.prepare_greetings_request_message();
+				core.send_message_to_remote_ai( 
+					greetings_message, 
+					remote_reference.remote_host,
+					remote_reference.remote_port,
+					function( response ) {
+						if( !response.exception ) {
+							metadata.can_connect = true;
+							metadata.greetings_response_received = true;
+							metadata.ai_active = response.active;
+							metadata.greetings_data = response;
+						}
+						progress_callback_fn(); // allow render progress
+						callback( null ); // indicate success
 					}
-					progress_callback_fn();
-				});
+				);
+			}
 		})
-	), finished_callback_fn );
+	), function( err, results ) {
+		finished_callback_fn();
+	});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -79,6 +79,6 @@ exports.create_placement = create_placement;
 exports.create_movement = create_movement;
 exports.create_special_ability = create_special_ability;
 exports.create_forfeit = create_forfeit;
-exports.create_ai_exception = create_ai_exception;
+exports.create_error = create_error;
 exports.create_unknown = create_unknown;
 
