@@ -115,35 +115,48 @@ function program_command_list_ai() {
 	}
 	else {
 		save_cursor_position();
-		resolve_ai_module_metadata( ai_registry, function() {
-			restore_cursor_position();
-			var table = create_table();
-			function render_metadata( ai_reference ) {
-				var ai_metadata = ai_registry.ai_metadata[ ai_reference.name ];
-				if( ai_metadata )
-					return [ // in progress
-						ai_metadata.name.bold.cyan,
-						"       ",
-						"    ",
-						"...".grey
-					];
-				else
-					return [ // loaded
-						ai_metadata.name.bold.cyan,
-						ai_metadata.long_name,
-						ai_metadata.version.grey,
-						ai_metadata.description.grey
-					];
-			}
-			table.push.apply( table, _.flatten([
-				_( ai_registry.ai_modules.local ).map( render_metadata ),
-				_( ai_registry.ai_modules.remote ).map( render_metadata )
-			]));
-			console.log( table.toString() );
-		}, function() {
-			process.exit();
-		});
+		print_status();
+		restore_cursor_position();
+		// async lookup on all registered ai modules, in parallel
+		resolve_ai_module_metadata( ai_registry, on_progress, on_complete );
 		show_help = false;
+	}
+	// single-use functions
+	function on_progress() {
+		restore_cursor_position();
+		print_status();
+	}
+	function on_complete() {
+		restore_cursor_position();
+		print_status();
+		process.exit();
+	}
+	function print_status() {
+		var table = create_table();
+		function render_metadata( ai_reference ) {
+			var ai_metadata = ai_registry.ai_metadata 
+				? ai_registry.ai_metadata[ ai_reference.name ]
+				: null;
+			if( !ai_metadata )
+				return [ // in progress
+					ai_reference.name.bold.cyan,
+					"       ",
+					"    ",
+					"... checking".grey
+				];
+			else
+				return [ // loaded
+					ai_reference.name.bold.cyan,
+					ai_metadata.greetings_data.long_name,
+					ai_metadata.greetings_data.version.grey,
+					ai_metadata.greetings_data.description.grey
+				];
+		}
+		table.push.apply( table, [_.flatten([
+			_.map( ai_registry.ai_modules.local, render_metadata ),
+			_.map( ai_registry.ai_modules.remote, render_metadata )
+		])]);
+		console.log( table.toString() );
 	}
 }
 
