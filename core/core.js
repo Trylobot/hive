@@ -146,7 +146,7 @@ function create( system_version ) {
 			_.defer( callback_fn, { error: err });
 		}
 	}
-	core.send_message_to_remote_ai = function( message, host, port, callback_fn ) {
+	core.send_message_to_remote_ai = function( message, remote_host, remote_port, callback_fn ) {
 		// you can use ../ai/ai-tcp-server.js to simulate/test this
 		try {
 			var socket = new net.Socket();
@@ -158,7 +158,7 @@ function create( system_version ) {
 				_.defer( callback_fn, response_message );
 				socket.destroy(); // TODO: keep alive for longer?
 			});
-			socket.connect( port, host, function() {
+			socket.connect( remote_port, remote_host, function() {
 				socket.write( JSON.stringify( message ));
 			});
 		} catch( err ) {

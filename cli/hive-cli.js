@@ -420,36 +420,51 @@ function handle_game_event( game_event ) {
 	if( !game_instance.game.game_over
 	&&  game_instance.game.possible_turns != null ) {
 		var player = game_instance.players[ game_instance.game.player_turn ];
-		var message = core.prepare_choose_turn_request_message( game_id );
-		var response_message;
-		try {
-			/////////////////////////////////////////
-			// TODO: run this on a separate thread
-			var response_message = player.ai_module.process_message( message );
-			/////////////////////////////////////////
-		} catch( exception ) {
-			// player who threw the exception unconditionally forfeits the game
-			var turn = Turn.create_ai_exception( exception );
-			var turn_event = core.prepare_turn_response_message( turn, game_id );
-			// wait for the callstack to clear, then notify core program of the turn
-			_.defer( function() {
-				core.events.emit( "turn", turn_event );
-			});
+		var request_message = core.prepare_choose_turn_request_message( game_id );
+		var response_callback = function( response_message ) {
+			if( !response_message.error ) {
+				var turn = core.parse_response_message_as_turn_object( response_message );
+				var turn_event = core.prepare_turn_response_message( turn, game_id );
+				_.defer( function() { 
+					core.events.emit( "turn", turn_event );
+				});
+			}
+			else {
+				var turn = Turn.create_error( err );
+				var turn_event = core.prepare_turn_response_message( turn, game_id );
+				_.defer( function() {
+					core.events.emit( "turn", turn_event );
+				});
+			}
+		};
+		if( player.type == "AI" ) {
+			if( player.proximity == "Local" ) {
+				core.send_message_to_local_ai( 
+					request_message, 
+					player.local_path, 
+					response_callback );
+			}
+			else if( player.proximity == "Remote" ) {
+				core.send_message_to_remote_ai( 
+					request_message, 
+					player.remote_host, 
+					player.remote_port, 
+					response_callback );
+			}
 		}
-		var turn = core.parse_response_message_as_turn_object( response_message );
-		var turn_event = core.prepare_turn_response_message( turn, game_id );
-		// wait for the callstack to clear, then notify core program of the turn
-		_.defer( function() { 
-			core.events.emit( "turn", turn_event );
-		});
+		else {
+			// this system does not have the capability (yet)
+			//   of interacting with non-AI players.
+		}
 	}
 	else { //( game_over == true || possible_turns == null )
 		// TODO: output recorded game data
 		core.end_game( game_id );
 		//
 		var active_games = core.list_games();
-		if( active_games.length == 0 )
-			process.exit();
+		if( active_games.length == 0 ) {
+			_.defer( process.exit );
+		}
 	}
 }
 
