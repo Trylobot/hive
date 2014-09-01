@@ -40,20 +40,20 @@ function create( system_version ) {
 		events: new events.EventEmitter
 	}
 	// ---
-	core.create_game = function( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
-		var game = Game.create( use_mosquito, use_ladybug, use_pillbug );
+	core.create_game = function( white_player, black_player, creation_parameters ) {
+		var game = Game.create( creation_parameters );
 		return core.register_game( white_player, black_player, game );
 	}
 	core.load_game = function( white_player, black_player, save_data ) {
-		var game = Game.load( save_data.creation_parameters, save_data.turn_history );
+		var game = Game.load( save_data );
 		return core.register_game( white_player, black_player, game );
 	}
 	// ---
 	core.register_game = function( white_player, black_player, game ) {
 		var game_id = core.generate_game_id();
 		var game_instance = {
-			game: game,
 			game_id: game_id,
+			game: game,
 			players: {
 				"White": white_player,
 				"Black": black_player
@@ -71,6 +71,11 @@ function create( system_version ) {
 	core.list_games = function() {
 		return _.keys( core.game_instances );
 	}
+	core.list_active_games = function() {
+		return _.keys( _.filter( core.game_instances, function( game_instance ) {
+			return !game_instance.game.game_over;
+		}));
+	}
 	// ---
 	core.start_game = function( game_id ) {
 		if( !(game_id in core.game_instances) )
@@ -78,12 +83,7 @@ function create( system_version ) {
 		var game_event = {
 			game_id: game_id
 		};
-		// TODO: instruct player objects for this game to start listening for events 
-		//   related to this game ID
 		// emit an event indicating that the game with the given ID has changed.
-		//   event listener would then use core.lookup_game with the given ID
-		//   and update her internal model or user interface as appropriate.
-		// TODO: WELL SOMEONE NEEDS TO LISTEN!
 		core.events.emit( "game", game_event );
 	}
 	core.handle_turn_event = function( turn_event ) {
@@ -96,11 +96,8 @@ function create( system_version ) {
 		core.events.emit( "game", game_event );
 	}
 	core.end_game = function( game_id ) {
-		// TODO: instruct players associated with game id to stop listening for events
-		//   related to that game id.
-		// TODO: save game to archive
-		//   html + embedded game history as JSON + auto playback + turn navigation
-		delete core.game_instances[ game_id ];
+		var game_instance = core.lookup_game( game_id );
+		game_instance.game.game_over = true; // enforce: game is over
 	}
 	// ---
 	core.generate_game_id = function() {

@@ -21,7 +21,7 @@ it encapsulates all of the hive rules, and allows for
 // functions
 
 // creates a new game board and initializes player hands, with optional add-on pieces
-function create( use_mosquito, use_ladybug, use_pillbug ) {
+function create( creation_parameters ) {
 	var game = {
 		board: Board.create(),
 		hands: {
@@ -33,11 +33,7 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		game_over: false,
 		winner: null,
 		is_draw: false,
-		creation_parameters: {
-			use_mosquito: use_mosquito,
-			use_ladybug: use_ladybug,
-			use_pillbug: use_pillbug,
-		},
+		creation_parameters: creation_parameters,
 		turn_history: [],
 		possible_turns: null
 	}
@@ -104,49 +100,48 @@ function create( use_mosquito, use_ladybug, use_pillbug ) {
 		_.assign( game, game_over_state );
 	}
 	game.save = function() {
-		return {
-			creation_parameters: game.creation_parameters,
-			turn_history: game.turn_history
-		};
+		return game;
 	}
 	// -------------------
-	// default hands (no addons)
-	game.hands["White"]["Queen Bee"] = 1;
-	game.hands["White"]["Beetle"] = 2;
-	game.hands["White"]["Grasshopper"] = 3;
-	game.hands["White"]["Spider"] = 2;
-	game.hands["White"]["Soldier Ant"] = 3;
-	// ---
-	game.hands["Black"]["Queen Bee"] = 1;
-	game.hands["Black"]["Beetle"] = 2;
-	game.hands["Black"]["Grasshopper"] = 3;
-	game.hands["Black"]["Spider"] = 2;
-	game.hands["Black"]["Soldier Ant"] = 3;
-	// optional addon pieces
-	if( use_mosquito ) {
-		game.hands["White"]["Mosquito"] = 1;
-		game.hands["Black"]["Mosquito"] = 1;
+	if( !creation_parameters.custom ) {
+		// default hands (no addons)
+		game.hands["White"]["Queen Bee"] = 1;
+		game.hands["White"]["Beetle"] = 2;
+		game.hands["White"]["Grasshopper"] = 3;
+		game.hands["White"]["Spider"] = 2;
+		game.hands["White"]["Soldier Ant"] = 3;
+		// ---
+		game.hands["Black"]["Queen Bee"] = 1;
+		game.hands["Black"]["Beetle"] = 2;
+		game.hands["Black"]["Grasshopper"] = 3;
+		game.hands["Black"]["Spider"] = 2;
+		game.hands["Black"]["Soldier Ant"] = 3;
+		// optional addon pieces
+		if( creation_parameters.use_mosquito ) {
+			game.hands["White"]["Mosquito"] = 1;
+			game.hands["Black"]["Mosquito"] = 1;
+		}
+		if( creation_parameters.use_ladybug ) {
+			game.hands["White"]["Ladybug"] = 1;
+			game.hands["Black"]["Ladybug"] = 1;
+		}
+		if( creation_parameters.use_pillbug ) {
+			game.hands["White"]["Pillbug"] = 1;
+			game.hands["Black"]["Pillbug"] = 1;
+		}
 	}
-	if( use_ladybug ) {
-		game.hands["White"]["Ladybug"] = 1;
-		game.hands["Black"]["Ladybug"] = 1;
-	}
-	if( use_pillbug ) {
-		game.hands["White"]["Pillbug"] = 1;
-		game.hands["Black"]["Pillbug"] = 1;
+	else {
+		game.hands = creation_parameters.custom.hands
 	}
 	// ---
 	game.possible_turns = game.lookup_possible_turns();
 	return game;
 }
 
-function load( creation_parameters, turn_history ) {
-	var game = create( 
-		creation_parameters.use_mosquito,
-		creation_parameters.use_ladybug,
-		creation_parameters.use_pillbug );
+function load( saved_game ) {
+	var game = create( saved_game.creation_parameters );
 	var skip_self_evaluation = true;
-	_.forEach( turn_history, function( turn_object ) {
+	_.forEach( saved_game.turn_history, function( turn_object ) {
 		game.perform_turn( turn_object, skip_self_evaluation );
 	});
 	game.self_evaluation();

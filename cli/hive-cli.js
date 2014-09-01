@@ -120,16 +120,16 @@ function program_command_list_ai() {
 	}
 	else {
 		readline.clearScreenDown( process.stdout );
-		print_status();
+		print_ai_registry_status( ai_registry );
 		readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
 		var on_progress = _.debounce( function() {
 			readline.clearScreenDown( process.stdout );
-			print_status();
+			print_ai_registry_status( ai_registry );
 			readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
 		}, 250 );
 		var on_complete = function() {
 			readline.clearScreenDown( process.stdout );
-			print_status();
+			print_ai_registry_status( ai_registry );
 			// write to disk and exit
 			save_ai_registry( ai_registry );
 			process.exit();
@@ -137,51 +137,6 @@ function program_command_list_ai() {
 		// async lookup on all registered ai modules, in parallel
 		resolve_ai_module_metadata( ai_registry, on_progress, on_complete );
 		show_help = false;
-	}
-	function print_status() {
-		var table = create_table();
-		function render_metadata( ai_reference ) {
-			var ai_metadata = ai_registry.ai_metadata 
-				? ai_registry.ai_metadata[ ai_reference.name ]
-				: null;
-			if( !ai_metadata ) {
-				// loading or communication in progress
-				return [
-					ai_reference.name.bold.cyan,
-					"",
-					"",
-					"",
-					"...".grey
-				];
-			}
-			else {
-				if( !ai_metadata.error && ai_metadata.greetings_data) {
-					// no error + greeting received
-					return [
-						ai_reference.name.bold.cyan,
-						ai_metadata.greetings_data.long_name,
-						ai_metadata.greetings_data.version.grey,
-						ai_metadata.greetings_data.description.grey,
-						"OK!".bold.green
-					];
-				}
-				else { 
-					// error
-					return [
-						ai_reference.name.cyan,
-						"",
-						"",
-						"",
-						"error".bold.red
-					];
-				}
-			}
-		}
-		table.push.apply( table, 
-			_.map( ai_registry.ai_modules.local, render_metadata ).concat(
-			_.map( ai_registry.ai_modules.remote, render_metadata ))
-		);
-		console.log( table.toString() );
 	}
 }
 
@@ -257,18 +212,26 @@ function program_command_play_single_random() {
 	config = resolve_config();
 	var ai_registry = load_ai_registry();
 	resolve_ai_module_metadata( ai_registry, null, function() {
-		var local_ai_count = ai_registry.ai_modules.local.length;
-		var ai = [];
-		for( var i = 0; i < 2; ++i )
-			ai.push( ai_registry.ai_modules.local[ rand( local_ai_count )]);
-		var white_player = Player.create_local_ai( "White", ai[0].local_path );
-		var black_player = Player.create_local_ai( "Black", ai[1].local_path );
+		var usable_ai = get_usable_ai_modules( ai_registry );
+		var players = [];
+		var colors = [ "White", "Black" ];
+		for( var i = 0, ii = colors.length; i < ii; ++i ) {
+			color = colors[i];
+			var ai_metadata = usable_ai[ rand( usable_ai.length )];
+			if( ai_metadata.proximity == "Local" )
+				players.push( Player.create_local_ai( color, ai_metadata.local_path ));
+			else if( ai_metadata.proximity == "Remote" )
+				players.push( Player.create_remote_ai( color, ai_metadata.remote_host, ai_metadata.remote_port ));
+		}
+		var creation_parameters = {
+			use_mosquito: config["use_mosquito"],
+			use_ladybug: config["use_ladybug"],
+			use_pillbug: config["use_pillbug"]
+		};
 		var game_id = core.create_game( 
-			white_player,
-			black_player,
-			config["use_mosquito"],
-			config["use_ladybug"],
-			config["use_pillbug"]
+			players[0],
+			players[1],
+			creation_parameters
 		);
 		core.start_game( game_id );
 	});
@@ -331,6 +294,12 @@ function count_registered_ai_modules( ai_registry ) {
 		+  (ai_modules.remote ? ai_modules.remote.length : 0);
 }
 
+function get_usable_ai_modules( ai_registry ) {
+	return _.filter( ai_registry.ai_metadata, function( metadata ) {
+		return metadata.active && metadata.greetings_data != null;
+	});
+}
+
 // asynchronous
 //   ai_registry <-- standard ai_registry object (global)
 //   progress_callback_fn <-- ( metadata_object )
@@ -345,13 +314,19 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 				var metadata = {
 					name: reference.name,
 					proximity: proximity,
+					local_path: undefined,
+					remote_host: undefined,
+					remote_port: undefined,
 					can_connect: false,
 					greetings_response_received: false,
 					ai_active: false,
 					greetings_data: null,
-					error: null
+					error: undefined
 				}
 				ai_registry.ai_metadata[ reference.name ] = metadata;
+				metadata.local_path = reference.local_path;
+				metadata.remote_host = reference.remote_host;
+				metadata.remote_port = reference.remote_port;
 				var greetings_message = core.prepare_greetings_request_message();
 				if( proximity == "Local" ) {
 					try {
@@ -416,7 +391,12 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 function handle_game_event( game_event ) {
 	var game_id = game_event.game_id;
 	var game_instance = core.lookup_game( game_id );
-	//show_tournament_progress( tournament ); // TODO
+	//
+	readline.clearScreenDown( process.stdout );
+	var game_ids_to_show = [ game_id ];
+	show_progress_for_games( game_ids_to_show );
+	readline.moveCursor( process.stdout, -1000, -game_ids_to_show.length );
+	//
 	if( !game_instance.game.game_over
 	&&  game_instance.game.possible_turns != null ) {
 		var player = game_instance.players[ game_instance.game.player_turn ];
@@ -461,7 +441,7 @@ function handle_game_event( game_event ) {
 		// TODO: output recorded game data
 		core.end_game( game_id );
 		//
-		var active_games = core.list_games();
+		var active_games = core.list_active_games();
 		if( active_games.length == 0 ) {
 			_.defer( process.exit );
 		}
@@ -471,11 +451,6 @@ function handle_game_event( game_event ) {
 ///////////////////////////////////////////////////////////////////////////////
 // tier 1 supporting functions
 
-function show_tournament_progress( tournament ) {
-	// TODO: given a tournament object, show the status of all games
-	//   along with turns taken for each side, current turn, time elapsed etc.
-}
-
 function kill_all_games() {
 	// TODO: output partial recorded game data for all games in progress
 	//   additionally making sure that the "partial" flag for these games
@@ -483,38 +458,92 @@ function kill_all_games() {
 	_( core.list_games() ).map( core.end_game );
 }
 
-// deprecated
-// function find_active_ai() {
-// 	var ai_packages = {};
-// 	_.forEach( fs.readdirSync( ai_basepath ), function( ai_dir ) {
-// 		var ai_package_path = ai_basepath + ai_dir + "/package.json";
-// 		if( fs.existsSync( ai_package_path )) {
-// 			var ai_package = require( ai_package_path );
-// 			if( ai_package && ai_package.active ) {
-// 				ai_packages[ ai_package.name ] = ai_package;
-// 			}
-// 		}
-// 	});
-// 	return ai_packages;
-// }
-
-function compute_progress() {
-	var game_ids = core.list_games();
-	var progress_values = _( game_ids )
-		.map( core.lookup_game )
-		.map( function( game_core ) {
-			return _.max([
-				0,
-				_( game_core.game.board.search_pieces( undefined, "Queen Bee" ))
-					.map( function( Queen_Bee ) {
-						return game_core.game.board.lookup_occupied_adjacencies( Queen_Bee.position ).length;
-					})
-					.max()
-					.value()
-			]);
+function show_progress_for_games( game_ids ) {
+	var all_games_progress = _.map( game_ids, compute_progress );
+	var table = create_table();
+	table.push.apply( table,
+		_.map( all_games_progress, function( progress ) {
+			if( progress.game_over ) {
+				return [ "Game Over".grey ];
+			}
+			else {
+				return [ "In Progress".bold ];
+			}
 		})
-		.value();
-	return _.zipObject( game_ids, progress_values );
+	);
+	console.log( table.toString() );
+}
+
+function compute_progress( game_id ) {
+	var game_instance = core.lookup_game( game_id );
+	var game = game_instance.game;
+	var board = game.board;
+	var White_Queen_Bee = board.search_pieces( "White", "Queen Bee" )[0];
+	var Black_Queen_Bee = board.search_pieces( "Black", "Queen Bee" )[0];
+	return {
+		general: {
+			player_turn: game.player_turn,
+			turn_number: game.turn_number,
+			game_over: game.game_over,
+			winner: game.winner,
+			is_draw: game.is_draw,
+		},
+		white_player: {
+			queen_occupied_adjacencies: White_Queen_Bee ?
+				board.lookup_occupied_adjacencies( White_Queen_Bee ).length : undefined,
+		},
+		black_player: {
+			queen_occupied_adjacencies: Black_Queen_Bee ?
+				board.lookup_occupied_adjacencies( Black_Queen_Bee ).length : undefined,
+		}
+	}
+}
+
+function print_ai_registry_status( ai_registry ) {
+	var table = create_table();
+	table.push.apply( table, 
+		_.map( ai_registry.ai_modules.local, render_metadata ).concat(
+		_.map( ai_registry.ai_modules.remote, render_metadata ))
+	);
+	console.log( table.toString() );
+}
+
+function render_metadata( ai_reference ) {
+	var ai_metadata = ai_registry.ai_metadata 
+		? ai_registry.ai_metadata[ ai_reference.name ]
+		: null;
+	if( !ai_metadata ) {
+		// loading or communication in progress
+		return [
+			ai_reference.name.bold.cyan,
+			"",
+			"",
+			"",
+			"...".grey
+		];
+	}
+	else {
+		if( !ai_metadata.error && ai_metadata.greetings_data) {
+			// no error + greeting received
+			return [
+				ai_reference.name.bold.cyan,
+				ai_metadata.greetings_data.long_name,
+				ai_metadata.greetings_data.version.grey,
+				ai_metadata.greetings_data.description.grey,
+				"OK!".bold.green
+			];
+		}
+		else { 
+			// error
+			return [
+				ai_reference.name.cyan,
+				"",
+				"",
+				"",
+				"error".bold.red
+			];
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -37,18 +37,7 @@ function create_local_human( color ) {
 	var player = {
 		player_type: "Human",
 		color: color,
-		proximity: "Local",
-		enforce_rules: true
-	}
-	return player;
-}
-
-function create_local_tester( color ) {
-	var player = {
-		player_type: "Tester",
-		color: color,
-		proximity: "Local",
-		enforce_rules: false
+		proximity: "Local"
 	}
 	return player;
 }
@@ -58,8 +47,7 @@ function create_local_ai( color, local_path ) {
 		player_type: "AI",
 		color: color,
 		proximity: "Local",
-		local_path: local_path,
-		enforce_rules: true
+		local_path: local_path
 	}
 	return player;
 }
@@ -70,8 +58,7 @@ function create_remote_human( color, remote_host, remote_port ) {
 		color: color,
 		proximity: "Remote",
 		remote_host: remote_host,
-		remote_port: remote_port,
-		enforce_rules: true
+		remote_port: remote_port
 	}
 	return player;
 }
@@ -82,8 +69,7 @@ function create_remote_ai( color, remote_host, remote_port ) {
 		color: color,
 		proximity: "Remote",
 		remote_host: remote_host,
-		remote_port: remote_port,
-		enforce_rules: true
+		remote_port: remote_port
 	}
 	return player;
 }
@@ -94,7 +80,6 @@ exports.colors_enum = colors_enum;
 exports.player_types_enum = player_types_enum;
 exports.message_types_enum = message_types_enum;
 exports.create_local_human = create_local_human;
-exports.create_local_tester = create_local_tester;
 exports.create_local_ai = create_local_ai;
 exports.create_remote_human = create_remote_human;
 exports.create_remote_ai = create_remote_ai;
