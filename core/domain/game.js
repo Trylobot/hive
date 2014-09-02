@@ -75,22 +75,63 @@ function create( creation_parameters ) {
 				game.board.move_piece( position_0, position_1 );
 			case "Forfeit":
 				break;
-			case "AI Exception":
+			case "Error":
 				skip_self_evaluation = true;
 				game.game_over = true;
 				game.winner = Piece.opposite_color( game.player_turn );
 				game.is_draw = false;
 				game.possible_turns = null;
 				break;
-			// case "Unknown":
-			// 	// ..?
-			// 	break;
+			case "Unknown":
+				// ..?
+				break;
 			default:
 				throw "invalid turn type: " + turn_type;
 		}
 		game.turn_number++;
 		game.player_turn = Piece.opposite_color( game.player_turn );
 		game.turn_history.push( _.clone( turn_object ));
+		if( !skip_self_evaluation )
+			game.self_evaluation();
+	}
+	game.undo_last_turn = function( skip_self_evaluation ) {
+		if( game.turn_history.length == 0 )
+			return; // cannot undo
+		game.player_turn = Piece.opposite_color( game.player_turn );
+		game.turn_number--;
+		var turn_object = game.turn_history.pop();
+		var turn_type = turn_object.turn_type;
+		switch( turn_type ) {
+			case "Placement": // remove piece from board and return to player's hand
+				var piece_color = game.player_turn;
+				var piece_type = turn_object.piece_type;
+				var position = Position.force_decoded_object( turn_object.destination );
+				var hand = game.hands[ piece_color ];
+				if( !hand[ turn_object.piece_type ])
+					hand[ turn_object.piece_type ] = 0;
+				hand[ turn_object.piece_type ]++;
+				game.board.remove_piece( position );
+				break;
+			case "Movement": // move piece back to its original position
+				var position_0 = Position.force_decoded_object( turn_object.source );
+				var position_1 = Position.force_decoded_object( turn_object.destination );
+				game.board.move_piece( position_1, position_0 );
+				break;
+			case "Special Ability": // move piece back to its original position
+				// TODO: do something with the ability_user field?
+				var position_0 = Position.force_decoded_object( turn_object.source );
+				var position_1 = Position.force_decoded_object( turn_object.destination );
+				game.board.move_piece( position_1, position_0 );
+			case "Forfeit":
+				break;
+			case "Error":
+				break;
+			case "Unknown":
+				// ..?
+				break;
+			default:
+				throw "invalid turn type: " + turn_type;
+		}
 		if( !skip_self_evaluation )
 			game.self_evaluation();
 	}

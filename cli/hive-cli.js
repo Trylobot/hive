@@ -209,7 +209,10 @@ function program_command_play_single_random() {
 		var colors = [ "White", "Black" ];
 		for( var i = 0, ii = colors.length; i < ii; ++i ) {
 			var color = colors[i];
-			var ai_metadata = usable_ai[ rand( usable_ai.length )];
+			var idx = rand( usable_ai.length );
+			var ai_metadata = usable_ai[ idx ];
+			if( usable_ai.length > 1 ) // prefer to match ai against a different ai, whenever possible
+				usable_ai.splice( idx, 1 ); // remove the chosen ai from the pool
 			if( ai_metadata.proximity == "Local" )
 				players.push( Player.create_local_ai( ai_metadata.name, color, ai_metadata.local_path ));
 			else if( ai_metadata.proximity == "Remote" )
@@ -400,20 +403,15 @@ function handle_game_event( game_event ) {
 		var player = game_instance.players[ game_instance.game.player_turn ];
 		var request_message = core.prepare_choose_turn_request_message( game_id );
 		var response_callback = function( response_message ) {
-			if( !response_message.error ) {
-				var turn = core.parse_response_message_as_turn_object( response_message );
-				var turn_event = core.prepare_turn_response_message( turn, game_id );
-				_.defer( function() { // allow the callstack room to breathe
-					core.events.emit( "turn", turn_event );
-				});
-			}
-			else {
-				var turn = Turn.create_error( response_message.error );
-				var turn_event = core.prepare_turn_response_message( turn, game_id );
-				_.defer( function() { // allow the callstack room to breathe
-					core.events.emit( "turn", turn_event );
-				});
-			}
+			var turn;
+			if( !response_message.error )
+				turn = core.parse_response_message_as_turn_object( response_message );
+			else
+				turn = Turn.create_error( response_message.error );
+			var turn_event = core.prepare_turn_response_message( turn, game_id );
+			_.defer( function() { // allow the callstack room to breathe
+				core.events.emit( "turn", turn_event );
+			});
 		};
 		if( player.player_type == "AI" ) {
 			if( player.proximity == "Local" ) {
@@ -560,6 +558,7 @@ function show_ai_registry_check_status( ai_registry ) {
 					"",
 					"",
 					"",
+					"",
 					color.blackBright( "..." )
 				];
 			}
@@ -568,8 +567,9 @@ function show_ai_registry_check_status( ai_registry ) {
 				return [
 					color.bold.cyanBright( ai_reference.name ),
 					ai_metadata.greetings_data.long_name,
-					color.blackBright( ai_metadata.greetings_data.version ),
+					color.bold.blackBright( ai_metadata.greetings_data.version ),
 					color.blackBright( ai_metadata.greetings_data.description ),
+					color.blackBright( ai_metadata.proximity ),
 					color.bold.greenBright( "OK" )
 				];
 			}
@@ -580,7 +580,8 @@ function show_ai_registry_check_status( ai_registry ) {
 					"",
 					"",
 					"",
-					color.blackBright( "ERROR" )
+					color.blackBright( ai_metadata.proximity ),
+					color.bold.redBright( "ERROR" )
 				];
 			}
 		})

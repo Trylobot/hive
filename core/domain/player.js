@@ -83,6 +83,8 @@ function create_remote_ai( name, color, remote_host, remote_port ) {
 exports.colors_enum = colors_enum;
 exports.player_types_enum = player_types_enum;
 exports.message_types_enum = message_types_enum;
+
+exports.opposite_color = Piece.opposite_color;
 exports.create_local_human = create_local_human;
 exports.create_local_ai = create_local_ai;
 exports.create_remote_human = create_remote_human;

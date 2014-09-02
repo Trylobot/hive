@@ -6,6 +6,7 @@ var fs = require("fs");
 var net = require("net");
 //   3rd-party
 var _ = require("lodash");
+var JsonSocket = require("json-socket");
 //   user
 var package_json = require("./package.json");
 var core_basepath = fs.existsSync("./core/") ? "./core/" : "../core/";
@@ -69,8 +70,6 @@ var model = {
 	game_id: null,
 	game_instance: null,
 	tcp_server: null,
-	tcp_server_listening: null,
-	tcp_outgoing_response: null,
 	tcp_client: null,
 	//////////////////////////////
 	// DELETE ME
