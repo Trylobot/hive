@@ -37,6 +37,10 @@ remote AI are not managed at all.
 function create( system_version ) {
 	var core = {
 		game_instances: {},
+		communications: {
+			local: {},
+			remote: {}
+		},
 		events: new events.EventEmitter
 	}
 	// ---
@@ -133,12 +137,26 @@ function create( system_version ) {
 	// ---
 	core.send_message_to_local_ai = function( message, local_path, callback_fn ) {
 		try {
-			var local_ai = child_process.fork( __dirname + "/../ai/ai-local-fork.js", [ local_path ]);
-			local_ai.on( "message", function( message ) {
-				_.defer( callback_fn, message );
-				local_ai.kill(); // TODO: keep alive for longer?
-			});
-			local_ai.send( message );
+			// lazy initialization of forked processes
+			var local_ai = core.communications.local[ local_path ];
+			if( !local_ai ) {
+				local_ai = {
+					forked_process: child_process.fork( __dirname + "/../ai/ai-local-fork.js", [ local_path ]),
+					current_callback_fn: null
+				};
+				core.communications.local[ local_path ] = local_ai;
+				// TODO: add validation
+				//   - penalize strange messages!
+				local_ai.forked_process.on( "error", function( err ) {
+					_.defer( local_ai.current_callback_fn, { error: err });
+					// TODO: kill + refork?
+				});
+				local_ai.forked_process.on( "message", function( message ) {
+					_.defer( local_ai.current_callback_fn, message );
+				});
+			}
+			local_ai.current_callback_fn = callback_fn;
+			local_ai.forked_process.send( message );
 		} catch( err ) {
 			_.defer( callback_fn, { error: err });
 		}
@@ -146,21 +164,36 @@ function create( system_version ) {
 	core.send_message_to_remote_ai = function( message, remote_host, remote_port, callback_fn ) {
 		// you can use ../ai/ai-tcp-server.js to simulate/test this
 		try {
-			var socket = new net.Socket();
-			socket.on( "error", function( err ) {
-				_.defer( callback_fn, { error: err });
-			});
-			socket.on( "data", function( data ) {
-				var response_message = JSON.parse( data );
-				_.defer( callback_fn, response_message );
-				socket.destroy(); // TODO: keep alive for longer?
-			});
-			socket.connect( remote_port, remote_host, function() {
-				socket.write( JSON.stringify( message ));
-			});
+			var remote_address = remote_host + ":" + remote_port;
+			var remote_ai = core.communications.remote[ remote_address ];
+			if( !remote_ai ) {
+				remote_ai = {
+					socket: new net.Socket(),
+					current_callback_fn: null
+				};
+				// TODO: add validation etc
+				remote_ai.socket.on( "error", function( err ) {
+					_.defer( remote_ai.current_callback_fn, { error: err });
+				});
+				remote_ai.socket.on( "data", function( data ) {
+					var response_message = JSON.parse( data );
+					_.defer( remote_ai.current_callback_fn, response_message );
+				});
+				remote_ai.socket.connect( remote_port, remote_host );
+			}
+			remote_ai.current_callback_fn = callback_fn;
+			remote_ai.socket.write( JSON.stringify( message ));
 		} catch( err ) {
 			_.defer( callback_fn, { error: err });
 		}
+	}
+	core.destroy = function() {
+		_.forEach( core.communications.local, function( local_ai, local_path ) {
+			local_ai.kill();
+		});
+		_.forEach( core.communications.remote, function( socket, remote_address ) {
+			socket.destroy();
+		})
 	}
 	// ---
 	core.parse_response_message_as_turn_object = function( response_message ) {

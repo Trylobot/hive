@@ -81,11 +81,7 @@ var show_help = true;
 // main
 
 // hive/core
-core = Core.create( package_json.version );
-core.events.on( "game", handle_game_event );
-// init random seed
-mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
-// -----------
+init();
 program.parse( process.argv );
 // -----------
 // default behavior (no arguments given at all): show help and exit
@@ -236,7 +232,8 @@ function program_command_play_single_random() {
 			creation_parameters
 		);
 		core.start_game( game_id );
-		show_progress_for_games([ game_id ]);
+		//
+		module.print_core_status();
 	});
 	show_help = false;
 	//
@@ -246,6 +243,20 @@ function program_command_play_single_random() {
 
 ///////////////////////////////////////////////////////////////////////////////
 // complex initialization & configuration
+
+function init() {
+	core = Core.create( package_json.version );
+	core.events.on( "game", handle_game_event );
+	// init random seed
+	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
+	// throttled/debounced global functions
+	module.print_core_status = _.throttle( function() {
+		var game_ids = core.list_games();
+		readline.moveCursor( process.stdout, -1000, -(game_ids.length + 1) );
+		readline.clearScreenDown( process.stdout );
+		show_progress_for_games( game_ids );
+	}, 250 );
+}
 
 function resolve_config() {
 	// initialize config from command-line
@@ -369,7 +380,7 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 						metadata.greetings_data = null;
 						metadata.error = response.error;
 					}
-					if( progress_callback_fn )
+					if( typeof progress_callback_fn === "function" )
 						progress_callback_fn(); // allow render progress
 					callback( null, metadata ); // indicate task success
 				}
@@ -384,7 +395,7 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 		_.map( ai_registry.ai_modules.local, make_ai_resolve_task( "Local" )).concat(
 		_.map( ai_registry.ai_modules.remote, make_ai_resolve_task( "Remote" )))
 	, limit, function( err, results ) {
-		if( finished_callback_fn )
+		if( typeof finished_callback_fn === "function" )
 			finished_callback_fn();
 	});
 }
@@ -393,14 +404,10 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 // events
 
 function handle_game_event( game_event ) {
+	module.print_core_status();
+	//
 	var game_id = game_event.game_id;
 	var game_instance = core.lookup_game( game_id );
-	//
-	readline.clearScreenDown( process.stdout );
-	var game_ids_to_show = [ game_id ];
-	show_progress_for_games( game_ids_to_show );
-	readline.moveCursor( process.stdout, -1000, -game_ids_to_show.length );
-	//
 	if( !game_instance.game.game_over
 	&&  game_instance.game.possible_turns != null ) {
 		var player = game_instance.players[ game_instance.game.player_turn ];
@@ -421,7 +428,7 @@ function handle_game_event( game_event ) {
 				});
 			}
 		};
-		if( player.type == "AI" ) {
+		if( player.player_type == "AI" ) {
 			if( player.proximity == "Local" ) {
 				core.send_message_to_local_ai( 
 					request_message, 
@@ -444,8 +451,7 @@ function handle_game_event( game_event ) {
 	else { //( game_over == true || possible_turns == null )
 		// TODO: output recorded game data
 		core.end_game( game_id );
-		show_progress_for_games([ game_id ]);
-		//
+		module.print_core_status();
 		var active_games = core.list_active_games();
 		if( active_games.length == 0 ) {
 			process.exit();
@@ -495,11 +501,11 @@ function compute_progress( game_id ) {
 		},
 		white_player: {
 			queen_occupied_adjacencies: White_Queen_Bee ?
-				board.lookup_occupied_adjacencies( White_Queen_Bee ).length : undefined,
+				board.lookup_occupied_adjacencies( White_Queen_Bee.position ).length : undefined,
 		},
 		black_player: {
 			queen_occupied_adjacencies: Black_Queen_Bee ?
-				board.lookup_occupied_adjacencies( Black_Queen_Bee ).length : undefined,
+				board.lookup_occupied_adjacencies( Black_Queen_Bee.position ).length : undefined,
 		}
 	}
 }
