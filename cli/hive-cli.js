@@ -448,7 +448,7 @@ function handle_game_event( game_event ) {
 		//
 		var active_games = core.list_active_games();
 		if( active_games.length == 0 ) {
-			_.defer( process.exit );
+			process.exit();
 		}
 	}
 }
