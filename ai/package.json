@@ -4,5 +4,8 @@
 	"description": "Generic TCP Server for Node.js implementations of Hive AI modules",
 	"author": "Trylobot",
 	"project_url": "https://github.com/Trylobot/hive/tree/master/ai",
-	"language": "Javascript"
+	"language": "Javascript",
+	"dependencies": {
+		"json-socket": "~0.1.2"
+	}
 }

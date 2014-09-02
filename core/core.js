@@ -3,11 +3,12 @@
 // dependencies
 //   node (built-in)
 var events = require("events");
-var net = require("net");
 var child_process = require("child_process");
 //   3rd-party modules
 var _ = require("lodash");
 var mersenne_twister = new (require('mersenne').MersenneTwister19937);
+var net = require("net");
+var JsonSocket = require("json-socket");
 //   user-defined modules
 _(global).extend(require("./domain/util"));
 var Piece = require("./domain/piece");
@@ -148,51 +149,63 @@ function create( system_version ) {
 				// TODO: add validation
 				//   - penalize strange messages!
 				local_ai.forked_process.on( "error", function( err ) {
-					_.defer( local_ai.current_callback_fn, { error: err });
+					local_ai.current_callback_fn({ error: err });
 					// TODO: kill + refork?
 				});
 				local_ai.forked_process.on( "message", function( message ) {
-					_.defer( local_ai.current_callback_fn, message );
+					local_ai.current_callback_fn( message );
 				});
 			}
 			local_ai.current_callback_fn = callback_fn;
 			local_ai.forked_process.send( message );
 		} catch( err ) {
-			_.defer( callback_fn, { error: err });
+			callback_fn({ error: err });
 		}
 	}
 	core.send_message_to_remote_ai = function( message, remote_host, remote_port, callback_fn ) {
-		// you can use ../ai/ai-tcp-server.js to simulate/test this
+		// you can use ../ai/ai-tcp-server.js (see usage) to simulate/test this
 		try {
 			var remote_address = remote_host + ":" + remote_port;
 			var remote_ai = core.communications.remote[ remote_address ];
 			if( !remote_ai ) {
 				remote_ai = {
-					socket: new net.Socket(),
+					json_socket: new JsonSocket( new net.Socket() ),
+					connected: false,
 					current_callback_fn: null
 				};
+				core.communications.remote[ remote_address ] = remote_ai;
 				// TODO: add validation etc
-				remote_ai.socket.on( "error", function( err ) {
-					_.defer( remote_ai.current_callback_fn, { error: err });
+				// Note: it is currently not possible to receive data regarding multiple requests simultaneously
+				remote_ai.json_socket.on( "message", function( message ) {
+					remote_ai.current_callback_fn( message );
 				});
-				remote_ai.socket.on( "data", function( data ) {
-					var response_message = JSON.parse( data );
-					_.defer( remote_ai.current_callback_fn, response_message );
+				remote_ai.json_socket.on( "error", function( err ) {
+					remote_ai.current_callback_fn({ error: err });
 				});
-				remote_ai.socket.connect( remote_port, remote_host );
+				remote_ai.json_socket.connect( remote_port, remote_host );
 			}
 			remote_ai.current_callback_fn = callback_fn;
-			remote_ai.socket.write( JSON.stringify( message ));
+			if( remote_ai.connected ) {
+				remote_ai.json_socket.sendMessage( message );
+			}
+			else {
+				remote_ai.json_socket.on( "connect", function() {
+					remote_ai.json_socket.sendMessage( message );
+					//
+					remote_ai.connected = true;
+					remote_ai.json_socket._socket.removeAllListeners( "connect" );
+				});
+			}
 		} catch( err ) {
-			_.defer( callback_fn, { error: err });
+			callback_fn({ error: err });
 		}
 	}
 	core.destroy = function() {
 		_.forEach( core.communications.local, function( local_ai, local_path ) {
 			local_ai.kill();
 		});
-		_.forEach( core.communications.remote, function( socket, remote_address ) {
-			socket.destroy();
+		_.forEach( core.communications.remote, function( remote_ai, remote_address ) {
+			remote_ai.json_socket._socket.destroy();
 		})
 	}
 	// ---

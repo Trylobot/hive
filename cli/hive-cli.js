@@ -5,7 +5,6 @@
 //   node (built-in)
 var fs = require("fs");
 var path = require("path");
-var net = require("net");
 var readline = require("readline");
 //   3rd-party modules
 var _ = require("lodash");
@@ -115,16 +114,11 @@ function program_command_list_ai() {
 		process.exit(); // print nothing (by design) indicating an empty list
 	}
 	else {
-		readline.clearScreenDown( process.stdout );
-		print_ai_registry_status( ai_registry );
-		readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
-		var on_progress = _.debounce( function() {
-			readline.clearScreenDown( process.stdout );
+		print_ai_registry_status( ai_registry, true );
+		var on_progress = function() {
 			print_ai_registry_status( ai_registry );
-			readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
-		}, 100 );
+		};
 		var on_complete = function() {
-			readline.clearScreenDown( process.stdout );
 			print_ai_registry_status( ai_registry );
 			// write to disk and exit
 			save_ai_registry( ai_registry );
@@ -233,7 +227,7 @@ function program_command_play_single_random() {
 		);
 		core.start_game( game_id );
 		//
-		module.print_core_status();
+		print_core_status( true );
 	});
 	show_help = false;
 	//
@@ -249,13 +243,6 @@ function init() {
 	core.events.on( "game", handle_game_event );
 	// init random seed
 	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
-	// throttled/debounced global functions
-	module.print_core_status = _.throttle( function() {
-		var game_ids = core.list_games();
-		readline.moveCursor( process.stdout, -1000, -(game_ids.length + 1) );
-		readline.clearScreenDown( process.stdout );
-		show_progress_for_games( game_ids );
-	}, 100 );
 }
 
 function resolve_config() {
@@ -404,7 +391,7 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 // events
 
 function handle_game_event( game_event ) {
-	module.print_core_status();
+	print_core_status();
 	//
 	var game_id = game_event.game_id;
 	var game_instance = core.lookup_game( game_id );
@@ -416,14 +403,14 @@ function handle_game_event( game_event ) {
 			if( !response_message.error ) {
 				var turn = core.parse_response_message_as_turn_object( response_message );
 				var turn_event = core.prepare_turn_response_message( turn, game_id );
-				_.defer( function() { 
+				_.defer( function() { // allow the callstack room to breathe
 					core.events.emit( "turn", turn_event );
 				});
 			}
 			else {
-				var turn = Turn.create_error( err );
+				var turn = Turn.create_error( response_message.error );
 				var turn_event = core.prepare_turn_response_message( turn, game_id );
-				_.defer( function() {
+				_.defer( function() { // allow the callstack room to breathe
 					core.events.emit( "turn", turn_event );
 				});
 			}
@@ -451,7 +438,7 @@ function handle_game_event( game_event ) {
 	else { //( game_over == true || possible_turns == null )
 		// TODO: output recorded game data
 		core.end_game( game_id );
-		module.print_core_status();
+		print_core_status();
 		var active_games = core.list_active_games();
 		if( active_games.length == 0 ) {
 			process.exit();
@@ -469,10 +456,57 @@ function kill_all_games() {
 	_( core.list_games() ).map( core.end_game );
 }
 
+function print_core_status( no_cls ) {
+	var game_ids = core.list_games();
+	if( !no_cls ) {
+		readline.moveCursor( process.stdout, 0, -(game_ids.length) );
+		readline.clearScreenDown( process.stdout );
+		readline.moveCursor( process.stdout, 0, -(game_ids.length) );
+	}
+	show_progress_for_games( game_ids );
+}
+
+function print_ai_registry_status( ai_registry, no_cls ) {
+	var registered_ai_modules = count_registered_ai_modules( ai_registry );
+	if( !no_cls ) {
+		readline.moveCursor( process.stdout, 0, -registered_ai_modules );
+		readline.clearScreenDown( process.stdout );
+		readline.moveCursor( process.stdout, 0, -registered_ai_modules );
+	}
+	show_ai_registry_check_status( ai_registry );
+}
+
+// TODO: write a Table decorator that adds line-clearing codes to all lines just before the terminator, and clear-screen-down codes at the end
+//   and can return the number of actual lines written, to be used on the next pass to reset the cursor.
 function show_progress_for_games( game_ids ) {
 	// NAME vs NAME 
+	// arbitrarily, white is magenta and black is green. no reason.
 	var all_games = _.map( game_ids, core.lookup_game );
-	var all_games_progress = _.map( all_games, compute_progress );
+	var all_games_progress = _.map( all_games, function( game_instance ) {
+		var game = game_instance.game;
+		var board = game.board;
+		var White_Queen_Bee = board.search_pieces( "White", "Queen Bee" )[0];
+		var Black_Queen_Bee = board.search_pieces( "Black", "Queen Bee" )[0];
+		return {
+			general: {
+				player_turn: game.player_turn,
+				turn_number: game.turn_number,
+				game_over: game.game_over,
+				winner: game.winner,
+				is_draw: game.is_draw,
+			},
+			white_player: {
+				name: game_instance.players[ "White" ].name,
+				queen_occupied_adjacencies: White_Queen_Bee ?
+					board.lookup_occupied_adjacencies( White_Queen_Bee.position ).length : "-",
+			},
+			black_player: {
+				name: game_instance.players[ "Black" ].name,
+				queen_occupied_adjacencies: Black_Queen_Bee ?
+					board.lookup_occupied_adjacencies( Black_Queen_Bee.position ).length : "-",
+			}
+		}
+	});
 	var table = create_table();
 	table.push.apply( table,
 		_.map( all_games_progress, function( progress ) {
@@ -485,46 +519,31 @@ function show_progress_for_games( game_ids ) {
 				return row.concat([
 					color.blackBright( "IN PROGRESS" ),
 					color.magentaBright( progress.white_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
-					color.greenBright( progress.black_player.queen_occupied_adjacencies ) + color.blackBright( "/6" )
+					color.greenBright( progress.black_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
+					"TURN " + color.whiteBright( progress.general.turn_number )
 				]);
 			}
-			else {
-				return row.concat([
-					color.blackBright( "GAME OVER" )
-				]);
+			else { // progress.general.game_over
+				row.push( color.blackBright( "GAME OVER" ))
+				if( !progress.general.is_draw ) {
+					var str = color.blackBright( "WINNER: " ) + progress.general.winner + " ";
+					if( progress.general.winner == "White" )
+						str += "(" + color.magentaBright( progress.white_player.name ) + ")";
+					else if( progress.general.winner == "Black" )
+						str += "(" + color.greenBright( progress.black_player.name ) + ")";
+					row.push( str );
+				}
+				else {
+					row.push( color.blackBright( "DRAW" ));
+				}
+				return row;
 			}
 		})
 	);
 	console.log( table.toString() );
 }
 
-function compute_progress( game_instance ) {
-	var game = game_instance.game;
-	var board = game.board;
-	var White_Queen_Bee = board.search_pieces( "White", "Queen Bee" )[0];
-	var Black_Queen_Bee = board.search_pieces( "Black", "Queen Bee" )[0];
-	return {
-		general: {
-			player_turn: game.player_turn,
-			turn_number: game.turn_number,
-			game_over: game.game_over,
-			winner: game.winner,
-			is_draw: game.is_draw,
-		},
-		white_player: {
-			name: game_instance.players[ "White" ].name,
-			queen_occupied_adjacencies: White_Queen_Bee ?
-				board.lookup_occupied_adjacencies( White_Queen_Bee.position ).length : undefined,
-		},
-		black_player: {
-			name: game_instance.players[ "Black" ].name,
-			queen_occupied_adjacencies: Black_Queen_Bee ?
-				board.lookup_occupied_adjacencies( Black_Queen_Bee.position ).length : undefined,
-		}
-	}
-}
-
-function print_ai_registry_status( ai_registry ) {
+function show_ai_registry_check_status( ai_registry ) {
 	var table = create_table();
 	table.push.apply( table, 
 		_.map( 
@@ -534,7 +553,7 @@ function print_ai_registry_status( ai_registry ) {
 			var ai_metadata = ai_registry.ai_metadata 
 				? ai_registry.ai_metadata[ ai_reference.name ]
 				: null;
-			if( !ai_metadata ) {
+			if( !ai_metadata || (!ai_metadata.error && !ai_metadata.greetings_data) ) {
 				// loading or communication in progress
 				return [
 					color.bold.cyanBright( ai_reference.name ),
@@ -544,27 +563,25 @@ function print_ai_registry_status( ai_registry ) {
 					color.blackBright( "..." )
 				];
 			}
-			else {
-				if( !ai_metadata.error && ai_metadata.greetings_data) {
-					// no error + greeting received
-					return [
-						color.bold.cyanBright( ai_reference.name ),
-						ai_metadata.greetings_data.long_name,
-						color.blackBright( ai_metadata.greetings_data.version ),
-						color.blackBright( ai_metadata.greetings_data.description ),
-						color.bold.greenBright( "OK" )
-					];
-				}
-				else { 
-					// error
-					return [
-						color.bold.cyanBright( ai_reference.name ),
-						"",
-						"",
-						"",
-						color.blackBright( "ERROR" )
-					];
-				}
+			else if( !ai_metadata.error && ai_metadata.greetings_data ) {
+				// no error + greeting received
+				return [
+					color.bold.cyanBright( ai_reference.name ),
+					ai_metadata.greetings_data.long_name,
+					color.blackBright( ai_metadata.greetings_data.version ),
+					color.blackBright( ai_metadata.greetings_data.description ),
+					color.bold.greenBright( "OK" )
+				];
+			}
+			else if( ai_metadata.error ) { 
+				// error
+				return [
+					color.bold.cyanBright( ai_reference.name ),
+					"",
+					"",
+					"",
+					color.blackBright( "ERROR" )
+				];
 			}
 		})
 	);
