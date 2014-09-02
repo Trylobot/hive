@@ -12,7 +12,7 @@ var _ = require("lodash");
 var mersenne_twister = new (require("mersenne").MersenneTwister19937);
 var program = require("commander");
 var Table = require("cli-table");
-var colors = require("colors");
+var color = require("cli-color");
 var async = require("async");
 //   semi-dynamic paths
 var self_path = path.dirname( process.argv[1] )+"/"; // dir
@@ -98,8 +98,8 @@ function program_command_print_config() {
 	table.push.apply( table, _.map( config,
 		function( value, key ) {
 			return [
-				key.grey,
-				JSON.stringify( value ).bold
+				color.blackBright( key ),
+				color.bold.whiteBright( JSON.stringify( value ))
 			];
 		}
 	));
@@ -122,7 +122,7 @@ function program_command_list_ai() {
 			readline.clearScreenDown( process.stdout );
 			print_ai_registry_status( ai_registry );
 			readline.moveCursor( process.stdout, -1000, -registered_ai_modules );
-		}, 250 );
+		}, 100 );
 		var on_complete = function() {
 			readline.clearScreenDown( process.stdout );
 			print_ai_registry_status( ai_registry );
@@ -217,9 +217,9 @@ function program_command_play_single_random() {
 			var color = colors[i];
 			var ai_metadata = usable_ai[ rand( usable_ai.length )];
 			if( ai_metadata.proximity == "Local" )
-				players.push( Player.create_local_ai( color, ai_metadata.local_path ));
+				players.push( Player.create_local_ai( ai_metadata.name, color, ai_metadata.local_path ));
 			else if( ai_metadata.proximity == "Remote" )
-				players.push( Player.create_remote_ai( color, ai_metadata.remote_host, ai_metadata.remote_port ));
+				players.push( Player.create_remote_ai( ai_metadata.name, color, ai_metadata.remote_host, ai_metadata.remote_port ));
 		}
 		var creation_parameters = {
 			use_mosquito: config["use_mosquito"],
@@ -255,7 +255,7 @@ function init() {
 		readline.moveCursor( process.stdout, -1000, -(game_ids.length + 1) );
 		readline.clearScreenDown( process.stdout );
 		show_progress_for_games( game_ids );
-	}, 250 );
+	}, 100 );
 }
 
 function resolve_config() {
@@ -470,23 +470,35 @@ function kill_all_games() {
 }
 
 function show_progress_for_games( game_ids ) {
-	var all_games_progress = _.map( game_ids, compute_progress );
+	// NAME vs NAME 
+	var all_games = _.map( game_ids, core.lookup_game );
+	var all_games_progress = _.map( all_games, compute_progress );
 	var table = create_table();
 	table.push.apply( table,
 		_.map( all_games_progress, function( progress ) {
-			if( progress.game_over ) {
-				return [ "Game Over".grey ];
+			var row = [
+				color.bold.magentaBright( progress.white_player.name ),
+				color.blackBright( "vs." ),
+				color.bold.greenBright( progress.black_player.name )
+			];
+			if( !progress.general.game_over ) {
+				return row.concat([
+					color.blackBright( "IN PROGRESS" ),
+					color.magentaBright( progress.white_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
+					color.greenBright( progress.black_player.queen_occupied_adjacencies ) + color.blackBright( "/6" )
+				]);
 			}
 			else {
-				return [ "In Progress".bold ];
+				return row.concat([
+					color.blackBright( "GAME OVER" )
+				]);
 			}
 		})
 	);
 	console.log( table.toString() );
 }
 
-function compute_progress( game_id ) {
-	var game_instance = core.lookup_game( game_id );
+function compute_progress( game_instance ) {
 	var game = game_instance.game;
 	var board = game.board;
 	var White_Queen_Bee = board.search_pieces( "White", "Queen Bee" )[0];
@@ -500,10 +512,12 @@ function compute_progress( game_id ) {
 			is_draw: game.is_draw,
 		},
 		white_player: {
+			name: game_instance.players[ "White" ].name,
 			queen_occupied_adjacencies: White_Queen_Bee ?
 				board.lookup_occupied_adjacencies( White_Queen_Bee.position ).length : undefined,
 		},
 		black_player: {
+			name: game_instance.players[ "Black" ].name,
 			queen_occupied_adjacencies: Black_Queen_Bee ?
 				board.lookup_occupied_adjacencies( Black_Queen_Bee.position ).length : undefined,
 		}
@@ -523,32 +537,32 @@ function print_ai_registry_status( ai_registry ) {
 			if( !ai_metadata ) {
 				// loading or communication in progress
 				return [
-					ai_reference.name.bold.cyan,
+					color.bold.cyanBright( ai_reference.name ),
 					"",
 					"",
 					"",
-					"...".grey
+					color.blackBright( "..." )
 				];
 			}
 			else {
 				if( !ai_metadata.error && ai_metadata.greetings_data) {
 					// no error + greeting received
 					return [
-						ai_reference.name.bold.cyan,
+						color.bold.cyanBright( ai_reference.name ),
 						ai_metadata.greetings_data.long_name,
-						ai_metadata.greetings_data.version.grey,
-						ai_metadata.greetings_data.description.grey,
-						"OK!".bold.green
+						color.blackBright( ai_metadata.greetings_data.version ),
+						color.blackBright( ai_metadata.greetings_data.description ),
+						color.bold.greenBright( "OK" )
 					];
 				}
 				else { 
 					// error
 					return [
-						ai_reference.name.cyan,
+						color.bold.cyanBright( ai_reference.name ),
 						"",
 						"",
 						"",
-						"error".bold.red
+						color.blackBright( "ERROR" )
 					];
 				}
 			}

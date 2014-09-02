@@ -33,8 +33,9 @@ var message_types_enum = [
 
 // functions
 
-function create_local_human( color ) {
+function create_local_human( name, color ) {
 	var player = {
+		name: name,
 		player_type: "Human",
 		color: color,
 		proximity: "Local"
@@ -42,8 +43,9 @@ function create_local_human( color ) {
 	return player;
 }
 
-function create_local_ai( color, local_path ) {
+function create_local_ai( name, color, local_path ) {
 	var player = {
+		name: name,
 		player_type: "AI",
 		color: color,
 		proximity: "Local",
@@ -52,8 +54,9 @@ function create_local_ai( color, local_path ) {
 	return player;
 }
 
-function create_remote_human( color, remote_host, remote_port ) {
+function create_remote_human( name, color, remote_host, remote_port ) {
 	var player = {
+		name: name,
 		player_type: "Human",
 		color: color,
 		proximity: "Remote",
@@ -63,8 +66,9 @@ function create_remote_human( color, remote_host, remote_port ) {
 	return player;
 }
 
-function create_remote_ai( color, remote_host, remote_port ) {
+function create_remote_ai( name, color, remote_host, remote_port ) {
 	var player = {
+		name: name,
 		player_type: "AI",
 		color: color,
 		proximity: "Remote",
