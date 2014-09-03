@@ -101,8 +101,7 @@ function program_command_print_config() {
 		function( value, key ) {
 			return [
 				color.blackBright( key ),
-				color.bold.whiteBright( JSON.stringify( value )),
-				"\x1b[K" // erase to end of line
+				color.bold.whiteBright( JSON.stringify( value ))
 			];
 		}
 	));
@@ -510,7 +509,7 @@ function show_progress_for_games( game_ids ) {
 				color.bold.greenBright( progress.black_player.name )
 			];
 			if( !progress.general.game_over ) {
-				row = row.concat([
+				return row.concat([
 					color.blackBright( "IN PROGRESS" ),
 					color.magentaBright( progress.white_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
 					color.greenBright( progress.black_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
@@ -530,9 +529,8 @@ function show_progress_for_games( game_ids ) {
 				else {
 					row.push( color.blackBright( "DRAW" ));
 				}
+				return row;
 			}
-			row.push( "\x1b[K" ); // erase to end of line
-			return row;
 		})
 	);
 	console.log( table.toString() );
@@ -557,8 +555,7 @@ function show_ai_registry_check_status( ai_registry ) {
 					"",
 					"",
 					"",
-					color.blackBright( "..." ),
-					"\x1b[K" // erase to end of line
+					color.blackBright( "..." )
 				];
 			}
 			else if( !ai_metadata.error && ai_metadata.greetings_data ) {
@@ -569,8 +566,7 @@ function show_ai_registry_check_status( ai_registry ) {
 					color.bold.blackBright( ai_metadata.greetings_data.version ),
 					color.blackBright( ai_metadata.greetings_data.description ),
 					color.blackBright( ai_metadata.proximity ),
-					color.bold.greenBright( "OK" ),
-					"\x1b[K" // erase to end of line
+					color.bold.greenBright( "OK" )
 				];
 			}
 			else if( ai_metadata.error ) { 
@@ -581,8 +577,7 @@ function show_ai_registry_check_status( ai_registry ) {
 					"",
 					"",
 					color.blackBright( ai_metadata.proximity ),
-					color.bold.redBright( "ERROR" ),
-					"\x1b[K" // erase to end of line
+					color.bold.redBright( "ERROR" )
 				];
 			}
 		})
@@ -622,13 +617,13 @@ function create_table() {
 			"bottom-mid": "",
 			"bottom-left": "",
 			"bottom-right": "",
-			"left": "  ",
+			"left": "  ", // left-side padding
 			"left-mid": "",
 			"mid": "",
 			"mid-mid": "",
-			"right": "",
+			"right": "\x1b[K", // erase to end of line
 			"right-mid": "",
-			"middle": "  "
+			"middle": "  " // intra-cell padding
 		},
 		style: { 
 			"padding-left": 0, 
