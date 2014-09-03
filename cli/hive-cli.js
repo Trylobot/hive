@@ -71,10 +71,13 @@ program
 
 // persistent objects
 var config = null;
+var cursor = null;
 var core = null;
 var ai_registry = null;
 // cross-command flags
 var show_help = true;
+// terminal state
+var newlines = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // main
@@ -98,11 +101,13 @@ function program_command_print_config() {
 		function( value, key ) {
 			return [
 				color.blackBright( key ),
-				color.bold.whiteBright( JSON.stringify( value ))
+				color.bold.whiteBright( JSON.stringify( value )),
+				"\x1b[K" // erase to end of line
 			];
 		}
 	));
 	console.log( table.toString() );
+	newlines += table.length; // rows == lines
 	show_help = false;
 }
 
@@ -110,11 +115,8 @@ function program_command_list_ai() {
 	config = resolve_config();
 	var ai_registry = load_ai_registry();
 	var registered_ai_modules = count_registered_ai_modules( ai_registry );
-	if( registered_ai_modules == 0 ) {
-		process.exit(); // print nothing (by design) indicating an empty list
-	}
-	else {
-		print_ai_registry_status( ai_registry, true );
+	if( registered_ai_modules > 0 ) {
+		print_ai_registry_status( ai_registry );
 		var on_progress = function() {
 			print_ai_registry_status( ai_registry );
 		};
@@ -127,6 +129,9 @@ function program_command_list_ai() {
 		// async lookup on all registered ai modules, in parallel
 		resolve_ai_module_metadata( ai_registry, on_progress, on_complete );
 		show_help = false;
+	}
+	else {
+		process.exit(); // print nothing (by design) indicating an empty list
 	}
 }
 
@@ -454,23 +459,14 @@ function kill_all_games() {
 	_( core.list_games() ).map( core.end_game );
 }
 
-function print_core_status( no_cls ) {
+function print_core_status() {
 	var game_ids = core.list_games();
-	if( !no_cls ) {
-		readline.moveCursor( process.stdout, 0, -(game_ids.length) );
-		readline.clearScreenDown( process.stdout );
-		readline.moveCursor( process.stdout, 0, -(game_ids.length) );
-	}
+	clear_newlines();
 	show_progress_for_games( game_ids );
 }
 
-function print_ai_registry_status( ai_registry, no_cls ) {
-	var registered_ai_modules = count_registered_ai_modules( ai_registry );
-	if( !no_cls ) {
-		readline.moveCursor( process.stdout, 0, -registered_ai_modules );
-		readline.clearScreenDown( process.stdout );
-		readline.moveCursor( process.stdout, 0, -registered_ai_modules );
-	}
+function print_ai_registry_status( ai_registry ) {
+	clear_newlines();
 	show_ai_registry_check_status( ai_registry );
 }
 
@@ -514,7 +510,7 @@ function show_progress_for_games( game_ids ) {
 				color.bold.greenBright( progress.black_player.name )
 			];
 			if( !progress.general.game_over ) {
-				return row.concat([
+				row = row.concat([
 					color.blackBright( "IN PROGRESS" ),
 					color.magentaBright( progress.white_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
 					color.greenBright( progress.black_player.queen_occupied_adjacencies ) + color.blackBright( "/6" ),
@@ -534,11 +530,13 @@ function show_progress_for_games( game_ids ) {
 				else {
 					row.push( color.blackBright( "DRAW" ));
 				}
-				return row;
 			}
+			row.push( "\x1b[K" ); // erase to end of line
+			return row;
 		})
 	);
 	console.log( table.toString() );
+	newlines += table.length; // rows == lines
 }
 
 function show_ai_registry_check_status( ai_registry ) {
@@ -559,7 +557,8 @@ function show_ai_registry_check_status( ai_registry ) {
 					"",
 					"",
 					"",
-					color.blackBright( "..." )
+					color.blackBright( "..." ),
+					"\x1b[K" // erase to end of line
 				];
 			}
 			else if( !ai_metadata.error && ai_metadata.greetings_data ) {
@@ -570,7 +569,8 @@ function show_ai_registry_check_status( ai_registry ) {
 					color.bold.blackBright( ai_metadata.greetings_data.version ),
 					color.blackBright( ai_metadata.greetings_data.description ),
 					color.blackBright( ai_metadata.proximity ),
-					color.bold.greenBright( "OK" )
+					color.bold.greenBright( "OK" ),
+					"\x1b[K" // erase to end of line
 				];
 			}
 			else if( ai_metadata.error ) { 
@@ -581,18 +581,27 @@ function show_ai_registry_check_status( ai_registry ) {
 					"",
 					"",
 					color.blackBright( ai_metadata.proximity ),
-					color.bold.redBright( "ERROR" )
+					color.bold.redBright( "ERROR" ),
+					"\x1b[K" // erase to end of line
 				];
 			}
 		})
 	);
 	console.log( table.toString() );
+	newlines += table.length; // rows == lines
 }
 
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // tier 2 supporting functions
+
+function clear_newlines() {
+	if( newlines > 0 ) {
+		readline.moveCursor( process.stdout, 0, -newlines );
+		newlines = 0;
+	}
+}
 
 function rand( n ) {
 	return Math.floor( mersenne_twister.genrand_real2() * n );
