@@ -227,6 +227,7 @@ model.dat_gui = {
 					};
 					start_game( white_player, black_player, creation_parameters );
 					core.connect_to_remote_human_server( remote_address.host, remote_address.port, handle_sync_request );
+					core.send_sync_game_state_request_to_other_human( model.game_instance.game ); // immediate sync with host
 					gui.close();
 				}
 			}
@@ -470,6 +471,8 @@ function handle_sync_request( sync_message ) {
 	// sync game_state by "loading" the entire game
 	var game_state = sync_message.game_state;
 	model.game_instance.game = Game.load( sync_message.game_state ); // overwrites game state
+	// update UI
+	// TODO!
 }
 function do_turn( model, turn ) {
 	//console.log( turn );

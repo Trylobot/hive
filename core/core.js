@@ -251,7 +251,8 @@ function create( system_version ) {
 		socket.connect( remote_port, remote_host );
 	}
 	core.send_sync_game_state_request_to_other_human = function( game_state ) {
-		socket.sendMessage({
+		var existing_open_json_socket = core.communications.human.socket;
+		existing_open_json_socket.sendMessage({
 			game_state: game_state
 		});
 	}
