@@ -17,7 +17,8 @@
 	},
 	"homepage": "https://github.com/Trylobot/hive",
 	"scripts": {
-		"test": "node test/all-tests.js"
+		"test": "node test/all-tests.js",
+		"start": "nodewebkit nw/."
 	},
 	"engines": {
 		"node": "~0.10.28",
@@ -30,6 +31,7 @@
 		"json-socket": "~0.1.2"
 	},
 	"devDependencies": {
-		"test": "~0.6.0"
+		"test": "~0.6.0",
+		"nodewebkit": "~0.10.4"
 	}
 }

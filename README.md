@@ -6,6 +6,7 @@
 * [Hive Node-Webkit UI Guide](doc/hive-node-webkit.md)
 * [Hive Rules Core Implementation Details](doc/hive-core.md)
 
+
 ####Legal
 
 This work is licensed under the [Research License 1.0](LICENSE.md) strictly for academic research and/or educational purposes *only*.
