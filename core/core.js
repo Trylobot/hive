@@ -240,7 +240,7 @@ function create( system_version ) {
 			existing_socket.destroy();
 		}
 		// wrap/create new socket
-		socket = new JsonSocket( new net.Socket() );
+		var socket = new JsonSocket( new net.Socket() );
 		core.communications.human.socket = socket;
 		socket.on( "message", function( message ) {
 			callback_fn( message );

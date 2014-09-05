@@ -176,7 +176,7 @@ model.dat_gui = {
 			}
 		},
 		ai: {
-			"Select AI": "", // cannot specify a default value
+			"Select AI": "",
 			"Start Game": function() {
 				pre_game_cleanup();
 				// Local Human --> White
@@ -283,13 +283,14 @@ function pre_game_cleanup() {
 }
 model.dat_gui_themes = find_themes( model );
 model.available_ai_modules = find_available_ai_modules( ai_basepath );
+model.dat_gui.local.ai["Select AI"] = _.keys( model.available_ai_modules )[0]; // default AI
 // init dat.GUI
 var gui_new_game = gui.addFolder( "Start New Game" );
 	var gui_new_game_local = gui_new_game.addFolder( "Local Game" );
 		var gui_new_game_local_human = gui_new_game_local.addFolder( "Versus Human" );
 			gui_new_game_local_human.add( model.dat_gui.local.human, "Start Game" );
 		var gui_new_game_local_ai = gui_new_game_local.addFolder( "Versus AI" );
-			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Select AI", _.keys(model.available_ai_modules) );
+			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Select AI", _.keys( model.available_ai_modules ));
 			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Start Game" );
 	var gui_new_game_remote = gui_new_game.addFolder( "Networked Game" );
 		var gui_new_game_remote_human = gui_new_game_remote.addFolder( "Versus Human" );
@@ -300,8 +301,8 @@ var gui_new_game = gui.addFolder( "Start New Game" );
 				gui_new_game_remote_human_connect.add( model.dat_gui.remote.human.connect, "Host:Port" );
 				gui_new_game_remote_human_connect.add( model.dat_gui.remote.human.connect, "Connect" );
 		var gui_new_game_remote_ai = gui_new_game_remote.addFolder( "Versus AI" );
-			gui_new_game_remote_ai.add( model.dat_gui.remote.human.connect, "Host:Port" );
-			gui_new_game_remote_ai.add( model.dat_gui.remote.human.connect, "Connect" );
+			gui_new_game_remote_ai.add( model.dat_gui.remote.ai.connect, "Host:Port" );
+			gui_new_game_remote_ai.add( model.dat_gui.remote.ai.connect, "Connect" );
 var gui_game_options = gui.addFolder( "Game Options");
 	gui_game_options.add( model.dat_gui, "Use Mosquito" );
 	gui_game_options.add( model.dat_gui, "Use Ladybug" );
