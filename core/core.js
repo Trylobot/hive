@@ -217,8 +217,8 @@ function create( system_version ) {
 			// cleanup
 			var existing_socket = core.communications.human.socket;
 			if( existing_socket ) {
-				existing_socket.end();
-				existing_socket.destroy();
+				existing_socket._socket.end();
+				existing_socket._socket.destroy();
 			}
 			// wrap/create new socket
 			socket = new JsonSocket( socket );
@@ -236,8 +236,8 @@ function create( system_version ) {
 		// cleanup
 		var existing_socket = core.communications.human.socket;
 		if( existing_socket ) {
-			existing_socket.end();
-			existing_socket.destroy();
+			existing_socket._socket.end();
+			existing_socket._socket.destroy();
 		}
 		// wrap/create new socket
 		var socket = new JsonSocket( new net.Socket() );

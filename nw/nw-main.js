@@ -471,8 +471,8 @@ function handle_sync_request( sync_message ) {
 	// sync game_state by "loading" the entire game
 	var game_state = sync_message.game_state;
 	model.game_instance.game = Game.load( sync_message.game_state ); // overwrites game state
-	// update UI
-	// TODO!
+	// update UI by pretending there's been a game update
+	handle_game_event({ game_id: model.game_id }); // hopefully this doesn't trigger an infinite-sync-loop (cross your fingers, I guess)
 }
 function do_turn( model, turn ) {
 	//console.log( turn );
