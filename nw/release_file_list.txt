@@ -10,6 +10,7 @@ themes\
 node_modules\mersenne\
 node_modules\async\
 node_modules\lodash\
+node_modules\json-socket\
 bower_components\tweenjs\src\Tween.js
 bower_components\pixi.js\bin\pixi.dev.js
 bower_components\dat.gui\dat.gui.js
