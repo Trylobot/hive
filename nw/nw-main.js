@@ -182,7 +182,7 @@ model.dat_gui = {
 				// Local Human --> White
 				// Local AI --> Black
 				var white_player = Player.create_local_human( null, "White" );
-				var black_player = Player.create_local_ai( null, "Black", model.available_ai_modules[ model.dat_gui.local.ai[ "Select AI" ]]), // use selected ai
+				var black_player = Player.create_local_ai( null, "Black", model.available_ai_modules[ model.dat_gui.local.ai[ "Select AI" ]]); // use selected ai from dropdown
 				var creation_parameters = {
 					use_mosquito: model.dat_gui["Use Mosquito"],
 					use_ladybug: model.dat_gui["Use Ladybug"],
@@ -197,7 +197,7 @@ model.dat_gui = {
 		human: {
 			listen: {
 				"Listen Port": "51337",
-				"Start Game": function() {
+				"Start Server": function() {
 					pre_game_cleanup();
 					var local_port = model.dat_gui.remote.human.listen["Listen Port"];
 					// Remote Human (Client) --> White
@@ -213,7 +213,7 @@ model.dat_gui = {
 			},
 			connect: {
 				"Host:Port": "localhost:51337",
-				"Start Game": function() {
+				"Connect": function() {
 					pre_game_cleanup();
 					var remote_address = parse_remote_address( model.dat_gui.remote.human.connect["Host:Port"] );
 					// Local Human (Client) --> White
@@ -234,7 +234,7 @@ model.dat_gui = {
 		ai: {
 			connect: {
 				"Host:Port": "localhost:51337",
-				"Start Game": function() {
+				"Connect": function() {
 					pre_game_cleanup();
 					// Local Human --> White
 					// Remote AI --> Black
@@ -247,11 +247,13 @@ model.dat_gui = {
 						use_pillbug: model.dat_gui["Use Pillbug"]
 					};
 					start_game( white_player, black_player, creation_parameters );
+					var greetings_message = core.prepare_greetings_request_message();
+					core.send_message_to_remote_ai( greetings_message, black_player.remote_host, black_player.remote_port, void_fn );
 					gui.close();
 				}
 			}
 		}
-	}
+	},
 	"Load Game": function() {
 		choose_read_file_path( function( path ) {
 			fs.readFile( path, function( error, data ) {
@@ -289,28 +291,29 @@ var gui_new_game = gui.addFolder( "Start New Game" );
 		var gui_new_game_local_ai = gui_new_game_local.addFolder( "Versus AI" );
 			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Select AI", _.keys(model.available_ai_modules) );
 			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Start Game" );
-	var gui_new_game_remote = gui_new_game.addFolder( "Network Game" );
-		var gui_new_game_remote_human = gui_new_game_local.addFolder( "Versus Human" );
-		var gui_new_game_remote_ai = gui_new_game_local.addFolder( "Versus AI" );
-	
-	gui_new_game.add( model.dat_gui, "Host:Port" );
-	gui_new_game.add( model.dat_gui, "Human-vs-AI (Connect)" );
-	gui_new_game.add( model.dat_gui, "Human-vs-Human (Connect)" );
-	gui_new_game.add( model.dat_gui, "Listen Port" );
-	gui_new_game.add( model.dat_gui, "Human-vs-Human (Listen)" );
-var gui_game_options = gui.addFolder( "Game Add-Ons");
+	var gui_new_game_remote = gui_new_game.addFolder( "Networked Game" );
+		var gui_new_game_remote_human = gui_new_game_remote.addFolder( "Versus Human" );
+			var gui_new_game_remote_human_listen = gui_new_game_remote_human.addFolder( "Host Game" );
+				gui_new_game_remote_human_listen.add( model.dat_gui.remote.human.listen, "Listen Port" );
+				gui_new_game_remote_human_listen.add( model.dat_gui.remote.human.listen, "Start Server" );
+			var gui_new_game_remote_human_connect = gui_new_game_remote_human.addFolder( "Join Game" );
+				gui_new_game_remote_human_connect.add( model.dat_gui.remote.human.connect, "Host:Port" );
+				gui_new_game_remote_human_connect.add( model.dat_gui.remote.human.connect, "Connect" );
+		var gui_new_game_remote_ai = gui_new_game_remote.addFolder( "Versus AI" );
+			gui_new_game_remote_ai.add( model.dat_gui.remote.human.connect, "Host:Port" );
+			gui_new_game_remote_ai.add( model.dat_gui.remote.human.connect, "Connect" );
+var gui_game_options = gui.addFolder( "Game Options");
 	gui_game_options.add( model.dat_gui, "Use Mosquito" );
 	gui_game_options.add( model.dat_gui, "Use Ladybug" );
 	gui_game_options.add( model.dat_gui, "Use Pillbug" );
 var gui_load_save = gui.addFolder( "Load/Save" );
 	gui_load_save.add( model.dat_gui, "Load Game" );
 	gui_load_save.add( model.dat_gui, "Save Game" );
-var gui_themes = gui.addFolder( "Themes" );
+var gui_themes = gui.addFolder( "UI Themes" );
 _.forEach( model.dat_gui_themes, function( set_theme_fn, theme_name ) {
 	gui_themes.add( model.dat_gui_themes, theme_name );
 });
-var gui_dev_tools = gui.addFolder( "Debugging" );
-	gui_dev_tools.add( model.dat_gui, "Sandbox Mode" );
+var gui_dev_tools = gui.addFolder( "Development Tools" );
 	gui_dev_tools.add( model.dat_gui, "Open Debugger" );
 
 //////////////////////////////////////////////////////////////////
@@ -451,7 +454,7 @@ function build_pixi_game_from_hive_game( model ) {
 	position_status_text( model );
 	position_hands( model );
 }
-function handle_sync_request = function( sync_message ) {
+function handle_sync_request( sync_message ) {
 	// in a networked human-vs-human game, this function is called when the other player has altered the game state and has requested a sync
 	if( sync_message.error ) {
 		// TODO: handle errors
@@ -1321,3 +1324,4 @@ function parse_remote_address( host_port ) {
 		port: tokens[1]
 	};
 }
+function void_fn(){}
