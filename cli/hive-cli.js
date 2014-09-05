@@ -218,7 +218,7 @@ function program_command_play_single_random() {
 			if( usable_ai.length > 1 ) // prefer to match ai against a different ai, whenever possible
 				usable_ai.splice( idx, 1 ); // remove the chosen ai from the pool
 			if( ai_metadata.proximity == "Local" )
-				players.push( Player.create_local_ai( ai_metadata.name, color, ai_metadata.local_path ));
+				players.push( Player.create_local_ai( ai_metadata.name, color, resolve_module_path( ai_metadata.local_path )));
 			else if( ai_metadata.proximity == "Remote" )
 				players.push( Player.create_remote_ai( ai_metadata.name, color, ai_metadata.remote_host, ai_metadata.remote_port ));
 		}
@@ -339,9 +339,7 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 				var greetings_message = core.prepare_greetings_request_message();
 				if( proximity == "Local" ) {
 					try {
-						var ai_package_path = path.resolve( self_path + reference.local_path + "/package.json" );
-						var ai_package_json = JSON.parse( fs.readFileSync( ai_package_path ));
-						var resolved_module_path = path.resolve( self_path + reference.local_path + "/" + ai_package_json.module + ".js" );
+						var resolved_module_path = resolve_module_path( reference.local_path );
 						core.send_message_to_local_ai( 
 							greetings_message, 
 							resolved_module_path, 
@@ -602,8 +600,11 @@ function rand( n ) {
 	return Math.floor( mersenne_twister.genrand_real2() * n );
 }
 
-function load_ai( ai_package ) {
-	return require( ai_basepath + ai_package.name + "/" + ai_package.module );
+function resolve_module_path( local_path ) {
+	var ai_package_path = path.resolve( self_path + local_path + "/package.json" );
+	var ai_package_json = JSON.parse( fs.readFileSync( ai_package_path ));
+	var resolved_module_path = path.resolve( self_path + local_path + "/" + ai_package_json.module + ".js" );
+	return resolved_module_path;
 }
 
 function create_table() {
