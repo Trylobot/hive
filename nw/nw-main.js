@@ -69,14 +69,6 @@ var model = {
 	core: null,
 	game_id: null,
 	game_instance: null,
-	tcp_server: null,
-	tcp_client: null,
-	//////////////////////////////
-	// DELETE ME
-	webserver: null,
-	webserver_listening: null,
-	http_outgoing_response: null,
-	//////////////////////////////
 	// dat.gui
 	dat_gui: null,
 	available_ai_modules: null,
@@ -155,86 +147,111 @@ var core = Core.create( package_json.version );
 model.core = core;
 model.pixi_board_piece_rotations = {};
 // events
-model.core.events.on( "game", handle_game_event );
-// server
-///////////////////////////////////
-// DELETE ME
-// model.webserver = http.createServer( http_webserver_handle_request );
-// model.webserver_listening = false;
-///////////////////////////////////
-model.tcp_server = net.createServer( tcp_server_handle_connection )
-model.tcp_server_listening = false;
+core.events.on( "game", handle_game_event );
 // dat.gui
 var gui = new dat.GUI();
 model.open_file_dialog = document.getElementById("open_file_dialog");
 model.save_file_dialog = document.getElementById("save_file_dialog");
 model.dat_gui = {
-	"Human-vs-Human (Local)": function() {
-		pre_game_cleanup();
-		start_game(
-			Player.create( "Human", "White", "Local" ), // TODO: broken
-			Player.create( "Human", "Black", "Local" ), // TODO: broken
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
-		gui.close();
-	},
-	"Local AI": null,
-	"Human-vs-AI (Local)": function() {
-		pre_game_cleanup();
-		start_game(
-			Player.create( "Human", "White", "Local" ), // TODO: broken
-			Player.create( "AI",    "Black", "Local", model.available_ai_modules[model.dat_gui["Local AI"]] ), // TODO: broken
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
-		gui.close();
-		// TODO: send Greetings message
-		//   save response info, for display on-screen
-	},
-	"Host:Port": "localhost:51337",
-	"Human-vs-AI (Connect)": function() {
-		pre_game_cleanup();
-		start_game(
-			Player.create( "Human", "White", "Local" ), // TODO: broken
-			Player.create( "AI",    "Black", "Remote", undefined, model.dat_gui["Host:Port"] ), // TODO: broken
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
-		gui.close();
-		// TODO: send Greetings message
-		//   save response info, for display on-screen
-	},
-	"Human-vs-Human (Connect)": function() {
-		pre_game_cleanup();
-		// for now, the CLIENT player is always White, 
-		//   and the SERVER player is always Black
-		start_game(
-			Player.create( "Human", "White", "Local" ), // TODO: broken
-			Player.create( "Human", "Black", "Remote", undefined, model.dat_gui["Host:Port"] ), // TODO: broken
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
-		gui.close();
-		//
-		var remote_player = model.game_instance.players["Black"];
-		var hostname = remote_player.get_remote_hostname();
-		var port = remote_player.get_remote_port();
-		greetings_http_post( hostname, port );
-	},
-	"Listen Port": "51337",
-	"Human-vs-Human (Listen)": function() {
-		pre_game_cleanup();
-		//
-		model.webserver.listen( model.dat_gui["Listen Port"] );
-		model.webserver_listening = true;
-		// game itself will be started when Greetings message receieved
-		// 
-		gui.close();
-	},
 	"Use Mosquito": true,
 	"Use Ladybug": true,
 	"Use Pillbug": true,
+	"Themes": null, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
+	// functions below
+	local: {
+		human: {
+			"Start Game": function() {
+				pre_game_cleanup();
+				// Local Human 1 --> White
+				// Local Human 2 --> Black
+				var white_player = Player.create_local_human( null, "White" );
+				var black_player = Player.create_local_human( null, "Black" );
+				var creation_parameters = {
+					use_mosquito: model.dat_gui["Use Mosquito"],
+					use_ladybug: model.dat_gui["Use Ladybug"],
+					use_pillbug: model.dat_gui["Use Pillbug"]
+				};
+				start_game( white_player, black_player, creation_parameters );
+				gui.close();
+			}
+		},
+		ai: {
+			"Select AI": "", // cannot specify a default value
+			"Start Game": function() {
+				pre_game_cleanup();
+				// Local Human --> White
+				// Local AI --> Black
+				var white_player = Player.create_local_human( null, "White" );
+				var black_player = Player.create_local_ai( null, "Black", model.available_ai_modules[ model.dat_gui.local.ai[ "Select AI" ]]), // use selected ai
+				var creation_parameters = {
+					use_mosquito: model.dat_gui["Use Mosquito"],
+					use_ladybug: model.dat_gui["Use Ladybug"],
+					use_pillbug: model.dat_gui["Use Pillbug"]
+				};
+				start_game( white_player, black_player, creation_parameters );
+				gui.close();
+			}
+		}
+	},
+	remote: {
+		human: {
+			listen: {
+				"Listen Port": "51337",
+				"Start Game": function() {
+					pre_game_cleanup();
+					var local_port = model.dat_gui.remote.human.listen["Listen Port"];
+					// Remote Human (Client) --> White
+					// Local Human (Server) --> Black
+					core.listen_for_remote_human_connections( local_port, handle_sync_request );
+					model.auto_create_serverside_game_from_client_sync_request = function( creation_parameters ) {
+						var white_player = Player.create_remote_human( null, "White", null, local_port ); // remote_host would theoretically be filled in upon incoming connection
+						var black_player = Player.create_local_human( null, "Black" );
+						start_game( white_player, black_player, creation_parameters );
+					};
+					gui.close();
+				}
+			},
+			connect: {
+				"Host:Port": "localhost:51337",
+				"Start Game": function() {
+					pre_game_cleanup();
+					var remote_address = parse_remote_address( model.dat_gui.remote.human.connect["Host:Port"] );
+					// Local Human (Client) --> White
+					// Remote Human (Server) --> Black
+					var white_player = Player.create_local_human( null, "White" );
+					var black_player = Player.create_remote_human( null, "Black", remote_address.host, remote_address.port );
+					var creation_parameters = {
+						use_mosquito: model.dat_gui["Use Mosquito"],
+						use_ladybug: model.dat_gui["Use Ladybug"],
+						use_pillbug: model.dat_gui["Use Pillbug"]
+					};
+					start_game( white_player, black_player, creation_parameters );
+					core.connect_to_remote_human_server( remote_address.host, remote_address.port, handle_sync_request );
+					gui.close();
+				}
+			}
+		},
+		ai: {
+			connect: {
+				"Host:Port": "localhost:51337",
+				"Start Game": function() {
+					pre_game_cleanup();
+					// Local Human --> White
+					// Remote AI --> Black
+					var remote_address = parse_remote_address( model.dat_gui.remote.ai.connect["Host:Port"] );
+					var white_player = Player.create_local_human( null, "White" );
+					var black_player = Player.create_remote_ai( null, "Black", remote_address.host, remote_address.port );
+					var creation_parameters = {
+						use_mosquito: model.dat_gui["Use Mosquito"],
+						use_ladybug: model.dat_gui["Use Ladybug"],
+						use_pillbug: model.dat_gui["Use Pillbug"]
+					};
+					start_game( white_player, black_player, creation_parameters );
+					gui.close();
+				}
+			}
+		}
+	}
 	"Load Game": function() {
 		choose_read_file_path( function( path ) {
 			fs.readFile( path, function( error, data ) {
@@ -252,18 +269,6 @@ model.dat_gui = {
 			gui.close();
 		});
 	},
-	"Themes": null, // PLACEHOLDER (Folder)   "./themes/" + <model.possible_theme_dirs>
-	"Sandbox Mode": function() {
-		pre_game_cleanup();
-		model.DEBUG_MODE = true;
-		start_game(
-			Player.create( "Testing", "White", "Local" ), // TODO: broken
-			Player.create( "Testing", "Black", "Local" ), // TODO: broken
-			model.dat_gui["Use Mosquito"],
-			model.dat_gui["Use Ladybug"],
-			model.dat_gui["Use Pillbug"] );
-		gui.close();
-	},
 	"Open Debugger": function() {
 		require("nw.gui").Window.get().showDevTools();
 		gui.close();
@@ -274,49 +279,20 @@ function pre_game_cleanup() {
 	if( model.webserver_listening )
 		model.webserver.close();
 }
-model.dat_gui_themes = _.zipObject( 
-	model.possible_theme_dirs, 
-	_.map( model.possible_theme_dirs, function( theme_folder ) {
-		return function() {
-			// theme
-			var theme_dir = "./themes/" + theme_folder + "/";
-			model.theme_dir = theme_dir;
-			var theme = require( model.theme_dir + "theme-package.json");
-			set_theme( model, theme );
-			// spritemap
-			_.forEach( model.textures, function( texture ) {
-				texture.destroy( true ); // destroy texture and base texture
-			});
-			model.spritemap_loader = new PIXI.AssetLoader([ theme_dir + theme.spritemap ]);
-			model.spritemap_loader.onComplete = initialize_textures;
-			model.spritemap_loader.load();
-			// TODO: this function needs a bunch of work
-			//   after this runs, if a game is in progress, a bunch of old variables are causing issues
-			//   we need to re-initialize the stage, or something, I guess
-		}
-	})
-);
-(function(){
-	var active_ai = {};
-	var ai_dirs = fs.readdirSync( ai_basepath );
-	_.forEach( ai_dirs, function( ai_dir ) {
-		var ai_package_path = ai_basepath + ai_dir + "/package.json";
-		if( fs.existsSync( ai_package_path )) {
-			var ai_package = require( ai_package_path );
-			if( ai_package && ai_package.active ) {
-				var ai = require( ai_basepath + ai_dir + "/" + ai_package.module ); 
-				active_ai[ ai_package.long_name ] = ai;
-			}
-		}
-	});
-	model.available_ai_modules = active_ai;
-})();
-model.dat_gui["Local AI"] = "Rando[m]"; // default AI; the easiest possible
+model.dat_gui_themes = find_themes( model );
+model.available_ai_modules = find_available_ai_modules( ai_basepath );
 // init dat.GUI
 var gui_new_game = gui.addFolder( "Start New Game" );
-	gui_new_game.add( model.dat_gui, "Human-vs-Human (Local)" );
-	gui_new_game.add( model.dat_gui, "Local AI", _.keys(model.available_ai_modules) );
-	gui_new_game.add( model.dat_gui, "Human-vs-AI (Local)" );
+	var gui_new_game_local = gui_new_game.addFolder( "Local Game" );
+		var gui_new_game_local_human = gui_new_game_local.addFolder( "Versus Human" );
+			gui_new_game_local_human.add( model.dat_gui.local.human, "Start Game" );
+		var gui_new_game_local_ai = gui_new_game_local.addFolder( "Versus AI" );
+			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Select AI", _.keys(model.available_ai_modules) );
+			gui_new_game_local_ai.add( model.dat_gui.local.ai, "Start Game" );
+	var gui_new_game_remote = gui_new_game.addFolder( "Network Game" );
+		var gui_new_game_remote_human = gui_new_game_local.addFolder( "Versus Human" );
+		var gui_new_game_remote_ai = gui_new_game_local.addFolder( "Versus AI" );
+	
 	gui_new_game.add( model.dat_gui, "Host:Port" );
 	gui_new_game.add( model.dat_gui, "Human-vs-AI (Connect)" );
 	gui_new_game.add( model.dat_gui, "Human-vs-Human (Connect)" );
@@ -400,28 +376,29 @@ function save_game() {
 }
 // global
 function load_game( saved_game_json_str ) {
+	// TODO: handle loading game properly when connected to a remote human player
+	//   it's a dick move if abused, but also an important piece of functionality
+	//   because if a game is interrupted due to loss of internet connectivity or a game crashes
+	//   the other player can save the game and load it after reconnecting.
 	clear_pixi_game( model );
+	var white_player = Player.create_local_human( null, "White" );
+	var black_player = Player.create_local_human( null, "Black" )
 	var data = JSON.parse( saved_game_json_str );
-	model.game_id = core.load_game( 
-		Player.create( "Human", "White", "Local" ), // TODO: broken
-		Player.create( "Human", "Black", "Local" ), // TODO: broken
-		data );
+	model.game_id = core.load_game( white_player, black_player, data );
 	model.game_instance = core.lookup_game( model.game_id );
-	console.log( model.game_instance );
+	//console.log( model.game_instance );
 	build_pixi_game_from_hive_game( model );
 }
 //
-function start_game( white_player, black_player, use_mosquito, use_ladybug, use_pillbug ) {
+function start_game( white_player, black_player, creation_parameters ) {
 	model.stage.setBackgroundColor( model.background_color );
 	model.pixi_board_piece_rotations = {};
 	model.game_id = core.create_game(
 		white_player,
 		black_player,
-		use_mosquito,
-		use_ladybug,
-		use_pillbug );
+		creation_parameters );
 	model.game_instance = core.lookup_game( model.game_id );
-	console.log( model.game_instance );
+	//console.log( model.game_instance );
 	clear_pixi_game( model );
 	build_pixi_game_from_hive_game( model );
 }
@@ -474,22 +451,30 @@ function build_pixi_game_from_hive_game( model ) {
 	position_status_text( model );
 	position_hands( model );
 }
+function handle_sync_request = function( sync_message ) {
+	// in a networked human-vs-human game, this function is called when the other player has altered the game state and has requested a sync
+	if( sync_message.error ) {
+		// TODO: handle errors
+		console.error( JSON.stringify( sync_message.error ));
+		return;
+	}
+	// if this is the server, and this is the first sync_message received, a new game needs to be started
+	//   the procedure for doing this has already been setup
+	if( !model.game_id ) {
+		model.auto_create_serverside_game_from_client_sync_request( sync_message.game_state.creation_parameters );
+	}
+	// sync game_state by "loading" the entire game
+	var game_state = sync_message.game_state;
+	model.game_instance.game = Game.load( sync_message.game_state ); // overwrites game state
+}
 function do_turn( model, turn ) {
-	console.log( turn );
+	//console.log( turn );
 	var turn_event = _.extend( {}, turn, {
 		response_type: "Choose Turn",
 		game_id: model.game_id
 	});
-	model.core.events.emit( "turn", turn_event );
-	//
-	if( model.http_outgoing_response ) {
-		var player_response = turn_event; // duck typing: similar enough
-		var player_response_str = JSON.stringify( player_response );
-		model.http_outgoing_response.writeHead( 200, { "content-type": "text/json" });
-		model.http_outgoing_response.write( player_response_str );
-		model.http_outgoing_response.end();
-		model.http_outgoing_response = null;
-	}
+	core.events.emit( "turn", turn_event );
+	// ... core emits a game_event in response
 }
 function handle_game_event( game_event ) {
 	model.stage.setInteractive( false );
@@ -506,128 +491,44 @@ function handle_game_event( game_event ) {
 	model.pixi_board.scale.set( scale, scale );
 	model.stage.setInteractive( true );
 	verify_board_integrity( model );
-
 	//
-	var game = model.game_instance ? model.game_instance.game : null;
-	var player = model.game_instance.players[ game.player_turn ];
-	var hostname, port;
-	if( player.proximity == "Remote" ) {
-		hostname = player.get_remote_hostname();
-		port = player.get_remote_port();
-	}
-	// request turn from Local AI or Remote player
-	if( game && !game.game_over && game.possible_turns ) {
-		if( player.player_type == "AI" && player.proximity == "Local" )
-			request_local_AI_turn( model, player );
-		else if( player.proximity == "Remote" )
-			request_remote_turn_http_post( model, hostname, port );
-	}
-	else if( game && game.game_over ) {
-		// patch: synchronize White WINS! for Black server in networked human-vs-human
-		if( player.player_type == "Human" && player.proximity == "Remote" )
-			request_remote_turn_http_post( model, hostname, port );
-	}
+	sync_with_ai_and_remote_humans();
 }
-function request_local_AI_turn( model, player ) {
-	var message = core.prepare_choose_turn_request_message( model.game_id );
-	var response_message = player.ai_module.process_message( message );
-	var turn = core.parse_response_message_as_turn_object( response_message );
+function sync_with_ai_and_remote_humans() {
+	var game = model.game_instance.game; // current game
+	var player = model.game_instance.players[ game.player_turn ]; // the player whose turn it is right now
+	//
+	if( player.player_type == "Human" ) {
+		if( player.proximity == "Local" ) {
+			// nothing to do right now, UI will invoke do_turn on this computer
+		}
+		else if( player.proximity == "Remote" ) {
+			// send game_state to other player in the form of a sync request
+			core.send_sync_game_state_request_to_other_human( game );
+		}
+	}
+	else if( player.player_type == "AI" ) {
+		if( !game.game_over && game.possible_turns ) {
+			// game is not over, and possible_turns have been pre-enumerated
+			var turn_time_ms = undefined; // TODO: come up with a reasonable default for turn_time_ms
+			var choose_turn_request_message = core.prepare_choose_turn_request_message( model.game_id, turn_time_ms );
+			if( player.proximity == "Local" ) {
+				core.send_message_to_local_ai( choose_turn_request_message, 
+					player.local_path, handle_choose_turn_response_message );
+			}
+			else if( player.proximity == "Remote" ) {
+				core.send_message_to_remote_ai( choose_turn_request_message, 
+					player.remote_host, player.remote_port, handle_choose_turn_response_message );
+			}
+		}
+		else {
+			// there is nothing valid that could be sent to an AI in this case
+		}
+	}	
+}
+function handle_choose_turn_response_message( choose_turn_response_message ) {
+	var turn = core.parse_response_message_as_turn_object( choose_turn_response_message );
 	_.defer( do_turn, model, turn );
-}
-function request_remote_turn_http_post( model, hostname, port ) {
-	var message = core.prepare_choose_turn_request_message( model.game_id );
-	http_post( hostname, port, message, function( response_message ) {
-		var turn = core.parse_response_message_as_turn_object( response_message );
-		_.defer( do_turn, model, turn );
-	});
-}
-/*
-function greetings_http_post( hostname, port ) {
-	http_post( hostname, port, {
-		request_type: "Greetings",
-		system_version: package_json.version
-	});
-}
-*/
-/*
-function http_post( hostname, port, message, response_fn ) {
-	var message_str = JSON.stringify( message );
-	var headers = { 
-		"Content-Type": "application/json", 
-		"Content-Length": message_str.length
-	};
-	var options = {
-		hostname: hostname,
-		port: port,
-		path: "/",
-		method: "POST"
-	};
-	var request = http.request( options, function( response ) {
-		response.setEncoding("utf-8");
-		var response_chunks = [];
-		response.on("data", function( data ) {
-			response_chunks.push( data );
-		});
-		if( response_fn && typeof response_fn === "function" ) {
-			response.on("end", function() {
-				var response_text = response_chunks.join("");
-				var response_message = JSON.parse( response_text );
-				response_fn( response_message );
-			});
-		}
-	});
-	request.write( message_str );
-	request.end();
-}
-*/
-/*
-function http_webserver_handle_request( request, response ) {
-	if( request.method === "POST" ) {
-		var chunks = [], data;
-		request.on( "data", function( chunk ) {
-			chunks.push( chunk );
-		});
-		request.on( "end", function() {
-			data = chunks.join("");
-			// ...
-		});
-	}
-}*/
-function tcp_server_handle_connection( socket ) { // this is only used in human-vs-human games
-/*
-	socket.on( "data", function( data ) {
-		var message = JSON.parse( data ); // not "real" objects (no methods)
-		//
-		if( message.request_type === "Greetings" ) {
-			start_game(
-				Player.create( "None", "White" ), // remote player connecting to this instance // TODO: broken
-				Player.create( "Human", "Black", "Local" ), // TODO: broken
-				model.dat_gui["Use Mosquito"],
-				model.dat_gui["Use Ladybug"],
-				model.dat_gui["Use Pillbug"] );
-		}
-		else if( message.request_type === "Choose Turn" ) {
-			// THIS IS A PRETTY ENORMOUS HACK
-			var game = model.game_instance.game;
-			game.possible_turns = core.possible_turns__decode_positions( message.possible_turns );
-			game.board.pieces =   message.game_state.board.pieces;
-			game.hands =          message.game_state.hands;
-			game.player_turn =    message.game_state.player_turn;
-			game.turn_number =    message.game_state.turn_number;
-			game.game_over =      message.game_state.game_over;
-			game.winner =         message.game_state.winner;
-			game.is_draw =        message.game_state.is_draw;
-			// KNOWN ISSUE: since the turn history is not transmitted,
-			//   this implementation invalidates the turn history for both players
-			game.turn_history.push( Turn.create_unknown() );
-			// the next turn made will respond via this object
-			model.http_outgoing_response = response;
-			// update local UI
-			handle_game_event( message.game_id ); 
-			// interesting hack though; in the same way that a culture of bacteria can be interesting
-		}
-	});
-*/
 }
 function clear_pixi_game( model ) {
 	if( model.pixi_board ) {
@@ -1348,6 +1249,46 @@ function clear_status_text( model ) {
 	model.status_text_bg.setText( "" );
 }
 
+function find_themes( model ) {
+	return _.zipObject( 
+		model.possible_theme_dirs, 
+		_.map( model.possible_theme_dirs, function( theme_folder ) {
+			return function() {
+				// theme
+				var theme_dir = "./themes/" + theme_folder + "/";
+				model.theme_dir = theme_dir;
+				var theme = require( model.theme_dir + "theme-package.json");
+				set_theme( model, theme );
+				// spritemap
+				_.forEach( model.textures, function( texture ) {
+					texture.destroy( true ); // destroy texture and base texture
+				});
+				model.spritemap_loader = new PIXI.AssetLoader([ theme_dir + theme.spritemap ]);
+				model.spritemap_loader.onComplete = initialize_textures;
+				model.spritemap_loader.load();
+				// TODO: this function needs a bunch of work
+				//   after this runs, if a game is in progress, a bunch of old variables are causing issues
+				//   we need to re-initialize the stage, or something, I guess
+			}
+		})
+	);	
+}
+
+function find_available_ai_modules( ai_basepath ) {
+	var active_ai_paths = {};
+	var ai_dirs = fs.readdirSync( ai_basepath );
+	_.forEach( ai_dirs, function( ai_dir ) {
+		var ai_package_path = ai_basepath + ai_dir + "/package.json";
+		if( fs.existsSync( ai_package_path )) {
+			var ai_package = require( ai_package_path );
+			if( ai_package && ai_package.active ) {
+				active_ai_paths[ ai_package.long_name ] = ai_basepath + ai_dir + "/" + ai_package.module;
+			}
+		}
+	});
+	return active_ai_paths;
+}
+
 //////////////////////////////////////////////////////////////////
 // fifth-tier functions
 //////////////////////////////////////////////////////////////////
@@ -1371,6 +1312,12 @@ function compare_positions_for_isometric_rendering( pos_a, pos_b ) {
 		return pos_a.col - pos_b.col;
 }
 function log_point( pixi_point, msg ) {
-	console.log( "("+pixi_point.x+","+pixi_point.y+") " + msg?msg:"" );
+	//console.log( "("+pixi_point.x+","+pixi_point.y+") " + msg?msg:"" );
 }
-
+function parse_remote_address( host_port ) {
+	var tokens = host_port.trim().split(":");
+	return {
+		host: tokens[0],
+		port: tokens[1]
+	};
+}

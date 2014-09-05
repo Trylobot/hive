@@ -39,8 +39,12 @@ function create( system_version ) {
 	var core = {
 		game_instances: {},
 		communications: {
-			local: {},
-			remote: {}
+			local: {}, // local AI module path --> metadata object
+			remote: {}, // host:port remote address --> metadata object
+			human: {
+				server: null, // --> net.Server (one at a time)
+				socket: null // --> JsonSocket (one at a time)
+			}
 		},
 		events: new events.EventEmitter
 	}
@@ -199,6 +203,57 @@ function create( system_version ) {
 		} catch( err ) {
 			callback_fn({ error: err });
 		}
+	}
+	core.listen_for_remote_human_connections = function( local_port, callback_fn ) {
+		// cleanup
+		var existing_server = core.communications.human.server;
+		if( existing_server ) {
+			existing_server.close();
+		}
+		// create new server
+		var server = net.createServer();
+		core.communications.human.server = server;
+		server.on( "connection", function( socket ) {
+			// cleanup
+			var existing_socket = core.communications.human.socket;
+			if( existing_socket ) {
+				existing_socket.end();
+				existing_socket.destroy();
+			}
+			// wrap/create new socket
+			socket = new JsonSocket( socket );
+			core.communications.human.socket = socket;
+			socket.on( "message", function( message ) {
+				callback_fn( message );
+			});
+			socket.on( "error", function( err ) {
+				callback_fn({ error: err });
+			});
+		});
+		server.listen( local_port );
+	}
+	core.connect_to_remote_human_server = function( remote_host, remote_port, callback_fn ) {
+		// cleanup
+		var existing_socket = core.communications.human.socket;
+		if( existing_socket ) {
+			existing_socket.end();
+			existing_socket.destroy();
+		}
+		// wrap/create new socket
+		socket = new JsonSocket( new net.Socket() );
+		core.communications.human.socket = socket;
+		socket.on( "message", function( message ) {
+			callback_fn( message );
+		});
+		socket.on( "error", function( err ) {
+			callback_fn({ error: err });
+		});
+		socket.connect( remote_port, remote_host );
+	}
+	core.send_sync_game_state_request_to_other_human = function( game_state ) {
+		socket.sendMessage({
+			game_state: game_state
+		});
 	}
 	core.destroy = function() {
 		_.forEach( core.communications.local, function( local_ai, local_path ) {
