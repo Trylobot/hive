@@ -48,13 +48,20 @@ exports["test rules check_force_queen_placement"] = function( assert ) {
 }
 
 exports["test rules check_allow_queen_placement"] = function( assert ) {
-	var game, board, valid_movement;
-
-	
+	assert.ok( !Rules.check_allow_queen_placement( 0 ) && !Rules.check_allow_queen_placement( 1 ), "queen placement NOT allowed" );
+	assert.ok( Rules.check_allow_queen_placement( 2 ) && Rules.check_allow_queen_placement( 3 ), "queen placement ALLOWED" );
 }
 
 exports["test rules check_any_movement_allowed"] = function( assert ) {
+	var board;
 
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
+	assert.ok( !Rules.check_any_movement_allowed( "White", board ) && !Rules.check_any_movement_allowed( "Black", board ), "NO movement allowed" );
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -4, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, 0 ));
+	assert.ok( Rules.check_any_movement_allowed( "White", board ) && Rules.check_any_movement_allowed( "Black", board ), "movement ALLOWED" );
 }
 
 exports["test rules check_if_game_over"] = function( assert ) {
@@ -85,11 +92,17 @@ exports["test rules check_if_game_over"] = function( assert ) {
 }
 
 exports["test rules find_valid_placement_positions"] = function( assert ) {
-	
+	var board = Board.create();
+	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, 0 ));
+	assert.ok( json_equality( ["-2,0","-1,1","-1,-1"], _.keys( Rules.find_valid_placement_positions( "White", board, 2 ))), "White placement" );
+	assert.ok( json_equality( ["3,1","4,0","3,-1"],    _.keys( Rules.find_valid_placement_positions( "Black", board, 3 ))), "Black placement" );
 }
 
 exports["test rules find_valid_movement"] = function( assert ) {
-
+	// defer specific movement types to their specific functions
+	//   instead check board_contiguity precondition
+	
 }
 
 exports["test rules find_valid_special_abilities"] = function( assert ) {

@@ -3,7 +3,10 @@
 	"version": "0.1.0",
 	"description": "Hive AI Development Tool",
 	"author": "Trylobot",
-	"license": "Research License 1.0",
+	"licenses": [{
+		"type": "RL1 (Research License 1.0)",
+		"url": "https://github.com/Trylobot/hive/blob/master/LICENSE.md"
+	}],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Trylobot/hive.git"
