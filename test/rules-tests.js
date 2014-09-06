@@ -396,11 +396,30 @@ exports["test rules find_valid_movement_Ladybug"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Pillbug"] = function( assert ) {
+	var game, board, valid_movement;
 
+	board = Board.create();
+	board.place_piece( Piece.create( "White", "Spider" ), Position.create( 0, 0 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( -2, 0 ));
+	board.place_piece( Piece.create( "White", "Pillbug" ), Position.create( -3, 1 ));
+	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
+	valid_movement = Position.encode_all( Rules.find_valid_movement_Pillbug( board, Position.create( -3, 1 )));
+	assert.ok( set_equality( valid_movement, 
+		["-4,0","-1,1"] ),
+		"Pillbug movement matches expected" );
 }
 
 exports["test rules find_valid_special_abilities_Pillbug"] = function( assert ) {
-
+	var board, abilities;
+	// Pillbug
+	board = Board.create();
+	board.place_piece( "Black,Pillbug", "-2,0" );
+	board.place_piece( "White,Pillbug", "0,0" );
+	abilities = Rules.find_valid_special_abilities_Pillbug( board, "0,0" );
+	assert.ok( _.keys( abilities ).length == 1 &&
+		JSON.stringify( Position.encode_all( abilities["-2,0"] ).sort() )
+		== JSON.stringify( ["-1,-1","-1,1","1,1","2,0","1,-1"].sort() ),
+		"Pillbug ability: confirmed" );
 }
 
 
