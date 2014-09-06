@@ -1,7 +1,5 @@
 node_modules
 *.sublime-workspace
-*.pdn
-
 
 #################
 ## Eclipse
