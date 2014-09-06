@@ -5,25 +5,21 @@ utils.js
 misc utilities
 */
 
-// array insert
-Array.prototype.insert = function( index, item ) {
-	this.splice( index, 0, item );
-	return this;
-}
-
 // repositions the last character of a string to the beginning
-String.prototype.cycle_chars = function( num ) {
+function cycle_chars( str, num ) {
 	if( typeof num === 'undefined' )
 		num = 1; // default value
-	num = num % this.length; // normalize
+	num = num % str.length; // normalize
 	if( num < 0 )
-		num = this.length + num; // wrap
-	return this.substr( this.length - num ) + this.substr( 0, this.length - num );
+		num = str.length + num; // wrap
+	return str.substr( str.length - num ) + str.substr( 0, str.length - num );
 }
 
 // 
 function set_equality( set0, set1 ) {
-	return( set0.length == set1.length && set0.length == _.intersection( set0, set1 ).length );
+	return set0.length == set1.length
+		&& _.difference( set0, set1 ).length == 0
+		&& _.difference( set1, set0 ).length == 0
 }
 
 function json_equality( value0, value1 ) {
@@ -58,6 +54,7 @@ function isNumber( n ) {
 	return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
+exports.cycle_chars = cycle_chars;
 exports.set_equality = set_equality;
 exports.json_equality = json_equality;
 exports.base62_encode = base62_encode;

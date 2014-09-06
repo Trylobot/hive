@@ -271,7 +271,21 @@ exports["test rules find_valid_movement_Spider"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Soldier_Ant"] = function( assert ) {
-
+	var board, movement;
+	// defer specific movement types to their specific functions
+	//   instead check board_contiguity precondition
+	board = Board.create();
+	board.place_piece( "White,Soldier Ant", "0,0" );
+	board.place_piece( "Black,Grasshopper", "1,-1" );
+	board.place_piece( "Black,Grasshopper", "1,1" );
+	board.place_piece( "Black,Grasshopper", "3,-1" );
+	board.place_piece( "Black,Grasshopper", "3,1" );
+	board.place_piece( "Black,Grasshopper", "4,0" );
+	movement = Rules.find_valid_movement_Soldier_Ant( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-1,1","0,2","2,2","4,2","5,1","6,0","5,-1","4,-2","2,-2","0,-2","-1,-1"].sort() ),
+		"movement confirmed" );
 }
 
 exports["test rules find_valid_movement_Mosquito"] = function( assert ) {
