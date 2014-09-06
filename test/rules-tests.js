@@ -289,11 +289,99 @@ exports["test rules find_valid_movement_Soldier_Ant"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement_Mosquito"] = function( assert ) {
-
+	var board, movement;
+	//
+	// Queen Bee
+	board = Board.create();
+	board.place_piece( "Black,Queen Bee", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-1,-1","-1,1"].sort() ),
+		"Queen Bee movement mimicry: confirmed" );
+	// Spider
+	board = Board.create();
+	board.place_piece( "Black,Spider", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-4,0"].sort() ),
+		"Spider movement mimicry: confirmed" );
+	// Soldier Ant
+	board = Board.create();
+	board.place_piece( "Black,Soldier Ant", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-1,-1","-3,-1","-4,0","-3,1","-1,1"].sort() ),
+		"Soldier Ant movement mimicry: confirmed" );
+	// Grasshopper
+	board = Board.create();
+	board.place_piece( "Black,Grasshopper", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-4,0"].sort() ),
+		"Grasshopper movement mimicry: confirmed" );
+	// Beetle
+	board = Board.create();
+	board.place_piece( "Black,Beetle", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-1,-1","-2,0","-1,1"].sort() ),
+		"Beetle movement mimicry: confirmed" );
+	// Mosquito
+	board = Board.create();
+	board.place_piece( "Black,Mosquito", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( [].sort() ),
+		"Mosquito movement mimicry: confirmed" );
+	// Ladybug
+	board = Board.create();
+	board.place_piece( "Black,Ladybug", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( [].sort() ),
+		"Ladybug movement mimicry: confirmed" );
+	board.place_piece( "Black,Queen Bee", "-3,-1" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-5,-1","-4,0","-1,-1","-2,-2","-4,-2"].sort() ),
+		"Ladybug movement mimicry: confirmed 2x" );
+	// Pillbug
+	board = Board.create();
+	board.place_piece( "Black,Pillbug", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	movement = Rules.find_valid_movement_Mosquito( board, "0,0" );
+	assert.equal( 
+		JSON.stringify( Position.encode_all( movement ).sort() ),
+		JSON.stringify( ["-1,-1","-1,1"].sort() ),
+		"Pillbug movement mimicry: confirmed" );
 }
 
 exports["test rules find_valid_special_abilities_Mosquito"] = function( assert ) {
-
+	var board, abilities;
+	// Pillbug
+	board = Board.create();
+	board.place_piece( "Black,Pillbug", "-2,0" );
+	board.place_piece( "White,Mosquito", "0,0" );
+	abilities = Rules.find_valid_special_abilities_Mosquito( board, "0,0" );
+	assert.ok( _.keys( abilities ).length == 1 &&
+		JSON.stringify( Position.encode_all( abilities["-2,0"] ).sort() )
+		== JSON.stringify( ["-1,-1","-1,1","1,1","2,0","1,-1"].sort() ),
+		"Pillbug ability mimicry: confirmed" );
 }
 
 exports["test rules find_valid_movement_Ladybug"] = function( assert ) {
