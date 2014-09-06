@@ -6,6 +6,7 @@
 * [Hive Node-Webkit UI Guide](doc/hive-node-webkit.md)
 * [Hive Rules Core Implementation Details](doc/hive-core.md)
 
+![](https://cloud.githubusercontent.com/assets/2160787/4161390/20a534b4-34cd-11e4-9088-1950940beb73.png)
 
 ####Legal
 
