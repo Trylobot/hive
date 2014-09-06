@@ -106,12 +106,38 @@ exports["test rules find_valid_movement"] = function( assert ) {
 	board = Board.create();
 	board.place_piece( "White,Soldier Ant", "0,0" );
 	movement = Rules.find_valid_movement( board, "0,0" );
-	assert.ok( movement.length == 0, "no valid movement" );
-	
+	assert.ok( movement.length == 0, "no valid movement (island)" );
+	board.place_piece( "White,Queen Bee", "2,0" );
+	movement = Rules.find_valid_movement( board, "0,0" );
+	assert.ok( movement.length != 0, "valid movement (normal)" );
+	board.place_piece( "White,Spider", "-2,0" );
+	movement = Rules.find_valid_movement( board, "0,0" );
+	assert.ok( movement.length == 0, "no valid movement (contiguity violated)" );
+	board.place_piece( "Black,Grasshopper", "-3,1" );
+	board.place_piece( "Black,Grasshopper", "-2,2" );
+	board.place_piece( "Black,Grasshopper", "0,2" );
+	board.place_piece( "Black,Grasshopper", "2,2" );
+	board.place_piece( "Black,Grasshopper", "3,1" );
+	movement = Rules.find_valid_movement( board, "0,0" );
+	assert.ok( movement.length != 0, "valid movement (contiguity no longer violated)" );
+	board.remove_piece( "0,2" );
+	movement = Rules.find_valid_movement( board, "0,0" );
+	assert.ok( movement.length == 0, "no valid movement (contiguity just barely violated)" );
 }
 
 exports["test rules find_valid_special_abilities"] = function( assert ) {
-
+	var board, movement;
+	board = Board.create();
+	board.place_piece( "White,Pillbug", "0,0" );
+	board.place_piece( "White,Queen Bee", "2,0" );
+	board.place_piece( "Black,Spider", "1,-1" );
+	board.place_piece( "Black,Spider", "1,1" );
+	movement = Rules.find_valid_special_abilities( board, "0,0" );
+	assert.ok( _.keys( movement ).length != 0, "valid special abilities" );
+	board.place_piece( "Black,Beetle", "1,-1" );
+	board.place_piece( "Black,Beetle", "1,1" );
+	movement = Rules.find_valid_special_abilities( board, "0,0" );
+	assert.ok( _.keys( movement ).length == 0, "no valid special abilities" );
 }
 
 exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
