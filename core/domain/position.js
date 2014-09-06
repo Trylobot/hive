@@ -69,6 +69,8 @@ function encode_all( array_of_positions ) {
 
 function decode( position_key ) {
 	var parts = position_key.split( "," );
+	if( parts.length != 2 )
+		throw "Invalid encoded position: " + position_key;
 	return create( parseInt( parts[0] ), parseInt( parts[1] ));
 }
 
@@ -106,18 +108,18 @@ function rotation( direction, clockwise ) {
 	}
 }
 
-function force_encoded_string( position_or_position_key ) {
-	if( typeof position_or_position_key === "object" )
-		return encode( position_or_position_key );
-	else if( typeof position_or_position_key === "string" )
-		return position_or_position_key;
+function force_encoded_string( position_var ) {
+	if( typeof position_var === "object" )
+		return encode( position_var );
+	else if( typeof position_var === "string" )
+		return position_var;
 }
 
-function force_decoded_object( position_or_position_key ) {
-	if( typeof position_or_position_key === "object" )
-		return position_or_position_key;
-	else if( typeof position_or_position_key === "string" )
-		return decode( position_or_position_key );
+function force_decoded_object( position_var ) {
+	if( typeof position_var === "object" )
+		return position_var;
+	else if( typeof position_var === "string" )
+		return decode( position_var );
 }
 
 

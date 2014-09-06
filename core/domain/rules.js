@@ -267,7 +267,7 @@ function find_valid_movement( board, position ) {
 	var piece = board.lookup_piece( position );
 	// one hive rule
 	if( !board.check_contiguity( position ))
-		return []; 
+		return [];
 	// freedom to move rule (varies by piece)
 	switch( piece.type )
 	{   

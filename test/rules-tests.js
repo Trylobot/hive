@@ -100,8 +100,13 @@ exports["test rules find_valid_placement_positions"] = function( assert ) {
 }
 
 exports["test rules find_valid_movement"] = function( assert ) {
+	var board, movement;
 	// defer specific movement types to their specific functions
 	//   instead check board_contiguity precondition
+	board = Board.create();
+	board.place_piece( "White,Soldier Ant", "0,0" );
+	movement = Rules.find_valid_movement( board, "0,0" );
+	assert.ok( movement.length == 0, "no valid movement" );
 	
 }
 

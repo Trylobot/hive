@@ -33,21 +33,22 @@ function create() {
 		pieces: {}
 	}
 	// add a new piece to the board at a specific position, at the top of the stack at that position
-	board.place_piece = function( piece, position ) {
-		var position_key = position.encode();
+	board.place_piece = function( piece_var, position_var ) {
+		var piece = Piece.force_decoded_object( piece_var );
+		var position_key = Position.force_encoded_string( position_var );
 		if( board.pieces[ position_key ])
 			board.pieces[ position_key ].push( piece )
 		else // new stack
 			board.pieces[ position_key ] = [ piece ];
 	}
 	// move the piece at the top of the stack of position_0 to the top of the stack at position_1
-	board.move_piece = function( position_0, position_1 ) {
-		board.place_piece( board.remove_piece( position_0 ), position_1 );
+	board.move_piece = function( position_var_0, position_var_1 ) {
+		board.place_piece( board.remove_piece( position_var_0 ), position_var_1 );
 	}
 	// remove and return a piece from the board at a specific position, from the top of the stack at that position
-	board.remove_piece = function( position ) {
+	board.remove_piece = function( position_var ) {
 		var piece = undefined;
-		var position_key = position.encode();
+		var position_key = Position.force_encoded_string( position_var );
 		if( board.pieces[ position_key ]) {
 			piece = board.pieces[ position_key ].pop();
 			if( board.pieces[ position_key ].length == 0 )
@@ -114,8 +115,9 @@ function create() {
 		return _.keys( board.pieces );
 	}
 	// return the entire piece-stack at position (or undefined if not found)
-	board.lookup_piece_stack = function( position ) {
-		return board.lookup_piece_stack_by_key( position.encode() );
+	board.lookup_piece_stack = function( position_var ) {
+		var position_key = Position.force_encoded_string( position_var );
+		return board.lookup_piece_stack_by_key( position_key );
 	}
 	// return the entire piece-stack at position (or undefined if not found)
 	board.lookup_piece_stack_by_key = function( position_key ) {
@@ -123,8 +125,9 @@ function create() {
 		return piece_stack;
 	}
 	// return the number of pieces stacked at the given position;
-	board.lookup_piece_stack_height = function( position ) {
-		return board.lookup_piece_stack_height_by_key( position.encode() );
+	board.lookup_piece_stack_height = function( position_var ) {
+		var position_key = Position.force_encoded_string( position_var );
+		return board.lookup_piece_stack_height_by_key( position_key );
 	}
 	// return the number of pieces stacked at the given position;
 	board.lookup_piece_stack_height_by_key = function( position_key ) {
@@ -134,8 +137,8 @@ function create() {
 		return 0;
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
-	board.lookup_piece = function( position ) {
-		var position_key = position.encode();
+	board.lookup_piece = function( position_var ) {
+		var position_key = Position.force_encoded_string( position_var );
 		return board.lookup_piece_by_key( position_key );
 	}
 	// return the piece at the top of the piece-stack at position (or undefined if not found)
@@ -147,8 +150,8 @@ function create() {
 		return piece;
 	}
 	// return the piece in a specific stack at a specific height, or undefined
-	board.lookup_piece_at_height = function( position, height ) {
-		var stack = board.lookup_piece_stack( position );
+	board.lookup_piece_at_height = function( position_var, height ) {
+		var stack = board.lookup_piece_stack( position_var );
 		if( stack && height < stack.length )
 			return stack[ height ];
 		return undefined;
@@ -157,7 +160,8 @@ function create() {
 	// the resulting map will contain the six keys of the cardinal directions mapped to result objects
 	// containing the fields: "position", "position_key"; 
 	// the "contents" field will contain the piece at the associated position, or undefined if there is no piece there
-	board.lookup_adjacent_positions = function( position ) {
+	board.lookup_adjacent_positions = function( position_var ) {
+		var position = Position.force_decoded_object( position_var );
 		var result = {};
 		_.forEach( Position.directions_enum, function( direction ) {
 			var translated_position = position.translation( direction );
@@ -174,8 +178,10 @@ function create() {
 	// return a list of positions valid to slide into, using the can_slide_lookup_table
 	//   a slide is defined as a movement from one position to another where the stack_height of both positions is zero
 	//   optionally, treat a specific position as empty
-	board.lookup_adjacent_slide_positions = function( position, assuming_empty_position ) {
-		var assuming_empty_position_key = (typeof assuming_empty_position !== "undefined") ? assuming_empty_position.encode() : undefined;
+	board.lookup_adjacent_slide_positions = function( position_var, assuming_empty_position_var ) {
+		var position = Position.force_decoded_object( position_var );
+		var assuming_empty_position_key = (typeof assuming_empty_position_var !== "undefined") 
+			? Position.force_encoded_string( assuming_empty_position_var ) : undefined;
 		var occupied_adjacencies_lookup_key_array = [], i;
 		for( i = 0; i < 6; ++i ) {
 			var direction = Position.directions_enum[i];
@@ -202,7 +208,8 @@ function create() {
 	// return a list of positions valid to climb onto
 	//   a climb is a movement from one position to another where one or both of the positions are occupied (height > 0)
 	//   optionally, treat a specific position as empty (not used yet)
-	board.lookup_adjacent_climb_positions = function( position, position_is_self ) {
+	board.lookup_adjacent_climb_positions = function( position_var, position_is_self ) {
+		var position = Position.force_decoded_object( position_var );
 		position_is_self = (typeof position_is_self === "undefined") ? true : false; // assumed true if not explicitly overridden
 		var position_list = [];
 		var self_height = board.lookup_piece_stack_height( position );
@@ -228,7 +235,8 @@ function create() {
 		return position_list;
 	}
 	// return a list of positions occupied by one or more stacked pieces
-	board.lookup_occupied_adjacencies = function( position ) {
+	board.lookup_occupied_adjacencies = function( position_var ) {
+		var position = Position.force_decoded_object( position_var );
 		var position_list = [];
 		_.forEach( Position.directions_enum, function( direction ) {
 			var adjacent_position = position.translation( direction );
@@ -241,7 +249,8 @@ function create() {
 	// return a map of free spaces that are within a specific range from a start position
 	//   default min_distance is 0
 	//   default max_distance is Infinity
-	board.lookup_slide_destinations_within_range = function( start_position, min_distance, max_distance ) {
+	board.lookup_slide_destinations_within_range = function( start_position_var, min_distance, max_distance ) {
+		var start_position = Position.force_decoded_object( start_position_var );
 		min_distance = (typeof min_distance !== "undefined") ? min_distance : 1;
 		max_distance = (typeof max_distance !== "undefined") ? max_distance : Infinity;
 		var result = {};
@@ -308,7 +317,8 @@ function create() {
 	}
 	// return the first free space found, tracing a line from an origin extending outward in a specified direction
 	// note: includes position immediately adjacent
-	board.find_free_space_in_direction = function( position, direction ) {
+	board.find_free_space_in_direction = function( position_var, direction ) {
+		var position = Position.force_decoded_object( position_var );
 		var cursor = position.translation( direction );
 		while( cursor.encode() in board.pieces )
 			cursor = cursor.translation( direction );
@@ -317,8 +327,9 @@ function create() {
 	// check whether a board is contiguous
 	//   returns true if contiguous
 	// optionally, treat a specific position as if it were missing its topmost piece
-	board.check_contiguity = function( assuming_piece_moved_position ) {
-		var assuming_piece_moved_position_key = (typeof assuming_piece_moved_position !== "undefined") ? assuming_piece_moved_position.encode() : undefined;
+	board.check_contiguity = function( assuming_piece_moved_position_var ) {
+		var assuming_piece_moved_position_key = (typeof assuming_piece_moved_position !== "undefined")
+			? Position.force_encoded_string( assuming_piece_moved_position_var ) : undefined;
 		var occupied_piece_position_keys = _.keys( board.pieces );
 		// do not count the assumed empty position, if it is specified, and occupied with height == 1 (normal case for most lookups); height > 1 has no effect on contiguity
 		if( typeof assuming_piece_moved_position !== "undefined"
@@ -381,7 +392,8 @@ function create() {
 	// ---
 	// height_range_specification  (number)     minimum AND maximum height (all distances, inclusive)
 	// 
-	board.find_unique_paths_matching_conditions = function( start_position, distance_range, height_range_specification ) {
+	board.find_unique_paths_matching_conditions = function( start_position_var, distance_range, height_range_specification ) {
+		var start_position = Position.force_decoded_object( start_position_var );
 		var result = {
 			paths: {}, // will include one path per destination, where the key is the encoded destination position
 			destinations: [] // each destination will be unique
