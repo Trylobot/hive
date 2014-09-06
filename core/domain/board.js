@@ -328,12 +328,12 @@ function create() {
 	//   returns true if contiguous
 	// optionally, treat a specific position as if it were missing its topmost piece
 	board.check_contiguity = function( assuming_piece_moved_position_var ) {
-		var assuming_piece_moved_position_key = (typeof assuming_piece_moved_position !== "undefined")
+		var assuming_piece_moved_position_key = (typeof assuming_piece_moved_position_var !== "undefined")
 			? Position.force_encoded_string( assuming_piece_moved_position_var ) : undefined;
 		var occupied_piece_position_keys = _.keys( board.pieces );
 		// do not count the assumed empty position, if it is specified, and occupied with height == 1 (normal case for most lookups); height > 1 has no effect on contiguity
-		if( typeof assuming_piece_moved_position !== "undefined"
-		&&  board.lookup_piece_stack_height( assuming_piece_moved_position ) <= 1 ) {
+		if( typeof assuming_piece_moved_position_key !== "undefined"
+		&&  board.lookup_piece_stack_height_by_key( assuming_piece_moved_position_key ) <= 1 ) {
 			_.pull( occupied_piece_position_keys, assuming_piece_moved_position_key ); // does nothing if assuming_empty_position was not specified, or if the specified position is not actually occupied
 		} else {
 			assuming_piece_moved_position_key = undefined; // position key should no longer be treated as empty, because there would be a piece underneath
