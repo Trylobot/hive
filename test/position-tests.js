@@ -61,37 +61,37 @@ exports["test position translation"] = function( assert ) {
 	assert.equal(
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: -2, col: 0 }),
-		"12 o'clock" );
+		"12 o'clock translation correct" );
 
 	translated_position = position.translation( "2 o'clock" );
 	assert.equal(
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: -1, col: 1 }),
-		"2 o'clock" );
+		"2 o'clock translation correct" );
 
 	translated_position = position.translation( "4 o'clock" );
 	assert.equal(
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: 1, col: 1 }),
-		"4 o'clock" );
+		"4 o'clock translation correct" );
 
 	translated_position = position.translation( "6 o'clock" );
 	assert.equal(
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: 2, col: 0 }),
-		"6 o'clock" );
+		"6 o'clock translation correct" );
 
 	translated_position = position.translation( "8 o'clock" );
 	assert.equal(
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: 1, col: -1 }),
-		"8 o'clock" );
+		"8 o'clock translation correct" );
 
 	translated_position = position.translation( "10 o'clock" );
 	assert.equal(
 		JSON.stringify( translated_position ),
 		JSON.stringify({ row: -1, col: -1 }),
-		"10 o'clock" );
+		"10 o'clock translation correct" );
 }
 
 exports["test position rotation_about_position"] = function( assert ) {
@@ -104,19 +104,59 @@ exports["test position rotation_about_position"] = function( assert ) {
 }
 
 exports["test position adjacencies"] = function( assert ) {
+	var position, adjacencies;
 
+	position = Position.create( -5, -1 );
+	adjacencies = Position.encode_all( position.adjacencies() );
+	assert.ok( json_equality( adjacencies,
+		["-7,-1","-6,0","-4,0","-3,-1","-4,-2","-6,-2"] ),
+		"adjacent positions reported properly" );
 }
 
 exports["test position rotation"] = function( assert ) {
-
+	var clockwise = true;
+	assert.ok( 
+		"2 o'clock"  == Position.rotation( "12 o'clock", clockwise ) &&
+		"10 o'clock" == Position.rotation( "12 o'clock", !clockwise ),
+		"12 o'clock rotation correct" );
+	assert.ok( 
+		"4 o'clock"  == Position.rotation( "2 o'clock", clockwise ) &&
+		"12 o'clock" == Position.rotation( "2 o'clock", !clockwise ),
+		"2 o'clock rotation correct" );
+	assert.ok( 
+		"6 o'clock"  == Position.rotation( "4 o'clock", clockwise ) &&
+		"2 o'clock" == Position.rotation( "4 o'clock", !clockwise ),
+		"4 o'clock rotation correct" );
+	assert.ok( 
+		"8 o'clock"  == Position.rotation( "6 o'clock", clockwise ) &&
+		"4 o'clock" == Position.rotation( "6 o'clock", !clockwise ),
+		"6 o'clock rotation correct" );
+	assert.ok( 
+		"10 o'clock"  == Position.rotation( "8 o'clock", clockwise ) &&
+		"6 o'clock" == Position.rotation( "8 o'clock", !clockwise ),
+		"8 o'clock rotation correct" );
+	assert.ok( 
+		"12 o'clock"  == Position.rotation( "10 o'clock", clockwise ) &&
+		"8 o'clock" == Position.rotation( "10 o'clock", !clockwise ),
+		"10 o'clock rotation correct" );
 }
 
 exports["test position force_encoded_string"] = function( assert ) {
-
+	var position, position_key, result;
+	position = Position.create( 3, 1 );
+	position_key = "3,1";
+	assert.ok( Position.force_encoded_string( position )     == "3,1"
+		&&     Position.force_encoded_string( position_key ) == "3,1",
+		"encoded_string correct" );
 }
 
 exports["test position force_decoded_object"] = function( assert ) {
-
+	var position, position_key, result;
+	position = Position.create( -1, -1 );
+	position_key = "-1,-1";
+	assert.ok( json_equality( Position.force_decoded_object( position ),     { row: -1, col: -1 })
+		&&     json_equality( Position.force_decoded_object( position_key ), { row: -1, col: -1 }),
+		"decoded_object correct" );
 }
 
 exports["test position copy"] = function( assert ) {
@@ -129,7 +169,12 @@ exports["test position copy"] = function( assert ) {
 }
 
 exports["test position is_equal"] = function( assert ) {
-	
+	var p0, p1, p2;
+	p0 = Position.create( 0, 0 );
+	p1 = Position.create( 0, 2 );
+	p2 = Position.create( 0, 0 );
+	assert.ok( !p0.is_equal( p1 ), "non-equality" );
+	assert.ok( p0.is_equal( p2 ), "equality" );
 }
 
 if( module == require.main )
