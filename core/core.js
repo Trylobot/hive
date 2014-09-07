@@ -98,7 +98,15 @@ function create( system_version ) {
 	core.handle_turn_event = function( turn_event ) {
 		var game_id = turn_event.game_id;
 		var game_instance = core.lookup_game( game_id );
-		game_instance.game.perform_turn( turn_event ); // duck-typing
+		try {
+			game_instance.game.perform_turn( turn_event ); // duck-typing
+		} catch( err ) {
+			// any error while attempting a turn mutation counts against the current player
+			core.events.emit( "match_penalty", { 
+				game_id: game_id,
+				error: err
+			});
+		}
 		var game_event = {
 			game_id: game_id
 		};

@@ -3,6 +3,6 @@
   "active": false,
   "version": "0.0.1",
   "long_name": "Cheater",
-  "module": "test-cheater",
+  "module": "test-ai-cheater",
   "description": "Fabricates turn objects",
 }
