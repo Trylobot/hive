@@ -94,14 +94,14 @@ exports["test position translation"] = function( assert ) {
 		"10 o'clock translation correct" );
 }
 
-exports["test position rotation_about_position"] = function( assert ) {
-	var position, rotated_position;
+// exports["test position rotation_about_position"] = function( assert ) {
+// 	var position, rotated_position;
 
-	position = Position.create( -2, 0 );
-	rotated_position = position.rotation_about_position( Position.create( 0, 0 ), 1 );
-	assert.ok( rotated_position.row == -1 && rotated_position.col == 1,
-		"rotated_position should be in correct location" );
-}
+// 	position = Position.create( -2, 0 );
+// 	rotated_position = position.rotation_about_position( Position.create( 0, 0 ), 1 );
+// 	assert.ok( rotated_position.row == -1 && rotated_position.col == 1,
+// 		"rotated_position should be in correct location" );
+// }
 
 exports["test position adjacencies"] = function( assert ) {
 	var position, adjacencies;

@@ -10,7 +10,7 @@ exports["test rules lookup_possible_turns"] = function( assert ) {
 	var board, save, game, turns;
 
 	save = require('./saved_games/white_turn_17__should_allow_placement.hive-game.json'); // this was named this way because of another bug, but the test itself has been corrected
-	game = Game.load( save );
+	game = Game.load( save, true ); // skip_all_validity_checks (game was saved before validity checks were implemented)
 	turns = game.lookup_possible_turns();
 	assert.ok( _.keys( turns ).length == 1 && turns["Forfeit"] == true, "White Player should only be able to forfeit" );
 
@@ -220,7 +220,7 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 		"Beetle can climb down into hole" );
 
 	save = JSON.parse('{"creation_parameters":{"use_mosquito":false,"use_ladybug":false,"use_pillbug":false},"turn_history":[{"turn_type":"Placement","piece_type":"Spider","destination":"0,0"},{"turn_type":"Placement","piece_type":"Spider","destination":"-1,1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-1,-1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"-3,1"},{"turn_type":"Placement","piece_type":"Queen Bee","destination":"1,-1"},{"turn_type":"Placement","piece_type":"Beetle","destination":"-2,2"},{"turn_type":"Movement","source":"-1,-1","destination":"1,-1"},{"turn_type":"Movement","source":"-2,2","destination":"-3,1"},{"turn_type":"Movement","source":"1,-1","destination":"0,0"},{"turn_type":"Movement","source":"-3,1","destination":"-1,1"}]}');
-	game = Game.load( save );
+	game = Game.load( save, true ); // skip_all_validity_checks (game was saved before validity checks were implemented)
 	possible_turns = game.lookup_possible_turns();
 	assert.ok( "0,0" in possible_turns["Movement"], "should be able to move the White Beetle" );
 
@@ -264,7 +264,7 @@ exports["test rules find_valid_movement_Spider"] = function( assert ) {
 	var save, game, turns;
 
 	save = require('./saved_games/black_turn_12__black_spider_should_have_4_moves.json');
-	game = Game.load( save );
+	game = Game.load( save, true ); // skip_all_validity_checks (game was saved before validity checks were implemented)
 	turns = game.lookup_possible_turns();
 	var position_key = game.board.search_pieces( "Black", "Spider" )[0].position_key;
 	assert.equal( turns["Movement"] ? turns["Movement"][position_key].length : undefined, 4, "Black Spider should have 4 possible moves" );
@@ -388,7 +388,7 @@ exports["test rules find_valid_movement_Ladybug"] = function( assert ) {
 	var save, game, turns;
 
 	save = require('./saved_games/white_turn_3__ladybug.hive-game.json');
-	game = Game.load( save );
+	game = Game.load( save, true ); // skip_all_validity_checks (game was saved before validity checks were implemented)
 	turns = game.lookup_possible_turns();
 	assert.equal( turns["Movement"]["1,1"].length, 9, "Ladybug should have 9 possible moves" );
 

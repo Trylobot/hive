@@ -46,10 +46,77 @@ function create( creation_parameters ) {
 			game.turn_history );
 	}
 	game.check_if_turn_valid = function( turn_object ) {
-		return true; // TODO
+		// TODO: provide player color in all turn_objects, check it here!
+		var turn_type = turn_object.turn_type;
+		switch( turn_type ) {
+			case "Placement":
+				var possible_placement = game.possible_turns["Placement"];
+				if( !possible_placement )
+					throw "Invalid Placement (none allowed)";
+				var piece_type = turn_object.piece_type;
+				var destination = Position.force_encoded_string( turn_object.destination );
+				if( !_.contains( possible_placement.piece_types, piece_type ))
+					throw "Invalid Placement (piece_type)"
+						+ "\n  sought " + piece_type
+						+ "\n  allowed " + JSON.stringify( possible_placement.piece_types );
+				if( !_.contains( possible_placement.positions, destination ))
+					throw "Invalid Placement (destination)"
+						+ "\n  sought " + destination
+						+ "\n  allowed " + JSON.stringify( possible_placement.positions );
+				break;
+			case "Movement":
+				var possible_movement = game.possible_turns["Movement"];
+				if( !possible_movement )
+					throw "Invalid Movement (none allowed)";
+				var source = Position.force_encoded_string( turn_object.source );
+				if( !possible_movement[ source ])
+					throw "Invalid Movement (source)"
+						+ "\n  sought " + source
+						+ "\n  allowed " + JSON.stringify( _.keys( possible_movement ));
+				var destination = Position.force_encoded_string( turn_object.destination );
+				if( !_.contains( possible_movement[ source ], destination ))
+					throw "Invalid Movement (destination)"
+						+ "\n  sought " + destination
+						+ "\n  allowed " + JSON.stringify( possible_movement[ source ]);
+				break;
+			case "Special Ability":
+				var possible_special_abilities = game.possible_turns["Special Ability"];
+				if( !possible_special_abilities )
+					throw "Invalid Special Ability (none allowed)";
+				var ability_user = Position.force_encoded_string( turn_object.ability_user );
+				if( !possible_special_abilities[ ability_user ])
+					throw "Invalid Special Ability (ability_user)"
+						+ "\n  sought " + ability_user
+						+ "\n  allowed " + JSON.stringify( _.keys( possible_special_abilities ));
+				var source = Position.force_encoded_string( turn_object.source );
+				if( !possible_special_abilities[ ability_user ][ source ])
+					throw "Invalid Special Ability (source)"
+						+ "\n  sought " + source
+						+ "\n  allowed " + JSON.stringify( _.keys( possible_special_abilities[ ability_user ]));
+				var destination = Position.force_encoded_string( turn_object.destination );
+				if( !_.contains( possible_special_abilities[ ability_user ][ source ], destination ))
+					throw "Invalid Special Ability (destination)"
+						+ "\n  sought " + destination
+						+ "\n  allowed " + JSON.stringify( possible_special_abilities[ ability_user ][ source ]);
+			case "Forfeit":
+				var possible_forfeiture = game.possible_turns["Forfeit"];
+				if( !possible_forfeiture )
+					throw "Invalid Forfeit (not allowed)";
+				break;
+			case "Error":
+				throw "Invalid Turn (Error)";
+				break;
+			case "Unknown":
+				throw "Invalid Turn (Unknown)";
+				break;
+			default:
+				throw "Invalid turn_type " + turn_type;
+		}
 	}
-	game.perform_turn = function( turn_object, skip_self_evaluation ) {
-		// TODO: add checks on validity of turn object structure and references, and validity of turn itself against known rules; return false if error?
+	game.perform_turn = function( turn_object, skip_self_evaluation, skip_validity_check ) {
+		if( !skip_validity_check )
+			game.check_if_turn_valid( turn_object ); // throws exception if invalid
+		//
 		var turn_type = turn_object.turn_type;
 		switch( turn_type ) {
 			case "Placement": 
@@ -86,7 +153,7 @@ function create( creation_parameters ) {
 				// ..?
 				break;
 			default:
-				throw "invalid turn type: " + turn_type;
+				throw "Invalid turn_type " + turn_type;
 		}
 		game.turn_number++;
 		game.player_turn = Piece.opposite_color( game.player_turn );
@@ -179,13 +246,14 @@ function create( creation_parameters ) {
 	return game;
 }
 
-function load( saved_game ) {
+function load( saved_game, skip_all_validity_checks ) {
 	var game = create( saved_game.creation_parameters );
-	var skip_self_evaluation = true;
+	var skip_self_evaluation = skip_all_validity_checks; // if validity checks should be performed, self evaluation must also be performed
 	_.forEach( saved_game.turn_history, function( turn_object ) {
-		game.perform_turn( turn_object, skip_self_evaluation );
+		game.perform_turn( turn_object, skip_self_evaluation, skip_all_validity_checks );
 	});
-	game.self_evaluation();
+	if( skip_self_evaluation )
+		game.self_evaluation(); // if self evaluations were skipped for performance reasons, they must now be performed
 	return game;
 }
 

@@ -349,4 +349,4 @@ function generate_id() {
 // exports
 
 exports.create = create;
-
+exports.generate_id = generate_id;
