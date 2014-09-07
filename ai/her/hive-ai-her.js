@@ -67,8 +67,11 @@ function process_message( message ) {
 			var skip_self_evaluation = true; 
 			// when skip_self_evaluation is used, the following properties are undefined and should not be used:
 			//   game.<possible_turns,game_over,winner,is_draw>
+			var skip_validity_checks = true;
+			// when skip_validity_checks is used, turn objects are never rejected
+			//   it is safe to do this if the possible_turns object is the source of information, as it will be the information checked against
 			var turn_scores = _.map( enumerated_turns, function( turn ) {
-				game.perform_turn( turn, skip_self_evaluation );
+				game.perform_turn( turn, skip_self_evaluation, skip_validity_checks );
 				var score = score_heuristic( game, player_turn );
 				game.undo_last_turn( skip_self_evaluation );
 				return score;
