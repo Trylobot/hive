@@ -6,49 +6,38 @@ var Turn = require("../../../core/domain/turn");
 
 // cheater test
 
-var normal_turn_types = _.filter( Turn.turn_types_enum, function( turn_type ) {
-	return turn_type != "Error" && turn_type != "Unknown";
-});
+var normal_turn_types = [
+	"Placement",
+	"Movement",
+	"Special Ability",
+	"Forfeit"
+];
 
 function process_message( message ) {
-	var response = {
-		response_type: message.request_type,
-		response_id: message.request_id
-	};
+	var response;
 	switch( message.request_type ) {
 		
 		case "Greetings":
+			response = {
+				response_type: message.request_type,
+				response_id: message.request_id
+			};
 			var package_json = require("./package.json");
 			for( var key in package_json )
 				response[key] = package_json[key];
 			break;
 		
 		case "Choose Turn":
-			_.extend( response, {
+			response = {
+				response_type: message.request_type,
+				response_id: message.request_id,
 				game_id: message.game_id,
 				turn_type: random_array_item( normal_turn_types ),
 				piece_type: random_array_item( Piece.types_enum ),
 				ability_user: Position.create( random_int( -10, 10 ), random_int( -10, 10 )).encode(),
 				source: Position.create( random_int( -10, 10 ), random_int( -10, 10 )).encode(),
-				destination: Position.create( random_int( -10, 10 ), random_int( -10, 10 )).encode(),
-			});
-			switch( response.turn_type ) {
-				case "Placement":
-					response.piece_type = random_array_item( possible_turns[ response.turn_type ].piece_types );
-					response.destination = random_array_item( possible_turns[ response.turn_type ].positions );
-					break;
-				case "Movement":
-					response.source = random_object_key( possible_turns[ response.turn_type ]);
-					response.destination = random_array_item( possible_turns[ response.turn_type ][ response.source ]);
-					break;
-				case "Special Ability":
-					response.ability_user = random_object_key( possible_turns[ response.turn_type ]);
-					response.source = random_object_key( possible_turns[ response.turn_type ][ response.ability_user ]);
-					response.destination = random_array_item( possible_turns[ response.turn_type ][ response.ability_user ][ response.source ]);
-					break;
-				case "Forfeit":
-					break;
-			}
+				destination: Position.create( random_int( -10, 10 ), random_int( -10, 10 )).encode()
+			};
 			break;
 	}
 	return response;

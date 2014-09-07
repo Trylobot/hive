@@ -1,0 +1,8 @@
+{
+  "name": "inactive",
+  "active": false,
+  "version": "0.0.1",
+  "long_name": "Inactive",
+  "module": "test-ai-inactive",
+  "description": "Always inactive"
+}

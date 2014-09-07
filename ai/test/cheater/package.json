@@ -1,8 +1,8 @@
 {
   "name": "cheater",
-  "active": false,
+  "active": true,
   "version": "0.0.1",
   "long_name": "Cheater",
   "module": "test-ai-cheater",
-  "description": "Fabricates turn objects",
+  "description": "Fabricates turn objects"
 }

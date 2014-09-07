@@ -248,6 +248,7 @@ function program_command_play_single_random() {
 function init() {
 	core = Core.create( package_json.version );
 	core.events.on( "game", handle_game_event );
+	core.events.on( "match_penalty", handle_match_penalty );
 	// init random seed
 	mersenne_twister.init_genrand( (new Date()).getTime() % 1000000000 );
 }
@@ -338,15 +339,31 @@ function resolve_ai_module_metadata( ai_registry, progress_callback_fn, finished
 				metadata.remote_port = reference.remote_port;
 				var greetings_message = core.prepare_greetings_request_message();
 				if( proximity == "Local" ) {
+					var resolved_module_path;
 					try {
-						var resolved_module_path = resolve_module_path( reference.local_path );
+						resolved_module_path = resolve_module_path( reference.local_path );
+					} catch( err ) {
+						handle_response({
+							error: {
+								"function": "resolve_module_path",
+								thrown_error: err
+							}
+						});
+					}
+					try {
 						core.send_message_to_local_ai( 
 							greetings_message, 
 							resolved_module_path, 
 							handle_response
 						);
 					} catch( err ) { // catch problems trying to load package.json
-						handle_response({ error: err });
+						handle_response({
+							error: {
+								resolved_module_path: resolved_module_path,
+								"function": "core.send_message_to_local_ai",
+								thrown_error: err
+							}
+						});
 					}
 				}
 				else if( proximity == "Remote" ) {
@@ -444,6 +461,13 @@ function handle_game_event( game_event ) {
 			process.exit();
 		}
 	}
+}
+
+function handle_match_penalty( match_penalty ) {
+	var game_instance = core.lookup_game( match_penalty.game_id );
+	game_instance.game.turn_history.push( Turn.create_error( match_penalty.error ));
+	game_instance.game.winner = Player.opposite_color( game_instance.game.player_turn );
+	core.end_game( match_penalty.game_id );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -545,27 +569,8 @@ function show_ai_registry_check_status( ai_registry ) {
 			var ai_metadata = ai_registry.ai_metadata 
 				? ai_registry.ai_metadata[ ai_reference.name ]
 				: null;
-			if( !ai_metadata || (!ai_metadata.error && !ai_metadata.greetings_data) ) {
-				// loading or communication in progress
-				return [
-					color.bold.cyanBright( ai_reference.name ),
-					"",
-					"",
-					"",
-					"",
-					color.blackBright( "..." )
-				];
-			}
-			else if( !ai_metadata.error && ai_metadata.greetings_data ) {
-				// no error + greeting received
-				return [
-					color.bold.cyanBright( ai_reference.name ),
-					ai_metadata.greetings_data.long_name,
-					color.bold.blackBright( ai_metadata.greetings_data.version ),
-					color.blackBright( ai_metadata.greetings_data.description ),
-					color.blackBright( ai_metadata.proximity ),
-					color.bold.greenBright( "OK" )
-				];
+			if( !ai_metadata ) {
+				color.bold.yellowBright( "WARNING: SYSTEM ERROR" )
 			}
 			else if( ai_metadata.error ) { 
 				// error
@@ -578,6 +583,41 @@ function show_ai_registry_check_status( ai_registry ) {
 					color.bold.redBright( "ERROR" )
 				];
 			}
+			else if( !ai_metadata.greetings_data ) {
+				// loading or communication in progress
+				return [
+					color.bold.cyanBright( ai_reference.name ),
+					"",
+					"",
+					"",
+					"",
+					color.blackBright( "LOADING" )
+				];
+			}
+			else if( !ai_metadata.ai_active ) {
+				// no error + greeting received
+				return [
+					color.bold.cyan( ai_reference.name ),
+					ai_metadata.greetings_data.long_name,
+					color.bold.blackBright( ai_metadata.greetings_data.version ),
+					color.blackBright( ai_metadata.greetings_data.description ),
+					color.blackBright( ai_metadata.proximity ),
+					color.bold.yellow( "INACTIVE" )
+				];
+			}
+			else if( ai_metadata.ai_active ) {
+				// no error + greeting received
+				return [
+					color.bold.cyanBright( ai_reference.name ),
+					ai_metadata.greetings_data.long_name,
+					color.bold.blackBright( ai_metadata.greetings_data.version ),
+					color.blackBright( ai_metadata.greetings_data.description ),
+					color.blackBright( ai_metadata.proximity ),
+					color.bold.greenBright( "OK" )
+				];
+			}
+			else
+				return []; // ?
 		})
 	);
 	console.log( table.toString() );
