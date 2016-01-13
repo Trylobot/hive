@@ -570,7 +570,7 @@ function show_ai_registry_check_status( ai_registry ) {
 				? ai_registry.ai_metadata[ ai_reference.name ]
 				: null;
 			if( !ai_metadata ) {
-				color.bold.yellowBright( "WARNING: SYSTEM ERROR" )
+				color.bold.yellowBright( "WARNING: SYSTEM ERROR" );
 			}
 			else if( ai_metadata.error ) { 
 				// error
@@ -620,7 +620,12 @@ function show_ai_registry_check_status( ai_registry ) {
 				return []; // ?
 		})
 	);
-	console.log( table.toString() );
+	try {
+		console.log( table.toString() );	
+	} catch (err) {
+		color.bold.yellowBright( "WARNING: SYSTEM ERROR" );
+		console.log( table );
+	}
 	newlines += table.length; // rows == lines
 }
 
