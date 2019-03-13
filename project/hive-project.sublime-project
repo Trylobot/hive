@@ -3,16 +3,21 @@
 	[
 		{
 			"path": "..",
-			"folder_exclude_patterns": [
+			"folder_exclude_patterns":
+			[
 				".git",
 				"node_modules/.bin"
 			],
-			"file_exclude_patterns": [
+			"file_exclude_patterns":
+			[
 				"*.sublime-workspace",
 				"node_modules/*",
 				"nw/node_modules/*",
 				"web/public/lib/*"
 			]
+		},
+		{
+			"path": "../../hive-clj"
 		}
 	]
 }
