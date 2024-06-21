@@ -1,5 +1,5 @@
 var _ = require("lodash");
-_(global).extend(require("../core/domain/util"));
+var util = require("./domain/util");
 var Piece = require("../core/domain/piece");
 var Position = require("../core/domain/position");
 var Board = require("../core/domain/board");
@@ -95,8 +95,8 @@ exports["test rules find_valid_placement_positions"] = function( assert ) {
 	var board = Board.create();
 	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "Black", "Queen Bee" ), Position.create( 2, 0 ));
-	assert.ok( json_equality( ["-2,0","-1,1","-1,-1"], _.keys( Rules.find_valid_placement_positions( "White", board, 2 ))), "White placement" );
-	assert.ok( json_equality( ["3,1","4,0","3,-1"],    _.keys( Rules.find_valid_placement_positions( "Black", board, 3 ))), "Black placement" );
+	assert.ok( util.json_equality( ["-2,0","-1,1","-1,-1"], _.keys( Rules.find_valid_placement_positions( "White", board, 2 ))), "White placement" );
+	assert.ok( util.json_equality( ["3,1","4,0","3,-1"],    _.keys( Rules.find_valid_placement_positions( "Black", board, 3 ))), "Black placement" );
 }
 
 exports["test rules find_valid_movement"] = function( assert ) {
@@ -149,7 +149,7 @@ exports["test rules find_valid_movement_Queen_Bee"] = function( assert ) {
 	board.place_piece( Piece.create( "White", "Queen Bee" ), Position.create( -3, 1 ));
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Queen_Bee( board, Position.create( -3, 1 )));
-	assert.ok( set_equality( valid_movement, 
+	assert.ok( util.set_equality( valid_movement, 
 		["-4,0","-1,1"] ),
 		"Queen Bee movement matches expected" );
 
@@ -163,7 +163,7 @@ exports["test rules find_valid_movement_Beetle"] = function( assert ) {
 	board.place_piece( Piece.create( "White", "Beetle" ), Position.create( 0, 0 ));
 	board.place_piece( Piece.create( "Black", "Beetle" ), Position.create( -2, 0 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Beetle( board, Position.create( 0, 0 )));
-	assert.ok( set_equality( valid_movement, 
+	assert.ok( util.set_equality( valid_movement, 
 		["-2,0","-1,1","-1,-1"] ),
 		"Beetle able to perform basic slides and to climb up" );
 	board.move_piece( Position.create( 0, 0 ), Position.create( -2, 0 ));
@@ -404,7 +404,7 @@ exports["test rules find_valid_movement_Pillbug"] = function( assert ) {
 	board.place_piece( Piece.create( "White", "Pillbug" ), Position.create( -3, 1 ));
 	board.place_piece( Piece.create( "Black", "Spider" ), Position.create( 1, 1 ));
 	valid_movement = Position.encode_all( Rules.find_valid_movement_Pillbug( board, Position.create( -3, 1 )));
-	assert.ok( set_equality( valid_movement, 
+	assert.ok( util.set_equality( valid_movement, 
 		["-4,0","-1,1"] ),
 		"Pillbug movement matches expected" );
 }

@@ -1,9 +1,9 @@
 var _ = require("lodash");
-_(global).extend(require("../core/domain/util"));
+var util = require("./domain/util");
 
 exports["test util cycle_chars"] = function( assert ) {
 	assert.deepEqual(
-		cycle_chars( "12345", 1 ),
+		util.cycle_chars( "12345", 1 ),
 		"51234",
 		"actual matches expected" );
 }

@@ -1,5 +1,5 @@
 var _ = require("lodash");
-_(global).extend(require("../core/domain/util"));
+var util = require("./domain/util");
 var Piece = require("../core/domain/piece");
 var Position = require("../core/domain/position");
 var Board = require("../core/domain/board");
@@ -437,8 +437,8 @@ exports["test board can_slide_lookup_table"] = function( assert ) {
 		var rotated_key = key;
 		var rotated_value = value;
 		for( var i = 0; i < 5; ++i ) {
-			var rotated_key = cycle_chars( rotated_key, 1 );
-			var rotated_value = cycle_chars( rotated_value, 1 );
+			var rotated_key = util.cycle_chars( rotated_key, 1 );
+			var rotated_value = util.cycle_chars( rotated_value, 1 );
 			var actual_rotated_value = Board.can_slide_lookup_table[ rotated_key ];
 			if( actual_rotated_value != rotated_value ) {
 				pass = false;
@@ -476,10 +476,10 @@ exports["test board parse_range"] = function( assert ) {
 	var range;
 
 	range = Board.parse_range( 3 );
-	assert.ok( json_equality( range, { min: 3, max: 3 }), "range specifier should parse correctly" );
+	assert.ok( util.json_equality( range, { min: 3, max: 3 }), "range specifier should parse correctly" );
 	
 	range = Board.parse_range({ min: 1, max: Infinity });
-	assert.ok( json_equality( range, { min: 1, max: Infinity }), "range specifier should parse correctly" );
+	assert.ok( util.json_equality( range, { min: 1, max: Infinity }), "range specifier should parse correctly" );
 }
 
 exports["test board parse_height_range_specification"] = function( assert ) {

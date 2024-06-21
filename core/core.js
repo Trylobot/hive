@@ -10,7 +10,7 @@ var mersenne_twister = new (require('mersenne').MersenneTwister19937);
 var net = require("net");
 var JsonSocket = require("json-socket");
 //   user-defined modules
-_(global).extend(require("./domain/util"));
+var util = require("./domain/util");
 var Piece = require("./domain/piece");
 var Position = require("./domain/position");
 var Turn = require("./domain/turn");
@@ -25,10 +25,10 @@ core.js
 this module manages game instances, and handles communications between players and games.
 
 local AI are completely managed.
-  they are stopped and started as needed, as forked child processes
+	they are stopped and started as needed, as forked child processes
 
 remote AI are not managed at all.
-  it is up to the remote AI's owner to start and stop it
+	it is up to the remote AI's owner to start and stop it
 
 */
 
@@ -351,7 +351,7 @@ function create( system_version ) {
 }
 
 function generate_id() {
-	return pad( base62_encode( Math.floor( mersenne_twister.genrand_real2()*(62*62*62*62*62) )), 5 );
+	return util.pad( util.base62_encode( Math.floor( mersenne_twister.genrand_real2()*(62*62*62*62*62) )), 5 );
 }
 
 // exports

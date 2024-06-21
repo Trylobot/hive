@@ -1,3 +1,4 @@
+var util = require("./domain/util");
 var Position = require("../core/domain/position");
 
 exports["test position create, encode, decode"] = function( assert ) {
@@ -42,12 +43,12 @@ exports["test position encode_all, decode_all"] = function( assert ) {
 		Position.create( 2, 0 )
 	];
 	position_key_array = Position.encode_all( position_array );
-	assert.ok( json_equality( position_key_array,
+	assert.ok( util.json_equality( position_key_array,
 		["0,0","-1,-1","2,0"] ),
 		"positions encoded properly" );
 
 	position_array2 = Position.decode_all( position_key_array );
-	assert.ok( json_equality( position_array, 
+	assert.ok( util.json_equality( position_array, 
 		position_array2 ),
 		"positions decoded properly" );
 }
@@ -108,7 +109,7 @@ exports["test position adjacencies"] = function( assert ) {
 
 	position = Position.create( -5, -1 );
 	adjacencies = Position.encode_all( position.adjacencies() );
-	assert.ok( json_equality( adjacencies,
+	assert.ok( util.json_equality( adjacencies,
 		["-7,-1","-6,0","-4,0","-3,-1","-4,-2","-6,-2"] ),
 		"adjacent positions reported properly" );
 }
@@ -154,8 +155,8 @@ exports["test position force_decoded_object"] = function( assert ) {
 	var position, position_key, result;
 	position = Position.create( -1, -1 );
 	position_key = "-1,-1";
-	assert.ok( json_equality( Position.force_decoded_object( position ),     { row: -1, col: -1 })
-		&&     json_equality( Position.force_decoded_object( position_key ), { row: -1, col: -1 }),
+	assert.ok( util.json_equality( Position.force_decoded_object( position ),     { row: -1, col: -1 })
+		&&     util.json_equality( Position.force_decoded_object( position_key ), { row: -1, col: -1 }),
 		"decoded_object correct" );
 }
 
@@ -164,7 +165,7 @@ exports["test position copy"] = function( assert ) {
 
 	position = Position.create( 0, 0 );
 	position2 = position.copy();
-	assert.ok( json_equality( position, position2 ),
+	assert.ok( util.json_equality( position, position2 ),
 		"position copied" );
 }
 
